@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from myatlas import code_mylang, code_rust  # noqa: E402
 from myatlas.build import build, page  # noqa: E402
 from myatlas.check import field_matches, load  # noqa: E402
+from myatlas.cli import main  # noqa: E402
 from myatlas.project import Project, Report  # noqa: E402
 from myatlas.traces import load_traces  # noqa: E402
 
@@ -440,6 +441,78 @@ class CodeTest(unittest.TestCase):
     def test_a_field_run(self):
         self.assertEqual(field_matches('a0 … a2', ['a0', 'a1', 'a2', 'a3']), ['a0', 'a1', 'a2'])
         self.assertEqual(field_matches('*s0', ['*s0']), ['*s0'])
+
+    def test_mylang_sizes_from_constants_arrays_and_entities(self):
+        text = 'u32 BASE = 0x1F;\nu8 buf[ 16 ];\nentity Task max 64 {\n}\n// LIMIT = 9;\ni32 MORE = n;\n'
+        self.assertEqual(code_mylang.find_number(text, 'BASE'), 31)
+        self.assertEqual(code_mylang.find_number(text, 'buf'), 16)
+        self.assertEqual(code_mylang.find_number(text, 'Task'), 64)
+        self.assertIsNone(code_mylang.find_number(text, 'LIMIT'))   # only in a comment
+        self.assertIsNone(code_mylang.find_number(text, 'MORE'))    # not a number
+
+    def test_mylang_namespace(self):
+        self.assertEqual(code_mylang.namespace_of('// a queue\n  namespace queue ;\n'), 'queue')
+        self.assertIsNone(code_mylang.namespace_of('void f() {}'))
+        self.assertIsNone(code_mylang.namespace_of(None))
+
+    def test_mylang_enum_values_carry_data_and_generics(self):
+        self.assertEqual(code_mylang.find_enum('enum Event { Key(u8), Pair(Map<i32, i32>), Quit, }', 'Event'),
+                         ['Key', 'Pair', 'Quit'])
+        self.assertEqual(code_mylang.find_enum('enum E {}', 'E'), [])
+        self.assertIsNone(code_mylang.find_enum('struct E { i32 a; };', 'E'))
+
+    def test_mylang_stores_are_assignments_not_comparisons(self):
+        text = """enum State { Idle, Busy(i32), Done }
+void start(Job j) { j.state = State::Busy(1); }
+void finish(Job j) {
+  if (x) { j.state = State::Done; }
+  log(j.state == State::Idle);
+}
+Job make() { return Job { state: State::Idle }; }
+"""
+        self.assertEqual(code_mylang.stores(text, 'State', 'state'), [('start', 'Busy'), ('finish', 'Done'), ('make', 'Idle')])
+
+
+class CliTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix='myatlas-test-')
+        self.fx = Fixture(Path(self.temporary.name))
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def run_main(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = main(['--root', str(self.fx.root), *argv])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_check_exits_1_only_on_an_error(self):
+        code, out, err = self.run_main('check')
+        self.assertEqual((code, err), (0, '0 errors, 1 warnings\n'))
+        self.assertIn('warning: os.kind: Kind の POP に説明が無い', out)
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
+        code, out, err = self.run_main('check')
+        self.assertEqual((code, err), (1, '1 errors, 1 warnings\n'))
+        self.assertIn('docs/atlas/flows/send.md:8: error: 手順の箱 pull が無い', out)
+
+    def test_build_writes_to_the_default_path(self):
+        code, out, _ = self.run_main('build')
+        self.assertEqual(code, 0)
+        self.assertIn('wrote build/atlas/index.html (6 nodes, 1 flows, 1 papers)', out)
+        self.assertIn('<title>小さな地図</title>', (self.fx.root / 'build' / 'atlas' / 'index.html').read_text(encoding='utf-8'))
+
+    def test_build_writes_no_page_on_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
+        code, _, _ = self.run_main('build', str(self.fx.root / 'out.html'))
+        self.assertEqual(code, 1)
+        self.assertFalse((self.fx.root / 'out.html').exists())
+
+    def test_a_missing_index_stops_with_a_message(self):
+        (self.fx.docs / 'atlas.md').unlink()
+        with self.assertRaises(SystemExit) as stop:
+            self.run_main('check')
+        self.assertEqual(str(stop.exception), f'{self.fx.docs / "atlas.md"} does not exist')
 
 
 if __name__ == '__main__':
