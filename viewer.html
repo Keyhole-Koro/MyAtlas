@@ -1,0 +1,2767 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__ATLAS_TITLE__</title>
+<style>
+/* ---- Tokens ---- */
+:root {
+  color-scheme: light;
+  --bg: #f8f8f7; --surface: #ffffff; --surface-2: #f1f1ef;
+  --text: #1a1a19; --text-2: #5f5e5a; --text-3: #8b8a85;
+  --border: #e4e3df; --border-strong: #cfcdc7;
+  --accent: #2f5bd3; --accent-text: #ffffff; --accent-soft: #e8eefc;
+  --series-1: #2f5bd3; --series-2: #d9822b;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  --text-2xs: 0.6875rem; --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem;
+  --text-lg: 1.25rem; --text-xl: 1.5rem; --text-2xl: 2rem;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --radius: 10px; --radius-sm: 6px;
+  --shadow: 0 8px 28px rgba(20, 20, 19, 0.16);
+  /* one hue per layer (top to bottom), checked for colour-blind separation between neighbours and against the accent */
+  --l-app: #eb6834; --l-lib: #1baf7a; --l-os: #eda100; --l-kernel: #e87ba4; --l-emu: #008300;
+  --app-t0: #fef4f1; --app-t1: #fdede7; --app-t2: #f9d2c2;
+  --lib-t0: #eff9f6; --lib-t1: #e4f5ef; --lib-t2: #bbe7d7;
+  --os-t0: #fef8ed; --os-t1: #fdf4e0; --os-t2: #fae3b2;
+  --kernel-t0: #fdf6f9; --kernel-t1: #fceff4; --kernel-t2: #f8d7e4;
+  --emu-t0: #edf6ed; --emu-t1: #e0f0e0; --emu-t2: #b2dab2;
+  /* who runs: three threads, from the only all-pairs set that keeps clear of the accent (labels carry it too) */
+  --c-app: var(--l-emu); --c-svc: var(--l-os); --c-irq: var(--l-kernel);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #141413; --surface: #1c1c1b; --surface-2: #262624;
+    --text: #ecebe8; --text-2: #a9a8a2; --text-3: #75746f;
+    --border: #2f2f2c; --border-strong: #42413d;
+    --accent: #7c9dff; --accent-text: #0e1220; --accent-soft: #1d2540;
+    --series-1: #7c9dff; --series-2: #f0a35e;
+    --shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    --l-app: #d95926; --l-lib: #199e70; --l-os: #c98500; --l-kernel: #d55181; --l-emu: #008300;
+    --app-t0: #2f221c; --app-t1: #38251d; --app-t2: #58301f;
+    --lib-t0: #1c2924; --lib-t1: #1c3028; --lib-t2: #1b4636;
+    --os-t0: #2d2618; --os-t1: #362c17; --os-t2: #533e12;
+    --kernel-t0: #2e2125; --kernel-t1: #38242a; --kernel-t2: #572d3c;
+    --emu-t0: #192618; --emu-t1: #182b17; --emu-t2: #133d12;
+  }
+}
+@media (max-width: 640px) {
+  :root { --text-xl: 1.375rem; --text-2xl: 1.625rem; }
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 var(--text-md)/1.8 var(--font-sans); }
+main { max-width: 960px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+main.wide { max-width: 1480px; }
+h1 { font-size: var(--text-2xl); line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 var(--space-3); }
+h2 { font-size: var(--text-lg); line-height: 1.45; font-weight: 650; margin: var(--space-7) 0 var(--space-3); }
+h3 { font-size: var(--text-md); font-weight: 650; margin: var(--space-5) 0 var(--space-2); }
+p { margin: 0 0 1em; max-width: 40em; }
+.lead { font-size: var(--text-lg); line-height: 1.6; color: var(--text-2); max-width: 44em; margin-bottom: var(--space-5); }
+.muted { color: var(--text-2); }
+small, .small { font-size: var(--text-sm); }
+.mono { font-family: var(--font-mono); }
+a { color: var(--accent); }
+code { font: var(--text-sm)/1.5 var(--font-mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { font: var(--text-sm)/1.6 var(--font-mono); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); overflow-x: auto; margin: 0 0 var(--space-4); }
+pre code { background: none; padding: 0; overflow-wrap: normal; }
+img, svg, canvas, video { max-width: 100%; height: auto; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+footer { margin-top: var(--space-7); font-size: var(--text-sm); color: var(--text-2); }
+details.more { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: var(--space-5) 0; }
+details.more > summary { cursor: pointer; padding: var(--space-3) var(--space-4); font-weight: 600; }
+details.more[open] > summary { border-bottom: 1px solid var(--border); }
+details.more > .more-body { padding: var(--space-4); }
+
+/* ---- Components ---- */
+.icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon.sm { width: 16px; height: 16px; }
+.badge { display: inline-block; font-size: var(--text-xs); font-weight: 600; line-height: 1.5; padding: 2px var(--space-2); border-radius: 999px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.badge.accent { background: var(--accent-soft); color: var(--accent); }
+button { font: inherit; font-size: var(--text-sm); font-weight: 600; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; }
+button:focus-visible, a:focus-visible, .box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tabs { display: flex; gap: var(--space-1); overflow-x: auto; }
+.tabs [role=tab] { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--text-2); padding: var(--space-2) var(--space-3); white-space: nowrap; }
+.tabs [role=tab][aria-selected=true] { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ---- Layout of the tool ---- */
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); margin-bottom: var(--space-4); }
+.toolbar-label { font-size: var(--text-xs); color: var(--text-2); letter-spacing: 0.06em; margin-right: var(--space-2); }
+.flow-tabs { display: flex; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: var(--space-2); }
+.seg button { border: 0; border-radius: 0; background: var(--surface); color: var(--text-2); }
+.seg button + button { border-left: 1px solid var(--border-strong); }
+.seg button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); }
+.seg button { white-space: nowrap; }
+@media (max-width: 640px) {
+  .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .seg button + button { border-left: 0; }
+  .seg button:nth-child(even) { border-left: 1px solid var(--border-strong); }
+  .seg button:nth-child(n+3) { border-top: 1px solid var(--border-strong); }
+}
+
+.app-grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1320px) {
+  .app-grid { grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "map node" "steps node"; align-items: start; }
+  .area-map { grid-area: map; }
+  .area-steps { grid-area: steps; }
+  .node-panel { grid-area: node; position: sticky; top: var(--space-4); max-height: calc(100vh - 32px); overflow-y: auto; }
+}
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); margin: 0; }
+.panel figcaption { font-size: var(--text-sm); color: var(--text-2); margin-top: var(--space-3); }
+.step-now { display: flex; gap: var(--space-3); align-items: center; margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 600; min-height: 28px; max-width: none; }
+.n { flex: none; width: 24px; height: 24px; border-radius: 999px; border: 2px solid var(--text-2); display: inline-grid; place-items: center; font-size: var(--text-xs); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.n.is-on, .step-now .n { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.n.outer-n { width: auto; min-width: 24px; padding: 0 6px; border-style: dashed; font-size: var(--text-2xs); }
+
+/* legend */
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: var(--space-3) 0 0; padding: 0; list-style: none; font-size: var(--text-xs); color: var(--text-2); }
+.legend li { display: inline-flex; gap: var(--space-2); align-items: center; }
+.legend .lg-h { font-weight: 650; color: var(--text); }
+.legend + .legend { margin-top: var(--space-1); }
+.legend .lg-h { min-width: 2.5em; }
+.legend .lg-note { color: var(--text-3); }
+.legend svg { flex: none; }
+.lg-box { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.2; }
+.lg-back { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.2; }
+.lg-cell { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.lg-cell.hi { fill: var(--accent-soft); stroke: var(--accent); }
+.lg-t { fill: var(--text); font-size: 9px; font-family: var(--font-mono); }
+
+/* the map */
+.canvas > svg { display: block; width: 100%; min-width: 980px; height: auto; font-family: var(--font-sans); }
+.band-0 { fill: var(--surface); }
+.band-1 { fill: var(--surface-2); }
+.band-line { stroke: var(--border-strong); stroke-width: 1; }
+.lane-line { stroke: var(--border-strong); stroke-width: 1; stroke-dasharray: 2 5; }
+.band-name { fill: var(--text); font-size: var(--text-sm); font-weight: 650; }
+.band-sub { fill: var(--text-2); font-size: var(--text-xs); }
+.band-empty { fill: var(--text-2); font-size: var(--text-xs); }
+.region { cursor: pointer; }
+.region rect, .region polygon { fill: none; stroke: var(--text-2); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.region text { fill: var(--text-2); font-size: var(--text-xs); paint-order: stroke; stroke-width: 6px; stroke-linejoin: round; }
+.region text.on-0 { stroke: var(--surface); }
+.region text.on-1 { stroke: var(--surface-2); }
+.region.is-node rect, .region.is-node path, .region.is-node polygon { stroke: var(--accent); stroke-width: 2; }
+.seq-ctx path { fill: none; stroke: var(--text-2); stroke-width: 1.2; }
+.region.is-node text { fill: var(--accent); font-weight: 650; }
+
+.box { cursor: pointer; outline: none; }
+.box .body { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; }
+.box .back { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
+.box.k-hw .body { stroke-width: 2.5; }
+.box .title { fill: var(--text); font-size: var(--text-sm); font-weight: 650; font-family: var(--font-mono); }
+.box .title.ja { font-family: var(--font-sans); }
+.box .ns { fill: var(--text-2); font-size: var(--text-2xs); font-family: var(--font-mono); }
+.box .sub { fill: var(--text-2); font-size: var(--text-xs); }
+.box:hover .body { stroke: var(--accent); }
+.box.is-end .body { stroke: var(--accent); stroke-width: 2; }
+.box.is-node .body { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
+.slot rect, .slot polygon { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.slot text { fill: var(--text); font-size: var(--text-2xs); font-family: var(--font-mono); }
+.slot.linked { cursor: pointer; }
+.slot.hot rect, .slot.hot polygon { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.bits rect, .bits polygon { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.bits rect.hi, .bits polygon.hi { fill: var(--accent-soft); stroke: var(--accent); }
+.bits text { fill: var(--text); font-size: var(--text-2xs); }
+
+/* edges: one look per kind */
+.edge { cursor: pointer; }
+.edge .line { fill: none; stroke: var(--text-2); stroke-width: 1.6; }
+.edge.k-syscall .line { stroke-width: 3.2; }
+.edge.k-return .line { stroke-dasharray: 7 4; }
+.edge.k-signal .line { stroke-dasharray: 0.5 5; stroke-linecap: round; stroke-width: 2.8; }
+.edge.k-msg .line { stroke-dasharray: 11 4 2 4; }
+.edge.is-sel .line, .edge.carries .line { stroke: var(--accent); }
+.edge.dim, .pill.dim { opacity: 0.25; }
+.edge .hit { fill: none; stroke: transparent; stroke-width: 14; }
+/* moving lines: the direction a step goes, each kind with its own motion (speeds: signal fast, queue slow) */
+.edge .flow { fill: none; stroke: var(--text); stroke-width: 3.6; stroke-linecap: round; stroke-dasharray: 0.01 22; pointer-events: none; animation: ln-flow 1.1s linear infinite; }
+.edge.k-syscall .flow { stroke-width: 5.8; animation-duration: 0.9s; }
+.edge.k-data .flow { animation-duration: 1.5s; }
+.edge.k-return .line { animation: ln-ret 1.2s linear infinite; }
+.edge.k-msg .line { animation: ln-msg 1.9s linear infinite; }
+.edge.k-signal .line { animation: ln-sig 0.45s linear infinite; }
+@keyframes ln-flow { to { stroke-dashoffset: -22.01; } }
+@keyframes ln-ret { to { stroke-dashoffset: -11; } }
+@keyframes ln-msg { to { stroke-dashoffset: -21; } }
+@keyframes ln-sig { to { stroke-dashoffset: -5.5; } }
+.edge.is-sel .flow, .edge.carries .flow, .edge.is-hover .flow { stroke: var(--accent); }
+.edge.far .flow { stroke: var(--text-2); }
+.edge.alt .line { stroke: var(--text-3); }
+.edge.alt .flow { stroke: var(--text-2); }
+.pill.alt .pbg { stroke-dasharray: 2 3; }
+.pill.alt .num rect { stroke-dasharray: none; stroke: var(--text-3); }
+.pill.alt .verb { fill: var(--text-2); }
+.pill .fork { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.5; stroke-linejoin: round; }
+.altframe rect { fill: none; stroke: var(--text-3); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.altframe path { fill: var(--surface-2); stroke: var(--text-3); stroke-width: 1; }
+.altframe text { fill: var(--text-2); font-size: var(--text-2xs); font-weight: 650; }
+.alt-when { margin: var(--space-1) 0 var(--space-2); font-size: var(--text-sm); color: var(--text-2); }
+.branches { border-collapse: collapse; font-size: var(--text-sm); margin: 0 0 var(--space-2); width: 100%; }
+.branches th, .branches td { text-align: left; vertical-align: top; padding: var(--space-1) var(--space-2); border-top: 1px solid var(--border); }
+.branches th { font-weight: 600; white-space: nowrap; color: var(--text-2); }
+.steps .alt .lbl { color: var(--text-2); }
+.lineage { list-style: none; margin: 0 0 var(--space-3); padding: 0; font-size: var(--text-sm); }
+.lineage .lin-flow { font-weight: 650; margin: var(--space-2) 0 var(--space-1); color: var(--text-2); font-size: var(--text-xs); }
+.lineage .lin-step { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--space-2); border-left: 2px solid var(--border); margin-left: 9px; padding: 2px 0 2px calc(10px + var(--d) * 14px); }
+.lineage .lin-paper { margin: var(--space-1) 0 0 9px; padding-left: calc(10px + var(--d) * 14px - 14px); border-left: 2px solid var(--border); font-size: var(--text-2xs); font-family: var(--font-mono); color: var(--text-2); }
+.lineage .lin-step.is-cur { border-left-color: var(--accent); }
+.lineage .lin-step button { display: inline-flex; align-items: center; gap: var(--space-1); }
+.lineage .n { width: 20px; height: 20px; font-size: var(--text-2xs); border-width: 1.5px; }
+.lineage .lin-step .lin-fields { flex-basis: 100%; padding-left: 26px; }
+.lineage .lin-fields { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+.lineage .lin-fields code, .lin-table code { font-size: var(--text-2xs); padding: 0 4px; }
+.lin-table td { font-size: var(--text-xs); }
+.edge.dim .flow, .edge.ghost .flow { display: none; }
+.edge.dim .line, .edge.ghost .line { animation: none; }
+body.still .edge .line { animation: none; }
+body.still .edge .flow { display: none; }
+@media (prefers-reduced-motion: reduce) { .edge .line { animation: none; } .edge .flow { display: none; } }
+.mk-fill { fill: var(--text-2); }
+.mk-open { fill: none; stroke: var(--text-2); stroke-width: 1.8; stroke-linejoin: round; }
+.mk-dot { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.8; }
+.mk-gate { fill: var(--text-2); }
+.mk-sel-fill { fill: var(--accent); }
+.mk-sel-open { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linejoin: round; }
+.mk-sel-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 1.8; }
+.mk-sel-gate { fill: var(--accent); }
+.bolt { fill: var(--text); }
+.pill { cursor: pointer; }
+.pill .pbg { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1; }
+.pill .num circle { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.5; }
+.pill .num text { fill: var(--text); font-size: var(--text-2xs); font-weight: 700; }
+.pill .verb { fill: var(--text); font-size: var(--text-xs); }
+.pill.is-sel .pbg { stroke: var(--accent); stroke-width: 1.5; }
+.pill.is-sel .num circle { fill: var(--accent); stroke: var(--accent); }
+.pill.is-sel .num text { fill: var(--accent-text); }
+.pill.is-sel .num rect { fill: var(--accent); stroke: var(--accent); }
+.chip rect { fill: var(--surface-2); stroke: var(--text-2); stroke-width: 1; }
+.chip path { fill: none; stroke: var(--text-2); stroke-width: 1.1; }
+.chip text { fill: var(--text); font-size: var(--text-2xs); font-family: var(--font-mono); font-weight: 600; }
+.chip.linked { cursor: pointer; }
+.chip.linked:hover rect { stroke: var(--accent); }
+.chip.is-node rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.chip.is-node path { stroke: var(--accent); }
+.lane { stroke: var(--border-strong); stroke-dasharray: 3 4; }
+.actor rect { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
+.actor.is-node rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
+.actor .name { fill: var(--text); font-size: var(--text-xs); font-weight: 650; font-family: var(--font-mono); }
+.actor .name.ja { font-family: var(--font-sans); }
+.actor .name.sm { font-size: var(--text-2xs); }
+.actor .layer { fill: var(--text-2); font-size: var(--text-2xs); }
+
+/* steps */
+.section-h { font-size: var(--text-md); margin: var(--space-2) 0 var(--space-3); }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.steps button { width: 100%; text-align: left; display: flex; gap: var(--space-3); align-items: flex-start; border: 1px solid transparent; background: none; padding: var(--space-2) var(--space-3); font-weight: 400; color: var(--text); }
+.steps button:hover { background: var(--surface-2); }
+.steps button[aria-current=true] { background: var(--accent-soft); }
+.steps [aria-current=true] .n { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.steps .lbl { display: block; font-weight: 600; line-height: 1.6; }
+.route { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: center; color: var(--text-2); font-size: var(--text-xs); line-height: 1.5; margin-top: 2px; }
+.route .path { font-family: var(--font-mono); }
+.kind-badge { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); font-weight: 600; color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 999px; padding: 0 var(--space-2); background: var(--surface); white-space: nowrap; }
+.type-tag { font: var(--text-xs)/1.5 var(--font-mono); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 var(--space-1); color: var(--text); }
+
+/* the panel */
+.step-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-3); margin: 0 0 var(--space-4); }
+.step-card .lbl { font-weight: 600; line-height: 1.6; display: flex; gap: var(--space-2); align-items: flex-start; }
+.step-card .route { margin-top: var(--space-2); }
+.node-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.node-title { font-size: var(--text-lg); margin: var(--space-2) 0; }
+.node-title.mono { font-family: var(--font-mono); font-size: var(--text-md); overflow-wrap: anywhere; }
+.code-ptr { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--text-sm); color: var(--text-2); margin: 0 0 var(--space-3); }
+.code-ptr code { overflow-wrap: normal; }
+.code-ptr .icon { margin-top: 3px; }
+.node-body p { margin: 0 0 var(--space-3); }
+.panel-h { font-size: var(--text-sm); font-weight: 650; color: var(--text-2); margin: var(--space-3) 0 var(--space-2); }
+.api { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); }
+.api-h { margin: 0; font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.08em; color: var(--text-2); }
+.api pre { margin: 0 0 var(--space-2); padding: 0; border: 0; background: none; white-space: pre-wrap; }
+.api pre a { text-decoration: none; border-bottom: 1px solid currentColor; }
+.api dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--space-3); font-size: var(--text-xs); line-height: 1.6; }
+.api dt { font-family: var(--font-mono); color: var(--text); }
+.api dd { margin: 0; color: var(--text-2); }
+.shape { font: var(--text-sm)/1.65 var(--font-mono); background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-2) 0; margin: 0 0 var(--space-3); overflow-x: auto; }
+.shape .ln { display: block; white-space: pre; padding: 0 var(--space-3); }
+.shape .kw { color: var(--text-2); }
+.shape a { text-decoration: none; border-bottom: 1px solid currentColor; }
+.shape .fld.hot { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.shape .note { display: block; font: var(--text-xs)/1.5 var(--font-sans); color: var(--text-2); padding: 0 var(--space-3) var(--space-1) 44px; }
+.shape-tip { font-size: var(--text-xs); color: var(--text-2); margin: calc(-1 * var(--space-2)) 0 var(--space-3); }
+.embed { margin: 0 0 var(--space-3); border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: var(--space-2) var(--space-3); }
+.embed figcaption { font-size: var(--text-xs); color: var(--text-2); margin: 0 0 var(--space-1); }
+.embed p { font-size: var(--text-sm); margin: 0 0 var(--space-1); }
+.embed .shape { background: var(--surface); }
+.refs { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-1); font-size: var(--text-sm); }
+.refs .kind { font-size: var(--text-xs); color: var(--text-2); margin-left: var(--space-2); }
+.link-btn { border: 0; background: none; padding: 0; font-weight: 400; color: var(--accent); text-decoration: underline; cursor: pointer; text-align: left; }
+
+.fig > svg { display: block; width: 100%; min-width: 300px; max-width: 760px; height: auto; font-family: var(--font-sans); margin: var(--space-2) 0; }
+.z-cell { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
+.z-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.z-t { fill: var(--text); font-size: var(--text-sm); font-weight: 600; }
+.z-s { fill: var(--text-2); font-size: var(--text-xs); }
+.z-a { fill: var(--series-1); }
+.z-b { fill: var(--series-2); }
+.z-on { fill: var(--accent-text); font-size: var(--text-xs); font-weight: 700; }
+.z-tick { stroke: var(--text-2); stroke-dasharray: 3 3; }
+.z-line { fill: none; stroke: var(--text-2); stroke-width: 1.5; }
+
+/* layer index */
+.layer-index { display: grid; }
+.layer-row { display: grid; grid-template-columns: 11em minmax(0, 1fr); gap: var(--space-3); align-items: baseline; padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+@media (max-width: 640px) { .layer-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); } }
+.layer-row h3 { margin: 0; font-size: var(--text-sm); }
+.layer-row h3 span { display: block; font-size: var(--text-xs); color: var(--text-2); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.nchip { font-weight: 500; padding: var(--space-1) var(--space-3); border-radius: 999px; display: inline-flex; gap: var(--space-2); align-items: center; }
+.nchip.code-title { font-family: var(--font-mono); font-size: var(--text-xs); }
+.nchip[aria-current=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.nchip .kindmark { font: 400 var(--text-xs) var(--font-sans); color: var(--text-2); }
+.nchip .uses { color: var(--text-2); font: 400 var(--text-xs) var(--font-sans); font-variant-numeric: tabular-nums; }
+/* papers inside boxes */
+.diveb { cursor: zoom-in; }
+.diveb rect { fill: var(--accent); stroke: var(--accent); stroke-width: 1.5; }
+.diveb path { fill: none; stroke: var(--accent-text); stroke-width: 1.3; stroke-linejoin: round; }
+.diveb text { fill: var(--accent-text); font-size: var(--text-2xs); font-weight: 700; }
+.sheet { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; }
+.sheet-back { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.out-zone { fill: transparent; cursor: zoom-out; }
+.paper-bg { pointer-events: none; }
+.area-map { position: relative; }
+.player { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; font-size: var(--text-xs); color: var(--text-2); margin: 0 0 var(--space-2); }
+.player button { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); padding: var(--space-1) var(--space-3); }
+.player button .icon { fill: currentColor; stroke: none; }
+.player button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.token circle { fill: var(--accent); stroke: var(--surface); stroke-width: 3; }
+.token .token-tag rect { fill: var(--accent); }
+.token .token-tag text { fill: var(--accent-text); font-size: var(--text-2xs); font-family: var(--font-mono); font-weight: 700; }
+.token { pointer-events: none; }
+.tjump { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 5; pointer-events: none; }
+.box.is-visit .body { stroke: var(--accent); stroke-width: 3; }
+.tr-table th { width: 3.5em; }
+.tr-table .tr-mark { display: inline-block; width: 1.4em; font-weight: 700; }
+.tr-table .tr-ok .tr-mark { color: var(--text); }
+.tr-table .tr-no td { color: var(--text-2); }
+.tr-table .tr-na td { color: var(--text-3); }
+.trace-cmp { margin-top: var(--space-4); }
+.peek { position: absolute; z-index: 5; width: 380px; max-width: calc(100% - 16px); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--space-2) var(--space-3) var(--space-3); pointer-events: none; }
+.peek[hidden] { display: none; }
+.peek .peek-h { font-size: var(--text-xs); font-weight: 650; margin: 0 0 var(--space-1); color: var(--text); }
+.peek .peek-s { font-size: var(--text-2xs); color: var(--text-2); margin: var(--space-1) 0 0; }
+.peek svg { display: block; width: 100%; height: auto; font-family: var(--font-sans); }
+.step-now .n.outer-n { width: auto; padding: 0 6px; border-style: dashed; background: var(--surface); color: var(--text); border-color: var(--text-2); font-size: var(--text-2xs); }
+.vbands { pointer-events: none; }
+.port { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.6; }
+.pill.outer .pbg { stroke-dasharray: 4 3; }
+.box.far .body { fill: var(--surface-2); }
+.box.far .title { fill: var(--text-2); }
+.edge.far .line { stroke: var(--text-3); }
+.pill .num rect { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.5; stroke-dasharray: 2.6 2; }
+.pill.is-hover .num rect { stroke: var(--accent); }
+.sheet-ctx .tag { fill: none; stroke: var(--text-2); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.seq-sheet { fill: none; stroke: var(--border-strong); stroke-width: 1.5; }
+.actor.outer rect { stroke-dasharray: 5 3; fill: var(--surface); }
+.lane.outer { stroke-dasharray: 1 5; }
+.steps .outer .n { border-style: dashed; width: auto; min-width: 24px; padding: 0 5px; font-size: var(--text-2xs); }
+.steps .outer .where { font-size: var(--text-xs); font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.steps .far .lbl { color: var(--text-2); }
+.actor.far rect { fill: var(--surface-2); }
+.actor.far .name { fill: var(--text-2); }
+.crumbs { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: center; font-size: var(--text-sm); margin: 0 0 var(--space-2); }
+.crumbs:empty { display: none; }
+.crumbs .here { font-weight: 650; font-family: var(--font-mono); }
+.crumbs .sep { color: var(--text-3); }
+.crumbs .crumb-out { margin-left: auto; font-size: var(--text-xs); padding: var(--space-1) var(--space-3); }
+/* the stack and the time solid */
+.box-label { cursor: pointer; }
+.box-label text { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.box-label .title { fill: var(--text); font-size: var(--text-sm); font-weight: 650; font-family: var(--font-mono); }
+.box-label .title.ja { font-family: var(--font-sans); }
+.box-label .ns { fill: var(--text-2); font-size: var(--text-2xs); font-family: var(--font-mono); }
+.box-label .ns.ja { font-family: var(--font-sans); }
+.box-label.on-node text { stroke: var(--accent-soft); }
+.box-label.ghost { opacity: 0.42; }
+.time-axis line { stroke: var(--text-2); stroke-width: 1.4; }
+.time-axis .tick { stroke-width: 1; }
+.time-axis .num { font-size: var(--text-2xs); }
+.rail { stroke: var(--border-strong); stroke-width: 1.4; }
+.time-axis text { fill: var(--text-2); font-size: var(--text-xs); }
+.edge.is-hover { opacity: 1; }
+.edge.is-hover .line { stroke: var(--accent); stroke-width: 2.6; }
+.edge.k-syscall.is-hover .line { stroke-width: 3.6; }
+.pill.is-hover { opacity: 1; }
+.pill.is-hover .pbg { stroke: var(--accent); stroke-width: 1.5; }
+.canvas.is-3d > svg { min-width: 0; }
+.canvas.is-3d { cursor: grab; touch-action: pan-y; }
+.canvas.is-3d.is-dragging { cursor: grabbing; }
+.ptop { stroke: var(--border-strong); stroke-width: 1; }
+.pface { fill: var(--border); stroke: var(--border-strong); stroke-width: 1; }
+.pface.side { fill: var(--border-strong); }
+.band-0.t-app { fill: var(--app-t0); } .band-1.t-app { fill: var(--app-t1); } .pface.t-app { fill: var(--app-t2); }
+.s-app { fill: var(--l-app); background: var(--l-app); }
+.band-0.t-lib { fill: var(--lib-t0); } .band-1.t-lib { fill: var(--lib-t1); } .pface.t-lib { fill: var(--lib-t2); }
+.s-lib { fill: var(--l-lib); background: var(--l-lib); }
+.band-0.t-os { fill: var(--os-t0); } .band-1.t-os { fill: var(--os-t1); } .pface.t-os { fill: var(--os-t2); }
+.s-os { fill: var(--l-os); background: var(--l-os); }
+.band-0.t-kernel { fill: var(--kernel-t0); } .band-1.t-kernel { fill: var(--kernel-t1); } .pface.t-kernel { fill: var(--kernel-t2); }
+.s-kernel { fill: var(--l-kernel); background: var(--l-kernel); }
+.band-0.t-emu { fill: var(--emu-t0); } .band-1.t-emu { fill: var(--emu-t1); } .pface.t-emu { fill: var(--emu-t2); }
+.s-emu { fill: var(--l-emu); background: var(--l-emu); }
+/* the who-runs lens: layer tints step back, context frames fill with the thread's colour, hatched where it runs inside the kernel */
+.lp-app { fill: var(--emu-t1); } .lp-svc { fill: var(--os-t1); } .lp-irq { fill: var(--kernel-t1); }
+.lp-l { stroke-width: 2.2; opacity: 0.45; } .lp-app-l { stroke: var(--c-app); } .lp-svc-l { stroke: var(--c-svc); } .lp-irq-l { stroke: var(--c-irq); }
+.cstripe { display: none; }
+.c-app { fill: var(--c-app); background: var(--c-app); } .c-svc { fill: var(--c-svc); background: var(--c-svc); } .c-irq { fill: var(--c-irq); background: var(--c-irq); }
+.sw.c-k { background: repeating-linear-gradient(45deg, var(--text-3) 0 2px, transparent 2px 5px); outline: 1px solid var(--text-3); }
+body.lens .band-0[class*="t-"] { fill: var(--surface); }
+body.lens .band-1[class*="t-"] { fill: var(--surface-2); }
+body.lens .pface[class*="t-"] { fill: var(--border); }
+body.lens .pface.side[class*="t-"] { fill: var(--border-strong); }
+body.lens .lbar { opacity: 0.25; }
+body.lens .stripe { display: none; }
+body.lens .cstripe { display: inline; }
+body.lens .region[data-node] > rect, body.lens .region[data-node] > polygon { stroke-dasharray: none; stroke-width: 1.6; }
+body.lens .region .tag { stroke-dasharray: none; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: var(--space-1); vertical-align: -1px; flex: none; }
+.path .sw { width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; vertical-align: 0; }
+.badge.layer-b { background: var(--surface-2); color: var(--text); }
+.lbar { pointer-events: none; }
+.block-line { stroke: var(--text-2); stroke-width: 1; }
+.box .face { fill: var(--border); stroke: var(--border-strong); stroke-width: 1.2; }
+.box .face.side { fill: var(--border-strong); }
+.box.is-node .face { fill: var(--accent-soft); stroke: var(--accent); }
+.box.is-end .face { stroke: var(--accent); }
+.box.ghost { opacity: 0.42; }
+.edge.ghost { opacity: 0.22; pointer-events: none; }
+.same { cursor: pointer; }
+.same-link { fill: none; stroke: var(--text); stroke-width: 1.6; stroke-dasharray: 1 5; stroke-linecap: round; }
+.same-label { fill: var(--text); font-size: var(--text-2xs); font-weight: 650; paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; }
+.ghost-label { fill: var(--text-2); font-size: var(--text-xs); cursor: pointer; text-decoration: underline; paint-order: stroke; stroke: var(--surface-2); stroke-width: 5px; stroke-linejoin: round; }
+.tools3d { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; font-size: var(--text-xs); color: var(--text-2); margin: 0 0 var(--space-2); }
+.tools3d:empty { display: none; }
+.tools3d button { font-size: var(--text-xs); padding: var(--space-1) var(--space-3); }
+.tools3d button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="h" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path class="mk-fill" d="M1,1L11,6L1,11z"/></marker>
+    <marker id="h-sel" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path class="mk-sel-fill" d="M1,1L11,6L1,11z"/></marker>
+    <marker id="o" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path class="mk-open" d="M1.5,1.5L10.5,6L1.5,10.5"/></marker>
+    <marker id="o-sel" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path class="mk-sel-open" d="M1.5,1.5L10.5,6L1.5,10.5"/></marker>
+    <marker id="dot" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse"><circle class="mk-dot" cx="6" cy="6" r="4"/></marker>
+    <marker id="dot-sel" viewBox="0 0 12 12" refX="6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse"><circle class="mk-sel-dot" cx="6" cy="6" r="4"/></marker>
+    <marker id="gate" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse"><rect class="mk-gate" x="1.5" y="1.5" width="11" height="11" rx="2"/></marker>
+    <marker id="gate-sel" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse"><rect class="mk-sel-gate" x="1.5" y="1.5" width="11" height="11" rx="2"/></marker>
+  </defs>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <defs>
+    <pattern id="lens-app-k" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="lp lp-app" width="7" height="7"/><line class="lp-l lp-app-l" x1="1" y1="0" x2="1" y2="7"/></pattern>
+    <pattern id="lens-svc-k" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="lp lp-svc" width="7" height="7"/><line class="lp-l lp-svc-l" x1="1" y1="0" x2="1" y2="7"/></pattern>
+    <pattern id="lens-irq-k" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="lp lp-irq" width="7" height="7"/><line class="lp-l lp-irq-l" x1="1" y1="0" x2="1" y2="7"/></pattern>
+  </defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+</svg>
+<main class="wide">
+  <h1>__ATLAS_TITLE__</h1>
+  <p class="lead">文章の実体は 1 か所にだけ置き、他からはポインタで指します。層に並べた関数と置き場のあいだを、種類ごとに描き分けた矢印と、そこを通るデータの形でたどります。</p>
+
+  <div class="toolbar">
+    <div class="flow-tabs"><span class="toolbar-label">流れ</span><div class="tabs" role="tablist" aria-label="流れ" id="flow-tabs"></div></div>
+    <div class="seg" role="group" aria-label="見え方" id="view-seg">
+      <button type="button" data-view="map">層の地図</button>
+      <button type="button" data-view="3d">立体：層を積む</button>
+      <button type="button" data-view="time">立体：時間を奥へ</button>
+      <button type="button" data-view="seq">やりとり（時系列）</button>
+    </div>
+  </div>
+
+  <div class="app-grid">
+    <figure class="panel area-map">
+      <nav class="crumbs" id="crumbs" aria-label="いる場所"></nav>
+      <div class="player" id="player"></div>
+      <p class="step-now" id="step-now"></p>
+      <div class="tools3d" id="tools3d"></div>
+      <div class="scroll-x canvas" id="canvas"></div>
+      <div class="peek" id="peek" hidden></div>
+      <div id="legend" aria-label="凡例"></div>
+      <figcaption id="caption"></figcaption>
+    </figure>
+    <aside class="panel node-panel" id="node" aria-live="polite"></aside>
+    <section class="area-steps" aria-labelledby="steps-h">
+      <h2 class="section-h" id="steps-h">手順</h2>
+      <ol class="steps" id="steps"></ol>
+      <div id="trace-cmp"></div>
+    </section>
+  </div>
+
+  <h2>層ごとの節</h2>
+  <p class="muted">フォルダの代わりの索引です。関数・置き場・データの形・実行の文脈も、それぞれ 1 か所にだけある節です。数字は、その節を指している所の数です。</p>
+  <div class="layer-index" id="layers"></div>
+
+  <details class="more">
+    <summary>この画面のもとのテキスト（__ATLAS_DOCS__ の、選んでいる節と流れ）</summary>
+    <div class="more-body">
+      <p class="muted small">節は <code>__ATLAS_DOCS__/layers/</code> の層ごとのファイルに、流れと中の紙は <code>__ATLAS_DOCS__/flows/</code> に書きます。<code>[[ID]]</code> はリンク、<code>![[ID]]</code> は埋め込み。関数の型・構造体のフィールド・列挙の値はコードから取り込むので、書くのは説明だけです。<span id="how-check"></span></p>
+      <pre><code id="source-node"></code></pre>
+      <pre><code id="source-flow"></code></pre>
+    </div>
+  </details>
+
+  <footer>__ATLAS_DOCS__ のテキストから MyAtlas が作った画面です。型・フィールド・値はコードから取り込んでいます。</footer>
+</main>
+
+<script>
+// ---- Layers (stacked bands) and what cuts across them ----
+// MyAtlas reads the map, checks it against the code and fills the data in here.
+const DATA = __ATLAS_DATA__;
+if (DATA.how?.check) document.getElementById('how-check').innerHTML = `<code>${DATA.how.check.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)}</code> がコードとの食い違いを見つけます。`;
+const LAYERS = DATA.layers.filter((l) => !l.cross);
+const CROSS = DATA.layers.filter((l) => l.cross);
+const LAYER_NAME = Object.fromEntries([...LAYERS, ...CROSS].map((l) => [l.id, l.name]));
+const bandsOf = (f) => f.bands || LAYERS;
+// Five layer colours, given to the layers from the top; the names are the palette's, not the layers'.
+const TONES = ['app', 'lib', 'os', 'kernel', 'emu'];
+const SLOT = Object.fromEntries(LAYERS.slice(0, TONES.length).map((l, i) => [l.id, TONES[i]]));
+const toneOf = (band) => (band ? SLOT[band.tone || band.id] || '' : '');
+// A box's name with its layer's colour mark, for text that says where a step goes from and to.
+const toneMark = (f, b) => { const t = toneOf(bandsOf(f).find((l) => l.id === b.layer)); return t ? `<i class="sw s-${t}"></i>` : ''; };
+const ends = (fa, a, fb, b) => `${toneMark(fa, a)}${esc(a.title)} → ${toneMark(fb, b)}${esc(b.title)}`;
+// Who runs each execution context (its 走る), in three colours by first appearance; hatched where it runs in the kernel.
+const RUN_SLOTS = ['app', 'svc', 'irq'], RUN_TINT = { app: 'emu', svc: 'os', irq: 'kernel' };
+const RUNS = [...new Set(Object.values(DATA.nodes).filter((n) => n.kind === 'context' && n.run).map((n) => n.run))].slice(0, RUN_SLOTS.length);
+const CTX = Object.fromEntries(Object.entries(DATA.nodes).filter(([, n]) => n.kind === 'context' && RUNS.includes(n.run)).map(([id, n]) => [id, RUN_SLOTS[RUNS.indexOf(n.run)]]));
+document.head.insertAdjacentHTML('beforeend', `<style>${Object.entries(CTX).map(([id, c]) => {
+  const k = DATA.nodes[id].kernel, sel = (x) => `body.lens .region[data-node="${id}"] > ${x}`;
+  return `${sel('rect')}, ${sel('polygon')} { fill: ${k ? `url(#lens-${c}-k)` : `var(--${RUN_TINT[c]}-t1)`}; stroke: var(--c-${c}); }\n`
+    + `body.lens .seq-ctx[data-node="${id}"] path { stroke: var(--c-${c}); stroke-width: 3; }`;
+}).join('\n')}</style>`);
+function paperContext(path) {
+  const trail = paperAt(path);
+  let ctx = null;
+  trail.slice(0, -1).forEach((f, k) => { const rg = (f.regions || []).find((r) => r.boxes.includes(path[k])); if (rg) ctx = rg.node; });
+  return ctx;
+}
+const toneCls = (band) => { const t = toneOf(band); return t ? ` t-${t}` : ''; };
+// Each layer has its own tint; only two neighbours of the same layer (inside a paper) alternate shades to stay apart.
+function bandShades(bands) {
+  let prev = null, sh = 1;
+  return bands.map((b, i) => { const t = toneOf(b); sh = t ? (t === prev ? 1 - sh : 1) : i % 2; prev = t; return sh; });
+}
+const bandName = (f, id) => (bandsOf(f).find((l) => l.id === id) || {}).name || LAYER_NAME[id] || id;
+const KIND_NAME = { func: '関数', store: '置き場', hw: 'レジスタ', schema: '構造体', enum: '列挙', context: '実行の文脈', note: '方針', figure: '図' };
+
+// ---- Nodes: each exists once. [[id]] links to one, ![[id]] shows it in place ----
+const NODES = DATA.nodes;
+for (const n of Object.values(NODES)) if (n.figure) { const svg = n.figure; n.svg = () => svg; }
+const SCHEMA_BY_NAME = Object.fromEntries(Object.entries(NODES).filter(([, n]) => n.kind === 'schema' || n.kind === 'enum').map(([k, n]) => [n.title, k]));
+
+// ---- Flows: boxes in layer lanes, context frames, numbered edges of six kinds ----
+const EDGE_KINDS = {
+  call: '呼び出し', syscall: 'syscall（アプリから OS へ）', return: '戻り・返事',
+  signal: '割り込み・通知', msg: '列を通す', data: '値を読む・書く',
+};
+const FLOWS = DATA.flows;
+
+// ---- Papers inside boxes: a node can hold its own map. Every box that points at the node opens the same paper. ----
+const PAPERS = DATA.papers;
+// Recorded runs (the map's traces/): function entries in the order they happened, tied to nodes.
+const TRACES = DATA.traces || [];
+const allPapers = () => [...FLOWS, ...Object.values(PAPERS)];
+for (const f of allPapers()) { let n = 0; for (const st of f.steps) if (st.alt) st.alt.no = 'ABCDEFGH'[n++]; }
+// A step's name as people read it: its number, or もしA for another way.
+const stepNo = (st, i) => (st.alt ? `もし${st.alt.no}` : String(i + 1));
+const mainOnly = (f) => (f.steps.some((st) => st.alt) ? { ...f, steps: f.steps.filter((st) => !st.alt) } : f);
+const paperById = (id) => FLOWS.find((x) => x.id === id) || PAPERS[id];
+const paperLabel = (p) => (FLOWS.includes(p) ? `「${p.tab}」` : `${p.tab} の中`);
+
+// ---- Helpers ----
+const W = 1100, LABEL_W = 128, LANE_H = 120, EMPTY_H = 48, TOP = 8, BOX_Y = 28, BOX_H = 68;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function paperAt(path) {
+  let f = FLOWS.find((x) => x.id === state.flow) || FLOWS[0];
+  const trail = [f];
+  for (const id of path) {
+    const b = f.boxes.find((x) => x.id === id), pid = b && NODES[b.node].paper;
+    if (!pid || !PAPERS[pid]) break;
+    f = PAPERS[pid];
+    trail.push(f);
+  }
+  return trail;
+}
+const flow = () => { const t = paperAt(state.path); return t[t.length - 1]; };
+// The way down to a paper: from the current flow first, then the others.
+function locate(pid) {
+  if (FLOWS.some((x) => x.id === pid)) return { flow: pid, path: [] };
+  for (const top of [FLOWS.find((x) => x.id === state.flow), ...FLOWS.filter((x) => x.id !== state.flow)]) {
+    const queue = [{ f: top, path: [] }];
+    while (queue.length) {
+      const { f, path } = queue.shift();
+      if (path.length > 4) continue;
+      for (const b of f.boxes) {
+        const inner = NODES[b.node].paper;
+        if (!inner || !PAPERS[inner]) continue;
+        if (inner === pid) return { flow: top.id, path: [...path, b.id] };
+        queue.push({ f: PAPERS[inner], path: [...path, b.id] });
+      }
+    }
+  }
+  return null;
+}
+const dive = { t: 1 };
+function withState(patch, fn) {
+  const keep = {};
+  for (const k of Object.keys(patch)) { keep[k] = state[k]; state[k] = patch[k]; }
+  try { return fn(); } finally { Object.assign(state, keep); }
+}
+const boxById = (f, id) => f.boxes.find((b) => b.id === id);
+const textW = (s, px, mono) => [...String(s)].reduce((w, c) => w + (c.charCodeAt(0) > 0x2e80 ? px : px * (mono ? 0.6 : 0.56)), 0);
+const isJa = (s) => /[぀-ヿ一-鿿]/.test(s);
+const plain = (s) => String(s).replace(/!?\[\[([\w.\-]+)\]\]/g, (m, id) => (NODES[id] ? NODES[id].title : id));
+// The stack view: layers become plates seen from the front left, one above the other.
+const DEG = Math.PI / 180, GAP3 = 170, HB3 = 22, HBMAX3 = 34, T3 = 10, AISLE3 = 24;
+const CAM0 = { yaw: 14 * DEG, pitch: 26 * DEG };
+const CAMT0 = { yaw: 35 * DEG, pitch: 30 * DEG };
+const CAM_PRESETS = { front: { yaw: 0, pitch: 0 }, tilt: CAMT0, top: { yaw: 0, pitch: 90 * DEG } };
+const TIME = { laneZ: 76, emptyZ: 36, headH: 44, headD: 40, stepD: 64 };
+const anim = { t: 1, raf: 0 };
+const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const xy = (q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`;
+const pathD = (pts) => 'M' + pts.map(xy).join('L');
+const bolt = (x, y) => `<path class="bolt" d="M${x + 1},${y - 7}L${x - 4},${y + 1}H${x}L${x - 2},${y + 7}L${x + 4},${y - 1}H${x}Z"/>`;
+
+// ---- State (in memory; the address keeps it: #flow=cpu&view=seq&step=5&node=schema.request) ----
+const state = { flow: FLOWS[0].id, view: 'map', step: FLOWS[0].start[0], node: FLOWS[0].start[1], cam: { ...CAM0 }, camT: { ...CAMT0 }, all: false, path: [], depth: 1, outer: null, still: false, lens: false };
+// Read a place from the address. The first read also takes the settings only used for checking pictures.
+function applyHash(h, first) {
+  const p = new URLSearchParams(h);
+  state.flow = FLOWS.some((x) => x.id === p.get('flow')) ? p.get('flow') : FLOWS[0].id;
+  state.path = [];
+  if (p.get('path')) {
+    const want = p.get('path').split(',').filter(Boolean), trail = paperAt(want);
+    state.path = want.slice(0, trail.length - 1);
+  }
+  [state.step, state.node] = flow().start;
+  state.view = ['map', '3d', 'time', 'seq'].includes(p.get('view')) ? p.get('view') : 'map';
+  state.all = p.get('all') === '1';
+  state.depth = p.get('depth') === '2' ? 2 : 1;
+  state.lens = p.get('color') === 'run';
+  state.outer = null;
+  if (p.get('step')) { const k = Number(p.get('step')) - 1; state.step = p.get('step') === 'none' || !(k >= 0 && k < flow().steps.length) ? null : k; }
+  if (NODES[p.get('node')]) state.node = p.get('node');
+  if (!first) return;
+  if (p.get('dt')) dive.t = clamp(Number(p.get('dt')), 0, 1);
+  if (p.get('lines') === '0') state.still = true;
+  if (p.get('yaw')) state.cam.yaw = clamp(Number(p.get('yaw')), -57, 57) * DEG;
+  if (p.get('pitch')) state.cam.pitch = clamp(Number(p.get('pitch')), 10, 50) * DEG;
+  if (p.get('tyaw')) state.camT.yaw = clamp(Number(p.get('tyaw')), -57, 57) * DEG;
+  if (p.get('tpitch')) state.camT.pitch = clamp(Number(p.get('tpitch')), 0, 90) * DEG;
+  if (p.get('t')) anim.t = clamp(Number(p.get('t')), 0, 1);
+}
+// The address as the page was opened: the place, and the settings only used for checking pictures (read once, before
+// the first render writes the place back).
+const OPENED = location.hash.slice(1);
+try { applyHash(OPENED, true); } catch (e) { /* no hash */ }
+// Write the place back. A new flow, paper or view is a new history entry; a new selection replaces the current one.
+let lastHash = null, lastPlace = null, quietNav = false;
+const placeKey = () => [state.flow, state.path.join(','), state.view].join('|');
+function hashOf() {
+  const p = new URLSearchParams();
+  if (state.flow !== FLOWS[0].id) p.set('flow', state.flow);
+  if (state.path.length) p.set('path', state.path.join(','));
+  if (state.view !== 'map') p.set('view', state.view);
+  p.set('step', state.step == null ? 'none' : String(state.step + 1));
+  if (state.node) p.set('node', state.node);
+  if (state.depth !== 1) p.set('depth', String(state.depth));
+  if (state.all) p.set('all', '1');
+  if (state.lens) p.set('color', 'run');
+  return p.toString();
+}
+function syncHash() {
+  const h = hashOf(), place = placeKey();
+  if (h === lastHash) return;
+  const push = lastPlace !== null && place !== lastPlace && !player.on && !quietNav;
+  lastHash = h; lastPlace = place;
+  try {
+    if (push) history.pushState(null, '', '#' + h); else history.replaceState(null, '', '#' + h);
+  } catch (e) {
+    try { if (push) location.hash = h; else location.replace('#' + h); } catch (e2) { /* the frame refuses; the page still works */ }
+  }
+}
+// Back and forward: one paper out or in on the map moves like the buttons; anything else jumps.
+function onNav() {
+  const h = location.hash.slice(1);
+  if (h === lastHash) return;
+  if (player.on) stopPlay();
+  const before = { flow: state.flow, path: [...state.path], view: state.view };
+  applyHash(h, false);
+  const want = { path: [...state.path], step: state.step, node: state.node };
+  lastHash = h; lastPlace = placeKey();
+  const done = () => { state.step = want.step; state.node = want.node; render(); quietNav = false; };
+  const same = before.flow === state.flow && before.view === 'map' && state.view === 'map';
+  const prefix = (a, b) => a.every((x, i) => x === b[i]);
+  quietNav = true;
+  if (same && want.path.length === before.path.length - 1 && prefix(want.path, before.path)) { state.path = before.path; diveOut(1, null, done); return; }
+  if (same && want.path.length === before.path.length + 1 && prefix(before.path, want.path)) { state.path = before.path; diveInto(want.path[want.path.length - 1], done); return; }
+  dive.t = 1; anim.t = 1; done();
+}
+window.addEventListener('popstate', onNav);
+window.addEventListener('hashchange', onNav);
+
+// ---- Geometry of the map ----
+function layout(f) {
+  const rows = [];
+  let y = TOP;
+  for (const l of bandsOf(f)) {
+    const own = f.boxes.filter((b) => b.layer === l.id);
+    const lanes = own.length ? Math.max(...own.map((b) => (b.lane || 0) + 1)) : 0;
+    const h = lanes ? lanes * LANE_H : EMPTY_H;
+    rows.push({ layer: l, y, lanes, h });
+    y += h;
+  }
+  return { rows, height: y + TOP };
+}
+function geom(L, b) {
+  const r = L.rows.find((row) => row.layer.id === b.layer);
+  const top = r.y + (b.lane || 0) * LANE_H, y = top + BOX_Y;
+  return { row: L.rows.indexOf(r), lane: b.lane || 0, top, bottom: top + LANE_H, x: b.x, y, w: b.w, h: BOX_H, cx: b.x + b.w / 2, cy: y + BOX_H / 2 };
+}
+function crosses(p, q, g) {
+  const x0 = g.x - 2, x1 = g.x + g.w + 2, y0 = g.y - 2, y1 = g.y + g.h + 2;
+  if (p[0] === q[0]) { const lo = Math.min(p[1], q[1]), hi = Math.max(p[1], q[1]); return p[0] > x0 && p[0] < x1 && hi > y0 && lo < y1; }
+  const lo = Math.min(p[0], q[0]), hi = Math.max(p[0], q[0]);
+  return p[1] > y0 && p[1] < y1 && hi > x0 && lo < x1;
+}
+// Orthogonal route; the horizontal run goes beside whichever end leaves the path clear of other boxes.
+// Two segments lying on each other: the same direction, within a few pixels, overlapping by more than a little.
+function onTop(p, q, r, t) {
+  const v1 = Math.abs(p[0] - q[0]) < 0.5, v2 = Math.abs(r[0] - t[0]) < 0.5, h1 = Math.abs(p[1] - q[1]) < 0.5, h2 = Math.abs(r[1] - t[1]) < 0.5;
+  if (v1 && v2 && Math.abs(p[0] - r[0]) < 4) return Math.min(Math.max(p[1], q[1]), Math.max(r[1], t[1])) - Math.max(Math.min(p[1], q[1]), Math.min(r[1], t[1])) > 8;
+  if (h1 && h2 && Math.abs(p[1] - r[1]) < 4) return Math.min(Math.max(p[0], q[0]), Math.max(r[0], t[0])) - Math.max(Math.min(p[0], q[0]), Math.min(r[0], t[0])) > 8;
+  return false;
+}
+function route(L, f, st, prior = []) {
+  const A = boxById(f, st.from), B = boxById(f, st.to), a = geom(L, A), b = geom(L, B);
+  const [dxa, dxb] = st.dx || [0, 0];
+  let cands;
+  if (a.row === b.row && a.lane === b.lane) {
+    cands = [b.x > a.x ? [[a.x + a.w, a.cy], [b.x, b.cy]] : [[a.x, a.cy], [b.x + b.w, b.cy]]];
+  } else {
+    const up = b.y < a.y, sx = a.cx + dxa, ex = b.cx + dxb;
+    const sy = up ? a.y : a.y + a.h, ey = up ? b.y + b.h : b.y;
+    const l1 = (up ? a.top : a.bottom) + (st.ly || 0), l2 = (up ? b.bottom : b.top) + (st.ly || 0);
+    cands = sx === ex ? [[[sx, sy], [ex, ey]]] : [];
+    cands.push(...[l1, l2].map((ly) => [[sx, sy], [sx, ly], [ex, ly], [ex, ey]]));
+    // When rows lie between, a way round: along the first band edge to a clear corridor, down it, then along the last edge.
+    if (Math.abs(l1 - l2) > 1) {
+      const xs = new Set([LABEL_W + 12]);
+      for (const x of f.boxes) { const g = geom(L, x); xs.add(g.x - 16); xs.add(g.x + g.w + 16); }
+      for (const cx of xs) if (cx > LABEL_W + 4 && cx < W - 4) cands.push([[sx, sy], [sx, l1], [cx, l1], [cx, l2], [ex, l2], [ex, ey]]);
+    }
+  }
+  const others = f.boxes.filter((x) => x !== A && x !== B).map((x) => geom(L, x));
+  // crossing a box is the worst; then the shorter, straighter way wins
+  const cost = (pts) => {
+    let n = 0, len = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      for (const g of others) if (crosses(pts[i], pts[i + 1], g)) n++;
+      len += Math.abs(pts[i + 1][0] - pts[i][0]) + Math.abs(pts[i + 1][1] - pts[i][1]);
+    }
+    let shared = 0;
+    for (const r of prior) for (let i = 0; i < pts.length - 1; i++) for (let k = 0; k < r.pts.length - 1; k++) if (onTop(pts[i], pts[i + 1], r.pts[k], r.pts[k + 1])) shared++;
+    return n * 1000 + shared * 300 + len + 30 * Math.max(0, pts.length - 2);
+  };
+  const pts = cands.reduce((best, c) => (cost(c) < cost(best) ? c : best));
+  let at = 0, best = -1;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const len = Math.abs(pts[i + 1][0] - pts[i][0]) + Math.abs(pts[i + 1][1] - pts[i][1]);
+    if (len > best) { best = len; at = i; }
+  }
+  const p = pts[at], q = pts[at + 1];
+  return { d: 'M' + pts.map((v) => v.join(',')).join('L'), pts, mid: [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], horizontal: p[1] === q[1], segLen: best };
+}
+
+// ---- Where boxes go: the text names only boxes and steps. Bands are fixed by layer; inside a band, boxes keep the
+// order the steps first reach them, lean toward the boxes they talk to, and take a second lane when one row is too narrow.
+function autoLayout(f) {
+  const bands = bandsOf(f), X0 = LABEL_W + 22, X1 = W - 12, GAP = 46;
+  const first = new Map();
+  f.steps.forEach((st, i) => { for (const id of [st.from, st.to]) if (!first.has(id)) first.set(id, st.alt ? 1000 + i : i); });
+  f.boxes.forEach((b, k) => { if (!first.has(b.id)) first.set(b.id, 2000 + k); });
+  for (const b of f.boxes) {
+    if (b.w) continue;
+    const parts = [textW(b.title, 14, !isJa(b.title)) + 30, b.ns ? textW(b.ns, 11, true) + 24 : 0, b.sub ? textW(b.sub, 12) + 24 : 0, 120,
+      b.slots ? b.slots.reduce((a, t) => a + Math.max(40, textW(t, 11, true) + 14), 0) + 16 + 4 * (b.slots.length - 1) : 0, b.bits ? 200 : 0];
+    b.w = Math.min(280, Math.ceil(Math.max(...parts) / 10) * 10);
+  }
+  const talk = (b) => f.steps.filter((st) => !st.alt && (st.from === b.id || st.to === b.id)).map((st) => boxById(f, st.from === b.id ? st.to : st.from));
+  const bandAt = (b) => bands.findIndex((l) => l.id === b.layer);
+  for (const band of bands) {
+    const own = f.boxes.filter((b) => b.layer === band.id);
+    if (!own.length) continue;
+    if (own.some((b) => b.lane != null)) { for (const b of own) b.lane = b.lane || 0; continue; }
+    const need = own.reduce((a, b) => a + b.w, 0) + GAP * (own.length - 1);
+    for (const b of own) b.lane = 0;
+    if (need <= X1 - X0) continue;
+    // two lanes, only as many boxes down as it takes: first those only another way reaches, then those that talk most to the layers below
+    const pull = (b) => talk(b).reduce((a, o) => a + Math.sign(bandAt(o) - bandAt(b)), 0);
+    const side = (b) => (talk(b).length ? 0 : 1);
+    const down = [...own].sort((a, b) => side(b) - side(a) || pull(b) - pull(a) || first.get(b.id) - first.get(a.id));
+    let top = need;
+    for (const b of down) {
+      if (top <= X1 - X0) break;
+      b.lane = 1; top -= b.w + GAP;
+    }
+  }
+  const rows = new Map();
+  for (const b of f.boxes) { const k = b.layer + '|' + b.lane; if (!rows.has(k)) rows.set(k, []); rows.get(k).push(b); }
+  const order = [...f.boxes].sort((a, b) => first.get(a.id) - first.get(b.id));
+  order.forEach((b, k) => { if (b.x == null) b.x = X0 + (X1 - X0 - b.w) * (order.length > 1 ? k / (order.length - 1) : 0.5); });
+  const settle = () => {
+    for (const row of rows.values()) {
+      row.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < row.length; i++) row[i].x = Math.max(row[i].x, row[i - 1].x + row[i - 1].w + GAP);
+      const over = row[row.length - 1].x + row[row.length - 1].w - X1;
+      if (over > 0) {
+        row[row.length - 1].x -= over;
+        for (let i = row.length - 2; i >= 0; i--) row[i].x = Math.min(row[i].x, row[i + 1].x - GAP - row[i].w);
+      }
+      for (const b of row) b.x = Math.max(X0, b.x);
+    }
+  };
+  settle();
+  for (let it = 0; it < 14; it++) {
+    for (const b of f.boxes) {
+      const nb = talk(b).filter((o) => o.layer !== b.layer || o.lane !== b.lane);
+      if (!nb.length) continue;
+      const want = nb.reduce((a, o) => a + o.x + o.w / 2, 0) / nb.length - b.w / 2;
+      b.x += (want - b.x) * 0.35;
+    }
+    settle();
+  }
+  for (const b of f.boxes) b.x = Math.round(b.x / 10) * 10;
+}
+// Where lines meet a box: several on one edge spread over it, ordered by where their other end is; runs that would
+// lie on top of each other along a band edge move into the band's margin.
+function autoPorts(f) {
+  const L = layout(f), ends = new Map();
+  const put = (key, item) => { if (!ends.has(key)) ends.set(key, []); ends.get(key).push(item); };
+  for (const st of f.steps) {
+    if (st.dx) continue;
+    const A = boxById(f, st.from), B = boxById(f, st.to), a = geom(L, A), b = geom(L, B);
+    if (a.row === b.row && a.lane === b.lane) continue;
+    const down = b.y > a.y;
+    put(A.id + (down ? '|b' : '|t'), { st, end: 0, other: b.cx });
+    put(B.id + (down ? '|t' : '|b'), { st, end: 1, other: a.cx });
+  }
+  for (const [key, list] of ends) {
+    const box = boxById(f, key.split('|')[0]);
+    list.sort((p, q) => p.other - q.other);
+    const step = list.length > 1 ? Math.min(30, (box.w - 40) / (list.length - 1)) : 0;
+    list.forEach((it, j) => { (it.st.dx = it.st.dx || [0, 0])[it.end] = Math.round((j - (list.length - 1) / 2) * step); });
+  }
+  const runs = (st) => {
+    const r = route(L, f, st), out = [];
+    for (let k = 0; k < r.pts.length - 1; k++) {
+      const p = r.pts[k], q = r.pts[k + 1];
+      if (Math.abs(p[1] - q[1]) < 0.5 && Math.abs(p[0] - q[0]) > 4) out.push([p[1], Math.min(p[0], q[0]), Math.max(p[0], q[0])]);
+    }
+    return out;
+  };
+  const lifts = [12, -12, 24, -24];
+  for (let j = 1; j < f.steps.length; j++) {
+    for (let tries = 0; tries < lifts.length; tries++) {
+      const mine = runs(f.steps[j]);
+      const clash = f.steps.slice(0, j).some((o) => runs(o).some(([y, a, b]) => mine.some(([y2, a2, b2]) => Math.abs(y - y2) < 4 && Math.min(b, b2) - Math.max(a, a2) > 8)));
+      if (!clash) break;
+      f.steps[j].ly = lifts[tries];
+    }
+  }
+}
+
+// ---- Drawing ----
+function stepClass(f, st, i) {
+  const carried = f.steps.some((s) => s.data && s.data.schema === state.node);
+  const own = st.data && st.data.schema === state.node;
+  let c = state.step === i ? ' is-sel' : '';
+  if (carried) c += own ? ' carries' : (state.step === i ? '' : ' dim');
+  return c;
+}
+// Lines move the way the step goes: beads run along the solid kinds, the dashed kinds move their own dashes.
+const BEADS = ['call', 'syscall', 'data'];
+function edgeSvg(st, i, d, cls) {
+  const hot = /is-sel|carries/.test(cls) ? '-sel' : '';
+  const end = (st.kind === 'return' ? 'o' : 'h') + hot;
+  const start = st.kind === 'data' ? ` marker-start="url(#dot${hot})"` : st.kind === 'syscall' ? ` marker-start="url(#gate${hot})"` : '';
+  return `<g class="edge k-${st.kind}${st.alt ? ' alt' : ''}${cls}" data-step="${i}"><title>${stepNo(st, i)}. ${esc(st.label)}</title><path class="line" d="${d}"${start} marker-end="url(#${end})"/>`
+    + (BEADS.includes(st.kind) ? `<path class="flow" d="${d}"/>` : '') + `<path class="hit" d="${d}"/></g>`;
+}
+function chipSvg(st, i, x, y) {
+  const label = st.data.label, sch = st.data.schema;
+  const w = textW(label, 11, true) + 26;
+  const cls = 'chip' + (sch ? ' linked' : '') + (sch && sch === state.node ? ' is-node' : '');
+  return `<g class="${cls}"${sch ? ` data-node="${sch}" data-chip="${i}"` : ''}><title>${esc(label)}${sch ? '：押すとフィールド' : ''}</title>`
+    + `<rect x="${x}" y="${y - 9}" width="${w}" height="18" rx="4"/>`
+    + `<path d="M${x + 5},${y - 4.5}h10v9h-10z M${x + 5},${y - 1.5}h10 M${x + 9},${y - 1.5}v6"/>`
+    + `<text x="${x + 20}" y="${y + 4}">${esc(label)}</text></g>`;
+}
+// The label on an edge: its number, a few words, and the shape of the data it carries.
+function pillParts(st, i, num, noVerb) {
+  if (st.alt && !num) num = stepNo(st, i);
+  const fork = st.branches ? 14 : 0;
+  const verb = noVerb ? '' : st.alt ? `${st.alt.when}なら${st.verb ? '：' + st.verb : ''}` : st.verb || '';
+  const chip = st.data && st.data.chip !== false ? st.data.label : '';
+  const bw = st.kind === 'signal' ? 12 : 0, vw = verb ? textW(verb, 12) + 6 : 0, cw = chip ? textW(chip, 11, true) + 26 : 0;
+  const nw = num ? textW(num, 11) + 10 : 18;
+  const width = ([v, c]) => (!v && !c ? 4 + nw + bw + fork : 8 + nw + bw + fork + (v ? vw : 0) + (c ? cw + 4 : 0) + 6);
+  return { num, fork, verb, chip, bw, vw, cw, nw, width };
+}
+function pillSvg(st, i, r, cls, free, minX, noVerb, num) {
+  if (st.alt && !num) cls += ' alt';
+  const pp = pillParts(st, i, num, noVerb), { fork, verb, chip, bw, vw, nw, width } = pp;
+  num = pp.num;
+  const opts = [[true, true], [false, true], [true, false], [false, false]].filter(([v, c]) => (!v || verb) && (!c || chip));
+  const pick = r.pick || opts.find((o) => free || !r.horizontal || r.segLen >= width(o) + 28) || [false, false];
+  const w = width(pick), [x, y] = r.mid;
+  let left = r.horizontal ? x - w / 2 : st.side === 'left' ? x - 6 - w : x + 6;
+  left = Math.max(minX, Math.min(W - 4 - w, left));
+  if (state.collect) state.collect.push([left, y - 12, left + w, y + 12]);
+  let s = `<g class="pill${cls}" data-step="${i}"><title>${stepNo(st, i)}. ${esc(st.label)}${st.branches ? '（分かれる：' + st.branches.map((b) => plain(b[0])).join('／') + '）' : ''}</title>`;
+  s += `<rect class="pbg" x="${left}" y="${y - 12}" width="${w}" height="24" rx="12"/>`;
+  s += num ? `<g class="num"><rect x="${left + 2.5}" y="${y - 9}" width="${nw}" height="18" rx="9"/><text x="${left + 2.5 + nw / 2}" y="${y + 4}" text-anchor="middle">${esc(num)}</text></g>`
+    : `<g class="num"><circle cx="${left + 11.5}" cy="${y}" r="9"/><text x="${left + 11.5}" y="${y + 4}" text-anchor="middle">${i + 1}</text></g>`;
+  let cx = left + 6 + nw;
+  if (fork) { s += `<path class="fork" d="M${cx + 5},${y - 6}L${cx + 11},${y}L${cx + 5},${y + 6}L${cx - 1},${y}Z"/>`; cx += fork; }
+  if (bw) { s += bolt(cx + 3, y); cx += bw; }
+  if (pick[0]) { s += `<text class="verb" x="${cx}" y="${y + 4}">${esc(verb)}</text>`; cx += vw; }
+  if (pick[1]) s += chipSvg(st, i, cx, y);
+  return s + `</g>`;
+}
+function boxSvg(L, b, cls, ctx) {
+  const g = geom(L, b), n = NODES[b.node];
+  let s = `<g class="box k-${n.kind}${cls}" data-box="${b.id}" tabindex="0" role="button" aria-label="${esc(n.title)}（${esc(KIND_NAME[n.kind])}）"><title>${esc(n.title)}</title>`;
+  if (n.kind === 'store') s += `<rect class="back" x="${g.x + 5}" y="${g.y - 5}" width="${g.w}" height="${g.h}" rx="8"/>`;
+  s += `<rect class="body" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="${n.kind === 'hw' ? 2 : 8}"/>`;
+  const tone = toneOf((L.rows.find((rw) => rw.layer.id === b.layer) || {}).layer);
+  if (tone) s += `<rect class="stripe s-${tone}" x="${g.x + 3.5}" y="${g.y + 8}" width="3" height="${g.h - 16}" rx="1.5"/>`;
+  if (ctx && CTX[ctx]) s += `<rect class="cstripe c-${CTX[ctx]}" x="${g.x + 3}" y="${g.y + 6}" width="4" height="${g.h - 12}" rx="2"/>`;
+  s += `<text class="title${isJa(b.title) ? ' ja' : ''}" x="${g.x + 10}" y="${g.y + 22}">${esc(b.title)}</text>`;
+  if (b.slots) {
+    const sw = (g.w - 20 - (b.slots.length - 1) * 4) / b.slots.length;
+    b.slots.forEach((t, k) => {
+      const sx = g.x + 10 + k * (sw + 4), linked = !!b.slotSchema;
+      s += `<g class="slot${linked ? ' linked' : ''}${linked && b.slotSchema === state.node ? ' hot' : ''}"${linked ? ` data-node="${b.slotSchema}"` : ''}>`
+        + `<rect x="${sx}" y="${g.y + 34}" width="${sw}" height="24" rx="3"/><text x="${sx + sw / 2}" y="${g.y + 50}" text-anchor="middle">${esc(t)}</text></g>`;
+    });
+  } else if (b.bits) {
+    const bw = g.w - 20, hi = bw * 0.64;
+    s += `<g class="bits"><rect class="hi" x="${g.x + 10}" y="${g.y + 34}" width="${hi}" height="24" rx="2"/><rect x="${g.x + 10 + hi}" y="${g.y + 34}" width="${bw - hi}" height="24" rx="2"/>`
+      + `<text x="${g.x + 10 + hi / 2}" y="${g.y + 50}" text-anchor="middle">tick 数</text><text x="${g.x + 10 + hi + (bw - hi) / 2}" y="${g.y + 50}" text-anchor="middle">進み</text></g>`;
+  } else {
+    if (b.ns) s += `<text class="ns" x="${g.x + 10}" y="${g.y + 39}">${esc(b.ns)}</text>`;
+    if (b.sub) s += `<text class="sub" x="${g.x + 10}" y="${g.y + 57}">${esc(b.sub)}</text>`;
+  }
+  if (n.paper && PAPERS[n.paper] && !state.bare) {
+    const px = g.x + g.w - 70, py = g.y - 14;
+    s += `<g class="diveb" data-dive="${b.id}"><title>中の紙を開く：${esc(PAPERS[n.paper].title)}</title><rect x="${px}" y="${py}" width="64" height="20" rx="10"/>`
+      + `<path d="M${px + 9},${py + 4}h7l3,3v9h-10z M${px + 16},${py + 4}v3h3"/><text x="${px + 24}" y="${py + 14.5}">中の紙</text></g>`;
+  }
+  return s + `</g>`;
+}
+function regionGeom(L, f, rg) {
+  const gs = rg.boxes.map((id) => geom(L, boxById(f, id)));
+  const x0 = Math.max(LABEL_W + 6, Math.min(...gs.map((g) => g.x)) - 12), y0 = Math.min(...gs.map((g) => g.y)) - 18;
+  const x1 = Math.min(W - 4, Math.max(...gs.map((g) => g.x + g.w)) + 12), y1 = Math.max(...gs.map((g) => g.y + g.h)) + 12;
+  const at = rg.at || 'tl';
+  let tx = x0 + 10, ty = y0 + 4, anchor = 'start';
+  if (at === 'tr') { tx = x1 - 10; anchor = 'end'; }
+  if (at === 'bl') ty = y1 + 4;
+  if (at === 'br') { tx = x1 - 10; ty = y1 + 4; anchor = 'end'; }
+  if (at === 'r') { tx = x1 + 8; ty = (y0 + y1) / 2 + 4; }
+  const tw = textW(rg.label, 12);
+  return { x0, y0, x1, y1, tx, ty, anchor, label: anchor === 'end' ? [tx - tw - 2, ty - 12, tx + 2, ty + 4] : [tx - 2, ty - 12, tx + tw + 2, ty + 4] };
+}
+function mapPillSpots(L, f, routes) {
+  const avoid = [[0, 0, LABEL_W + 2, L.height]];
+  for (const b of f.boxes) {
+    const g = geom(L, b);
+    avoid.push([g.x - 3, g.y - 3, g.x + g.w + 3, g.y + g.h + 3]);
+    if (NODES[b.node].paper && PAPERS[NODES[b.node].paper]) avoid.push([g.x + g.w - 72, g.y - 16, g.x + g.w - 4, g.y + 8]);
+  }
+  for (const rg of f.regions || []) avoid.push(regionGeom(L, f, rg).label);
+  const placed = [], none = { x: 0, y: 0, w: 0, h: 0 };
+  return f.steps.map((st, i) => {
+    const r = routes[i], pp = pillParts(st, i), [mx, my] = r.mid, others = routes.filter((_, k) => k !== i).map((q) => q.pts);
+    const picks = [[true, true], [false, true], [true, false], [false, false]].filter(([v, c]) => (!v || pp.verb) && (!c || pp.chip));
+    let choice = null;
+    for (const pick of picks) {
+      const w = pp.width(pick), cut = (pp.verb && !pick[0] ? 2.5 : 0) + (pp.chip && !pick[1] ? 1.5 : 0);
+      const pref = r.horizontal ? [mx - w / 2, my, -0.6] : [st.side === 'left' ? mx - 6 - w : mx + 6, my, -0.6];
+      const best = tagSpot(r.pts, w, avoid, placed, others, none, L.height, [pref], 1) || { cost: 99, lx: pref[0], cy: pref[1] };
+      if (!choice || best.cost + cut < choice.cost) choice = { cost: best.cost + cut, lx: best.lx, cy: best.cy, w, pick };
+    }
+    placed.push([choice.lx, choice.cy - 12, choice.lx + choice.w, choice.cy + 12]);
+    return { mid: [choice.lx + choice.w / 2, choice.cy], horizontal: true, segLen: 1e9, pick: choice.pick };
+  });
+}
+function regionSvg(L, f, rg) {
+  const gs = rg.boxes.map((id) => geom(L, boxById(f, id)));
+  const x0 = Math.max(LABEL_W + 6, Math.min(...gs.map((g) => g.x)) - 12), y0 = Math.min(...gs.map((g) => g.y)) - 18;
+  const x1 = Math.min(W - 4, Math.max(...gs.map((g) => g.x + g.w)) + 12), y1 = Math.max(...gs.map((g) => g.y + g.h)) + 12;
+  const at = rg.at || 'tl';
+  let tx = x0 + 10, ty = y0 + 4, anchor = 'start';
+  if (at === 'tr') { tx = x1 - 10; anchor = 'end'; }
+  if (at === 'bl') ty = y1 + 4;
+  if (at === 'br') { tx = x1 - 10; ty = y1 + 4; anchor = 'end'; }
+  if (at === 'r') { tx = x1 + 8; ty = (y0 + y1) / 2 + 4; }
+  const band = L.rows.findIndex((r) => ty - 4 >= r.y && ty - 4 < r.y + r.h);
+  return `<g class="region${rg.node === state.node ? ' is-node' : ''}" data-node="${rg.node}"><title>実行の文脈：${esc(NODES[rg.node].title)}</title>`
+    + `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="10"/><text class="on-${Math.max(0, band) % 2}" x="${tx}" y="${ty}" text-anchor="${anchor}">${esc(rg.label)}</text></g>`;
+}
+
+function mapParts(f) {
+  const L = layout(f), sel = state.step != null ? f.steps[state.step] : null;
+  let s = '';
+  const shade = bandShades(L.rows.map((r) => r.layer));
+  L.rows.forEach((r, i) => {
+    s += `<rect class="band-${shade[i]}${toneCls(r.layer)}" x="0" y="${r.y}" width="${W}" height="${r.h}"/>`;
+    if (toneOf(r.layer)) s += `<rect class="lbar s-${toneOf(r.layer)}" x="0" y="${r.y}" width="4" height="${r.h}"/>`;
+    if (i > 0) s += `<line class="band-line" x1="0" x2="${W}" y1="${r.y}" y2="${r.y}"/>`;
+    for (let k = 1; k < r.lanes; k++) s += `<line class="lane-line" x1="${LABEL_W}" x2="${W}" y1="${r.y + k * LANE_H}" y2="${r.y + k * LANE_H}"/>`;
+    s += `<text class="band-name" x="12" y="${r.y + r.h / 2 - 4}">${esc(r.layer.name)}</text><text class="band-sub" x="12" y="${r.y + r.h / 2 + 14}">${esc(r.layer.sub)}</text>`;
+    if (!r.lanes) s += `<text class="band-empty" x="${LABEL_W + 14}" y="${r.y + r.h / 2 + 4}">この流れは通らない</text>`;
+  });
+  s += `<line class="band-line" x1="${LABEL_W}" x2="${LABEL_W}" y1="${TOP}" y2="${L.height - TOP}"/>`;
+  for (const rg of f.regions || []) s += regionSvg(L, f, rg);
+  const ctxOf = new Map();
+  for (const rg of f.regions || []) for (const id of rg.boxes) ctxOf.set(id, rg.node);
+  for (const b of f.boxes) {
+    if (state.hide && state.hide.has(b.id)) continue;
+    const cls = (b.node === state.node ? ' is-node' : '') + (sel && (sel.from === b.id || sel.to === b.id) ? ' is-end' : '');
+    s += boxSvg(L, b, cls, ctxOf.get(b.id) || (NODES[b.node].kind === 'func' ? state.paperCtx : null));
+  }
+  const routes = [];
+  for (const st of f.steps) routes.push(route(L, f, st, routes));
+  const spots = mapPillSpots(L, f, routes);
+  f.steps.forEach((st, i) => { s += edgeSvg(st, i, routes[i].d, stepClass(f, st, i)); });
+  f.steps.forEach((st, i) => { s += pillSvg(st, i, spots[i], stepClass(f, st, i), true, LABEL_W + 4); });
+  return { H: L.height, body: s };
+}
+function renderMap() {
+  const trail = paperAt(state.path), f = trail[trail.length - 1];
+  if (trail.length > 1) return nestedSvg(trail);
+  const m = mapParts(f);
+  return `<svg viewBox="0 0 ${W} ${m.H}" role="img" aria-label="${esc(f.title)}。層に並べた関数と置き場、そのあいだの手順">${m.body}</svg>`;
+}
+// ---- Around a paper: the outer steps that cross its edge ----
+// Inside are the box we went into and every node the paper draws. An outer step between one of those and a node that is not
+// crosses the edge of the sheet: at the box itself it goes to the paper's entry (or, going out, to the box its ports name for that neighbour),
+// at a node the paper draws it goes to that node's box. Steps between two nodes inside are already in the paper.
+function aroundOf(parent, pb, child, depth = 1) {
+  const crossings = [], inside = new Set([pb.node, ...child.boxes.map((b) => b.node)]);
+  parent.steps.forEach((st, i) => {
+    const A = boxById(parent, st.from), B = boxById(parent, st.to), ai = inside.has(A.node);
+    if (ai === inside.has(B.node)) return;
+    const own = ai ? A : B, nb = ai ? B : A, via = own.node === pb.node;
+    // ports name the box a step leaves by; steps into the box arrive at the entry unless entries say otherwise
+    const target = via ? (ai ? (child.ports || {})[nb.node] : (child.entries || {})[nb.node]) || child.entry : (child.boxes.find((b) => b.node === own.node) || {}).id;
+    if (!boxById(child, target)) return;
+    crossings.push({ i, st, nb, dir: ai ? 'out' : 'in', target, via });
+  });
+  // Outside boxes by how far they are: 1 touches the paper, 2 touches one of those, and so on up to depth.
+  const isIn = (b) => inside.has(b.node), hop = new Map(crossings.map((c) => [c.nb.id, 1]));
+  for (let h = 2; h <= depth; h++) {
+    for (const st of parent.steps) {
+      const A = boxById(parent, st.from), B = boxById(parent, st.to);
+      if (isIn(A) || isIn(B)) continue;
+      if (hop.get(A.id) === h - 1 && !hop.has(B.id)) hop.set(B.id, h);
+      if (hop.get(B.id) === h - 1 && !hop.has(A.id)) hop.set(A.id, h);
+    }
+  }
+  // Steps between two boxes that are both shown outside.
+  const outer = [];
+  parent.steps.forEach((st, i) => {
+    const a = boxById(parent, st.from), b = boxById(parent, st.to);
+    if (!isIn(a) && !isIn(b) && hop.has(a.id) && hop.has(b.id)) outer.push({ i, st, a, b });
+  });
+  const cards = [...hop.keys()].map((id) => boxById(parent, id));
+  const region = (parent.regions || []).find((r) => r.boxes.includes(pb.id));
+  return { crossings, outer, cards, hop, region };
+}
+function aroundHere() {
+  const trail = paperAt(state.path);
+  if (trail.length < 2) return null;
+  const parent = trail[trail.length - 2], child = trail[trail.length - 1], pb = boxById(parent, state.path[trail.length - 2]);
+  return { parent, pb, child, ...aroundOf(parent, pb, child, state.depth) };
+}
+// Where everything sits once we are inside (dive.t = 1). The outside boxes keep the outer map's layer order:
+// layers above the box go above the sheet, layers below go below, and the box's own layer goes on the side its targets are.
+// A step between a box above and a box below goes around the sheet, in a lane at its left or right edge.
+const SHEET_GAP = 34;
+function aroundPlan(parent, pb, child, pillsIn = [], depth = 1) {
+  const A = aroundOf(parent, pb, child, depth), PB = bandsOf(parent), PL = layout(parent);
+  const bi = (id) => PB.findIndex((l) => l.id === id), home = bi(pb.layer), ctxOf = (nb) => (parent.regions || []).find((r) => r.boxes.includes(nb.id));
+  const Lc = layout(child), rowOf = (id) => Lc.rows.findIndex((r) => r.layer.id === boxById(child, id).layer);
+  const bands = [];
+  for (const l of PB) {
+    const own = A.cards.filter((b) => b.layer === l.id);
+    if (own.length) bands.push({ layer: l, own, same: bi(l.id) === home, side: bi(l.id) < home ? 'above' : 'below' });
+  }
+  const bandOf = (b) => bands.find((x) => x.own.includes(b)), hb = bands.find((x) => x.same);
+  if (hb) {
+    const rows = A.crossings.filter((c) => hb.own.includes(c.nb)).map((c) => rowOf(c.target));
+    if (rows.length) hb.side = rows.reduce((a, b) => a + b, 0) / rows.length < (Lc.rows.length - 1) / 2 ? 'above' : 'below';
+    else {
+      const near = A.outer.flatMap((o) => (hb.own.includes(o.a) ? [o.b] : hb.own.includes(o.b) ? [o.a] : [])).map(bandOf).filter((x) => x && x !== hb);
+      hb.side = near.length && near.filter((x) => x.side === 'above').length * 2 > near.length ? 'above' : 'below';
+    }
+  }
+  const above = bands.filter((b) => b.side === 'above'), below = bands.filter((b) => b.side === 'below');
+  const bypass = A.outer.filter((o) => bandOf(o.a).side !== bandOf(o.b).side);
+  let nl = 0, nr = 0;
+  for (const o of bypass) { o.left = geom(PL, o.a).cx + geom(PL, o.b).cx < W; o.lane = o.left ? nl++ : nr++; }
+  const si = bypass.length ? 14 + 8 * Math.max(nl, nr) : 10, k = (W - 2 * si) / W, Hs = Lc.height * k, cardX0 = si + k * LABEL_W + 24;
+  let y = 8;
+  for (const b of above) { b.y = y; y += LANE_H; }
+  const sheet = { x: si, y: y + SHEET_GAP, w: W - 2 * si, h: Hs };
+  y = sheet.y + Hs + SHEET_GAP;
+  for (const b of below) { b.y = y; y += LANE_H; }
+  const inner = (id) => { const g = geom(Lc, boxById(child, id)); return { x: si + k * g.x, y: sheet.y + k * g.y, w: k * g.w, h: k * g.h }; };
+  const rects = child.boxes.map((b) => ({ id: b.id, ...inner(b.id) }))
+    .concat(pillsIn.map((q) => ({ id: null, x: si + k * q[0], y: sheet.y + k * q[1], w: k * (q[2] - q[0]), h: k * (q[3] - q[1]) })));
+  const blocked = (x, y0, y1, except) => rects.some((q) => q.id !== except && x > q.x - 4 && x < q.x + q.w + 4 && y1 > q.y - 4 && y0 < q.y + q.h + 4);
+  // A straight line through the sheet to the target where one fits; else along the gutter right of the band names.
+  const crossings = A.crossings.map((c) => {
+    const band = bandOf(c.nb), T = inner(c.target);
+    const [y0, y1] = band.side === 'above' ? [sheet.y, T.y] : [T.y + T.h, sheet.y + sheet.h];
+    const runs = [];
+    for (let x = T.x + 16; x <= T.x + T.w - 16; x += 4) {
+      if (blocked(x, y0, y1, c.target)) continue;
+      const last = runs[runs.length - 1];
+      if (last && x - last[1] < 4.5) last[1] = x; else runs.push([x, x]);
+    }
+    const run = runs.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0];
+    const tb = boxById(child, c.target), leftmost = !child.boxes.some((o) => o !== tb && o.layer === tb.layer && (o.lane || 0) === (tb.lane || 0) && o.x < tb.x);
+    const type = run || !leftmost ? 'V' : 'G';
+    return { ...c, band, side: band.side, T, run: run || [T.x + T.w / 2, T.x + T.w / 2], type, jog: 0 };
+  });
+  // Ports on one target spread over its edge; the farthest band takes the leftmost, so nearer cards can step right of its line.
+  const groups = {};
+  for (const c of crossings) if (c.type === 'V') (groups[c.target + c.side] = groups[c.target + c.side] || []).push(c);
+  for (const g of Object.values(groups)) {
+    g.sort((a, b) => (a.side === 'above' ? a.band.y - b.band.y : b.band.y - a.band.y) || a.i - b.i);
+    g.forEach((c, j) => { const r = c.run, px = r[0] + (r[1] - r[0]) * (j + 1) / (g.length + 1); c.frac = (px - c.T.x) / c.T.w; c.px = px; });
+  }
+  for (const side of ['above', 'below']) {
+    const g = crossings.filter((c) => c.type === 'G' && c.side === side)
+      .sort((a, b) => (side === 'above' ? a.band.y - b.band.y : b.band.y - a.band.y) || a.i - b.i);
+    g.forEach((c, j) => { c.lane = j; c.lanes = g.length; });
+  }
+  // A card's spot: as near its wish as the band allows, clear of other cards and of lines that pass through the band.
+  const cards = [], lines = [], hi0 = W - si - 8;
+  const farther = (lb, band) => lb.side === band.side && (band.side === 'above' ? lb.y < band.y : lb.y > band.y);
+  const spot = (nb, band, pref) => {
+    const w = nb.w, lo = cardX0 + w / 2, hi = hi0 - w / 2, m0 = ctxOf(nb) ? 26 : 16;
+    const mine = cards.filter((c) => c.band === band).map((c) => c.r1), pass = lines.filter((l) => farther(l.band, band));
+    const ok = (cx) => cx >= lo && cx <= hi && !mine.some((m) => cx - w / 2 < m.x + m.w + 34 && cx + w / 2 > m.x - 34)
+      && !pass.some((l) => l.x > cx - w / 2 - m0 && l.x < cx + w / 2 + m0);
+    for (let j = 0; j <= 110; j++) for (const sg of [1, -1]) if (ok(pref + sg * j * 10)) return pref + sg * j * 10;
+    return clamp(pref, lo, hi);
+  };
+  const add = (nb, band, cx) => {
+    const g0 = geom(PL, nb), card = { nb, band, r0: { x: g0.x, y: g0.y, w: g0.w, h: g0.h }, r1: { x: cx - nb.w / 2, y: band.y + BOX_Y, w: nb.w, h: BOX_H }, ctx: ctxOf(nb), hop: A.hop.get(nb.id) };
+    cards.push(card);
+    return card;
+  };
+  for (const side of ['above', 'below']) {
+    let jogs = 0;
+    for (const band of side === 'above' ? above : [...below].reverse()) {
+      const items = band.own.filter((nb) => A.hop.get(nb.id) === 1).map((nb) => {
+        const cr = crossings.filter((c) => c.nb === nb), gut = cr.some((c) => c.type === 'G');
+        return { nb, cr, pref: gut ? cardX0 + nb.w / 2 : cr.reduce((a, c) => a + c.px, 0) / cr.length };
+      }).sort((a, b) => a.pref - b.pref);
+      for (const it of items) {
+        const card = add(it.nb, band, spot(it.nb, band, it.pref)), rect = card.r1;
+        for (const c of it.cr) {
+          if (c.type === 'G') { c.exOff = 0; continue; }
+          const ex = clamp(c.px, rect.x + 14, rect.x + rect.w - 14);
+          c.exOff = ex - rect.x;
+          if (Math.abs(ex - c.px) > 0.5) c.jog = jogs++;
+          lines.push({ x: ex, band });
+        }
+      }
+    }
+  }
+  // Boxes further out sit next to the shown box they talk to, on the side they have in the outer map.
+  for (const nb of A.cards.filter((b) => A.hop.get(b.id) > 1).sort((a, b) => A.hop.get(a.id) - A.hop.get(b.id) || a.x - b.x)) {
+    const band = bandOf(nb), links = A.outer.filter((o) => o.a === nb || o.b === nb).map((o) => cards.find((c) => c.nb === (o.a === nb ? o.b : o.a))).filter(Boolean);
+    const same = links.find((c) => c.band === band);
+    const pref = same ? same.r1.x + same.r1.w / 2 + (nb.x < same.nb.x ? -1 : 1) * (same.r1.w / 2 + nb.w / 2 + 44)
+      : links.length ? links.reduce((a, c) => a + c.r1.x + c.r1.w / 2, 0) / links.length : nb.x + nb.w / 2;
+    add(nb, band, spot(nb, band, pref));
+  }
+  // Steps between pairs of shown boxes: several between one pair are drawn side by side.
+  const pairs = {};
+  for (const o of A.outer) (pairs[[o.a.id, o.b.id].sort().join('|')] = pairs[[o.a.id, o.b.id].sort().join('|')] || []).push(o);
+  for (const g of Object.values(pairs)) g.forEach((o, j) => { o.off = (j - (g.length - 1) / 2) * 22; });
+  const runs = {};
+  for (const o of bypass) for (const nb of [o.a, o.b]) { o['k' + (nb === o.a ? 'a' : 'b')] = runs[nb.id] = (runs[nb.id] ?? -1) + 1; bandOf(nb).runs = true; }
+  // Where steps meet a card's top or bottom: spread over its width, ordered by where the other end is, clear of crossing lines.
+  const cardOf = (nb) => cards.find((c) => c.nb === nb), att = {};
+  const put = (card, side, item) => { const key = card.nb.id + side; (att[key] = att[key] || { card, fixed: [], free: [] })[item.x != null ? 'fixed' : 'free'].push(item); };
+  for (const c of crossings) if (c.type === 'V') put(cardOf(c.nb), c.side === 'above' ? 'bottom' : 'top', { x: cardOf(c.nb).r1.x + c.exOff });
+  for (const o of A.outer) {
+    if (bypass.includes(o)) continue;
+    const ca = cardOf(o.a), cb = cardOf(o.b), mid = (c) => c.r1.x + c.r1.w / 2;
+    if (ca.band === cb.band) {
+      const l = Math.min(ca.r1.x + ca.r1.w, cb.r1.x + cb.r1.w), r = Math.max(ca.r1.x, cb.r1.x);
+      if (!cards.some((c) => c.band === ca.band && c !== ca && c !== cb && c.r1.x < r && c.r1.x + c.r1.w > l)) continue;
+      o.u = true;
+      put(ca, 'bottom', { o, end: 'a', other: mid(cb) });
+      put(cb, 'bottom', { o, end: 'b', other: mid(ca) });
+      continue;
+    }
+    const down = cb.band.y > ca.band.y;
+    put(ca, down ? 'bottom' : 'top', { o, end: 'a', other: mid(cb) });
+    put(cb, down ? 'top' : 'bottom', { o, end: 'b', other: mid(ca) });
+  }
+  for (const { card, fixed, free } of Object.values(att)) {
+    free.sort((p, q) => p.other - q.other);
+    const x0 = card.r1.x + 16, x1 = card.r1.x + card.r1.w - 16;
+    free.forEach((it, j) => {
+      let x = x0 + (x1 - x0) * (j + 1) / (free.length + 1);
+      for (const { x: f } of fixed) if (Math.abs(x - f) < 20) x = f + (x >= f ? 20 : -20);
+      it.o['f' + it.end] = (clamp(x, x0, x1) - card.r1.x) / card.r1.w;
+    });
+  }
+  return { ...A, crossings, cards, bands, sheet, H: y + 8, Lc, k, si, bypass, bandOf };
+}
+// One crossing's route for the current frame: from the card to the target inside the sheet, through a port on its edge.
+function crossPts(c, C, T, sh, im) {
+  let pts, port;
+  if (c.type === 'G') {
+    const n = c.lanes || 1, j = c.lane || 0, sg = c.side === 'below' ? 1 : -1, off = n > 1 ? (j - (n - 1) / 2) * 16 : 0;
+    const gx = im.x + im.k * (n > 1 ? LABEL_W + 4 + 10 * j / (n - 1) : LABEL_W + 10), cy = C.y + C.h / 2 - sg * off, ty = T.y + T.h / 2 + sg * off * im.k;
+    pts = [[C.x, cy], [gx, cy], [gx, ty], [T.x, ty]];
+    port = [gx, c.side === 'above' ? sh.y : sh.y + sh.h];
+  } else {
+    const px = T.x + c.frac * T.w, ex = C.x + c.exOff, up = c.side === 'below';
+    const y0 = up ? C.y : C.y + C.h, y1 = up ? T.y + T.h : T.y, chy = up ? sh.y + sh.h + 14 + 7 * c.jog : sh.y - 14 - 7 * c.jog;
+    pts = Math.abs(ex - px) < 0.5 ? [[px, y0], [px, y1]] : [[ex, y0], [ex, chy], [px, chy], [px, y1]];
+    port = [px, up ? sh.y + sh.h : sh.y];
+  }
+  if (c.dir === 'out') pts.reverse();
+  return { pts, port };
+}
+const outerNum = (c) => (c.st.alt ? `外${c.st.alt.no}` : `外${c.i + 1}`);
+function pillWidth(st, num, i = 0) {
+  const pp = pillParts(st, i, num);
+  return pp.width([!!pp.verb, !!pp.chip]);
+}
+// An outer step drawn inside: its number keeps the outer flow's count, and pressing it goes out to that step.
+function outerize(svg, c, parent) {
+  const touch = c.nb ? ` data-xin="${c.target}" data-xout="${c.nb.id}"` : ` data-xout="${c.a.id}" data-xout2="${c.b.id}"`;
+  return svg.replace(` data-step="${c.i}"`, ` data-outstep="${c.i}"${touch}`)
+    .replace(/ data-chip="\d+"/, '')
+    .replace(`<title>${stepNo(c.st, c.i)}. `, `<title>外の手順 ${stepNo(c.st, c.i)}（${esc(paperLabel(parent))}）：`)
+    .replace('</title>', '。押すと外へ戻ってこの手順を見る</title>');
+}
+// A step between two boxes outside: straight across a band, or to another band with one jog in a band's margin.
+function outerPts(o, A, B, others) {
+  const off = o.off || 0;
+  const cost = (pts) => { let n = 0; for (let i = 0; i < pts.length - 1; i++) for (const r of others) if (segHit(pts[i], pts[i + 1], r)) n++; return n; };
+  const sx = A.x + A.w * (o.fa ?? 0.5), ex = B.x + B.w * (o.fb ?? 0.5);
+  if (Math.abs(A.y - B.y) < 1) {
+    // side by side; when boxes stand between, under them through the band's margin
+    if (o.u) { const under = A.y + A.h + 16; return [[sx, A.y + A.h], [sx, under], [ex, under], [ex, B.y + B.h]]; }
+    const y = A.y + A.h / 2 + off * 0.5;
+    return B.x > A.x ? [[A.x + A.w, y], [B.x, y]] : [[A.x, y], [B.x + B.w, y]];
+  }
+  const down = B.y > A.y, sy = down ? A.y + A.h : A.y, ey = down ? B.y : B.y + B.h;
+  if (Math.abs(sx - ex) < 1) return [[sx, sy], [ex, ey]];
+  const cands = [down ? A.y + A.h + 14 : A.y - 14, down ? B.y - 14 : B.y + B.h + 14].map((ly) => [[sx, sy], [sx, ly], [ex, ly], [ex, ey]]);
+  return cands.reduce((best, c) => (cost(c) < cost(best) ? c : best));
+}
+// A step that passes the sheet: out of the side of one box, along a lane outside everything, into the side of the other.
+function bypassPts(o, A, B) {
+  const lx = o.left ? 6 + 8 * o.lane : W - 6 - 8 * o.lane;
+  const ya = A.y + A.h * (0.8 - 0.13 * o.ka), yb = B.y + B.h * (0.8 - 0.13 * o.kb);
+  return [[o.left ? A.x : A.x + A.w, ya], [lx, ya], [lx, yb], [o.left ? B.x : B.x + B.w, yb]];
+}
+// The emptiest spot for a step's tag: along its route, or at the extra spots offered (beside a port, next to a box).
+function tagSpot(pts, w, avoid, placed, lines, sh, VH, extra = [], lineCost = 4) {
+  const cands = [...extra];
+  for (let n = 0; n < pts.length - 1; n++) {
+    const p = pts[n], q = pts[n + 1], len = Math.hypot(q[0] - p[0], q[1] - p[1]), vert = Math.abs(p[0] - q[0]) < 0.5;
+    if (len < 18) continue;
+    for (const f of [0.5, 0.35, 0.65, 0.2, 0.8, 0.1, 0.9]) {
+      const mx = lerp(p[0], q[0], f), my = lerp(p[1], q[1], f), d = Math.abs(f - 0.5);
+      if (vert) cands.push([mx + 8, my, d], [mx - 8 - w, my, d + 0.2]);
+      else cands.push([mx - w / 2, my, d], [mx - w / 2, my - 16, d + 0.5]);
+    }
+  }
+  const sr = [sh.x, sh.y, sh.x + sh.w, sh.y + sh.h];
+  let best = null;
+  for (const [lx, cy, base] of cands) {
+    const rc = [lx, cy - 12, lx + w, cy + 12];
+    let cost = base;
+    if (rc[0] < 2 || rc[2] > W - 2 || rc[1] < 2 || rc[3] > VH - 2) cost += 30;
+    for (const a of avoid) if (rectHit(rc, a)) cost += 10;
+    for (const a of placed) if (rectHit(rc, a)) cost += 10;
+    for (const l of lines) for (let m = 0; m < l.length - 1; m++) if (segHit(l[m], l[m + 1], rc)) cost += lineCost;
+    const inside = rc[0] > sr[0] && rc[2] < sr[2] && rc[1] > sr[1] && rc[3] < sr[3];
+    cost += inside ? 3 : rectHit(rc, sr) ? 8 : 0;
+    if (!best || cost < best.cost) best = { cost, lx, cy, rc };
+  }
+  return best;
+}
+// Paper in paper. Going in (e 0 -> 1), the outer picture zooms toward the box and fades while the box's paper grows out of it,
+// and the boxes it talks to outside slide to bands above and below the sheet. Their steps come in through ports on its edge.
+// The outer picture is the parent as it looked: a flow's map, or a paper with its own outside around it.
+function nestedSvg(trail) {
+  const child = trail[trail.length - 1], parent = trail[trail.length - 2], n = nestedParts(trail, ease(dive.t));
+  return `<svg viewBox="0 0 ${W} ${n.H.toFixed(1)}" role="img" aria-label="${esc(child.title)}。${esc(paperLabel(parent))}の箱の中の紙と、その外で必要な相手">`
+    + `<rect class="out-zone" data-out="1" x="0" y="0" width="${W}" height="${n.H.toFixed(1)}"><title>外へ戻る</title></rect>${n.body}</svg>`;
+}
+function nestedParts(trail, e) {
+  const child = trail[trail.length - 1], parent = trail[trail.length - 2];
+  const pb = boxById(parent, state.path[trail.length - 2]), PL = layout(parent);
+  const pillsIn = [], cm = withState({ collect: pillsIn, paperCtx: paperContext(state.path.slice(0, trail.length - 1)) }, () => mapParts(child));
+  const P = aroundPlan(parent, pb, child, pillsIn, state.depth), hide = new Set(P.cards.map((c) => c.nb.id));
+  const pm = withState({ step: null, node: pb.node, bare: true, hide }, () => (trail.length > 2 ? nestedParts(trail.slice(0, -1), 1) : { ...mapParts(parent), place: (q) => q }));
+  const place = (q) => pm.place({ x: q.x, y: q.y, w: q.w, h: q.h }), g = place(geom(PL, pb));
+  const S = P.sheet, VH = lerp(pm.H, P.H, e);
+  const s = Math.pow(S.w / g.w, e), bc = [g.x + g.w / 2, g.y + g.h / 2], c = [lerp(bc[0], S.x + S.w / 2, e), lerp(bc[1], S.y + S.h / 2, e)];
+  const tx = c[0] - s * bc[0], ty = c[1] - s * bc[1];
+  const rb = [tx + s * g.x, ty + s * g.y, s * g.w, s * g.h], rr = [S.x, S.y, S.w, S.h], r = rb.map((v, i) => lerp(v, rr[i], e));
+  const kk = Math.min(r[2] / W, r[3] / cm.H), im = { k: kk, x: r[0] + (r[2] - W * kk) / 2, y: r[1] + (r[3] - cm.H * kk) / 2 };
+  const sh = { x: r[0], y: r[1], w: r[2], h: r[3] };
+  const fx = (v) => v.toFixed(1), late = clamp((e - 0.55) / 0.45, 0, 1), mid = clamp((e - 0.25) / 0.5, 0, 1);
+  const T = (id) => { const q = geom(P.Lc, boxById(child, id)); return { x: im.x + im.k * q.x, y: im.y + im.k * q.y, w: im.k * q.w, h: im.k * q.h }; };
+  const cards = P.cards.map((cd) => {
+    const r0 = place(cd.r0);
+    return { ...cd, g0: cd.r0, rect: { x: lerp(r0.x, cd.r1.x, e), y: lerp(r0.y, cd.r1.y, e), w: lerp(r0.w, cd.r1.w, e), h: lerp(r0.h, cd.r1.h, e) } };
+  });
+  const rectOf = (nb) => cards.find((cd) => cd.nb === nb).rect, lcol = P.si + P.k * LABEL_W;
+  const fade = 1 - clamp(e / 0.85, 0, 1);
+  let out = fade > 0 ? `<g class="paper-bg" opacity="${fade.toFixed(2)}" transform="matrix(${s.toFixed(4)},0,0,${s.toFixed(4)},${fx(tx)},${fx(ty)})">${pm.body}</g>` : '';
+  if (mid > 0) {
+    const x0 = P.si, x1 = W - P.si, tx0 = P.si + P.k * 12;
+    const shade = bandShades(P.bands.map((b) => b.layer));
+    out += `<g class="vbands" opacity="${mid.toFixed(2)}">` + P.bands.map((b, i) => `<rect class="band-${shade[i]}${toneCls(b.layer)}" x="${x0}" y="${b.y}" width="${x1 - x0}" height="${LANE_H}"/>`
+      + (toneOf(b.layer) ? `<rect class="lbar s-${toneOf(b.layer)}" x="${x0}" y="${b.y}" width="4" height="${LANE_H}"/>` : '')
+      + `<line class="band-line" x1="${x0}" x2="${x1}" y1="${b.y}" y2="${b.y}"/><line class="band-line" x1="${x0}" x2="${x1}" y1="${b.y + LANE_H}" y2="${b.y + LANE_H}"/>`
+      + `<line class="band-line" x1="${fx(lcol)}" x2="${fx(lcol)}" y1="${b.y}" y2="${b.y + LANE_H}"/>`
+      + `<text class="band-name" x="${fx(tx0)}" y="${b.y + (b.runs ? 34 : LANE_H / 2 - 4)}">${esc(b.layer.name)}</text>`
+      + `<text class="band-sub" x="${fx(tx0)}" y="${b.y + (b.runs ? 52 : LANE_H / 2 + 14)}">${esc(b.same ? '同じ層・箱の外' : b.layer.sub)}</text>`).join('') + `</g>`;
+  }
+  out += `<g opacity="${clamp(e / 0.35, 0, 1).toFixed(2)}"><rect class="sheet-back" x="${fx(r[0] + 6)}" y="${fx(r[1] + 6)}" width="${fx(r[2])}" height="${fx(r[3])}" rx="8"/>`
+    + `<rect class="sheet" x="${fx(r[0])}" y="${fx(r[1])}" width="${fx(r[2])}" height="${fx(r[3])}" rx="8"/>`
+    + `<svg x="${fx(r[0])}" y="${fx(r[1])}" width="${fx(r[2])}" height="${fx(r[3])}" viewBox="0 0 ${W} ${cm.H}" preserveAspectRatio="xMidYMid meet">${cm.body}</svg></g>`;
+  const routes = P.crossings.map((x) => crossPts(x, rectOf(x.nb), T(x.target), sh, im));
+  const boxRects = cards.map((cd) => [cd.rect.x - 4, cd.rect.y - 4, cd.rect.x + cd.rect.w + 4, cd.rect.y + cd.rect.h + 4]);
+  const outs = P.outer.map((o) => (P.bypass.includes(o) ? bypassPts(o, rectOf(o.a), rectOf(o.b))
+    : outerPts(o, rectOf(o.a), rectOf(o.b), boxRects.filter((_, n) => cards[n].nb !== o.a && cards[n].nb !== o.b))));
+  const avoid = [...boxRects];
+  for (const b of P.bands) avoid.push([0, b.y, lcol + 4, b.y + LANE_H]);
+  for (const b of child.boxes) { const q = T(b.id); avoid.push([q.x - 3, q.y - 3, q.x + q.w + 3, q.y + q.h + 3]); }
+  for (const q of pillsIn) avoid.push([im.x + im.k * q[0], im.y + im.k * q[1], im.x + im.k * q[2], im.y + im.k * q[3]]);
+  avoid.push([sh.x, sh.y, im.x + im.k * (LABEL_W + 2), sh.y + sh.h]);
+  let ctxLabel = '';
+  if (P.region && late > 0) {
+    const label = `実行の文脈：${P.region.label}`, tw = textW(label, 12) + 30, x1 = sh.x + sh.w - 2, y = sh.y - 10;
+    ctxLabel = `<g class="region sheet-ctx${P.region.node === state.node ? ' is-node' : ''}" data-node="${P.region.node}" opacity="${late.toFixed(2)}"><title>この紙が走る実行の文脈：${esc(NODES[P.region.node].title)}</title>`
+      + `<rect class="tag" x="${fx(x1 - tw)}" y="${fx(y - 9)}" width="20" height="11" rx="4"/><text class="on-0" x="${fx(x1)}" y="${fx(y)}" text-anchor="end">${esc(label)}</text></g>`;
+    avoid.push([x1 - tw - 2, y - 13, x1 + 2, y + 4]);
+  }
+  let frames = '';
+  for (const cd of cards) {
+    if (!cd.ctx || late <= 0) continue;
+    const q = cd.rect, x0 = q.x - 12, y0 = q.y - 18, label = NODES[cd.ctx.node].title;
+    frames += `<g class="region${cd.ctx.node === state.node ? ' is-node' : ''}" data-node="${cd.ctx.node}" opacity="${late.toFixed(2)}"><title>実行の文脈：${esc(label)}</title>`
+      + `<rect x="${fx(x0)}" y="${fx(y0)}" width="${fx(q.w + 24)}" height="${fx(q.h + 30)}" rx="10"/><text class="on-${P.bands.indexOf(cd.band) % 2}" x="${fx(x0 + 10)}" y="${fx(y0 + 4)}">${esc(label)}</text></g>`;
+    avoid.push([x0 + 6, y0 - 9, x0 + 14 + textW(label, 12), y0 + 7]);
+  }
+  out += frames + ctxLabel;
+  if (late > 0) {
+    out += `<g opacity="${late.toFixed(2)}">`;
+    const on = (i) => (state.outer === i ? ' is-sel' : '');
+    P.outer.forEach((o, j) => { out += outerize(edgeSvg(o.st, o.i, pathD(outs[j]), ' outer far' + on(o.i)), o, parent); });
+    P.crossings.forEach((x, j) => { out += outerize(edgeSvg(x.st, x.i, pathD(routes[j].pts), ' outer' + on(x.i)), x, parent); });
+    for (const rt of routes) out += `<circle class="port" cx="${fx(rt.port[0])}" cy="${fx(rt.port[1])}" r="4"><title>紙の縁の口：外の手順がここから出入りする</title></circle>`;
+    out += `</g>`;
+  }
+  for (const cd of cards) {
+    const cls = (cd.nb.node === state.node ? ' is-node' : '') + (cd.hop > 1 ? ' far' : '');
+    const box = withState({ bare: true }, () => boxSvg(PL, cd.nb, cls, cd.ctx && cd.ctx.node)).replace(` data-box="${cd.nb.id}"`, ` data-outbox="${cd.nb.id}" data-node="${cd.nb.node}"`);
+    const sc = cd.rect.w / cd.g0.w;
+    out += `<g transform="matrix(${sc.toFixed(4)},0,0,${sc.toFixed(4)},${fx(cd.rect.x - sc * cd.g0.x)},${fx(cd.rect.y - sc * cd.g0.y)})">${box}</g>`;
+  }
+  if (late > 0) {
+    const placed = [], all = [...routes.map((rt) => rt.pts), ...outs];
+    out += `<g opacity="${late.toFixed(2)}">`;
+    P.crossings.forEach((x, j) => {
+      const num = outerNum(x), w = pillWidth(x.st, num), port = routes[j].port, py = port[1] + (x.side === 'above' ? -17 : 17), extra = [];
+      for (const d of [0, 40, 80, 120, 160, 200, 240]) extra.push([port[0] + 8 + d, py, -0.3 + d / 200], [port[0] - 8 - w - d, py, -0.1 + d / 200]);
+      const best = tagSpot(routes[j].pts, w, avoid, placed, all.filter((l) => l !== routes[j].pts), sh, VH, extra);
+      if (!best) return;
+      placed.push(best.rc);
+      out += outerize(pillSvg(x.st, x.i, { mid: [best.lx + w / 2, best.cy], horizontal: true, segLen: 1e9 }, ' outer' + (state.outer === x.i ? ' is-sel' : ''), true, 2, false, num), x, parent);
+    });
+    P.outer.forEach((o, j) => {
+      const num = outerNum(o), w = pillWidth(o.st, num), A = rectOf(o.a), B = rectOf(o.b), extra = [];
+      for (const q of [A, B]) extra.push([q.x + q.w / 2 - w / 2, q.y - 15, 0.6], [q.x + q.w / 2 - w / 2, q.y + q.h + 15, 0.6], [q.x + q.w + 10, q.y + q.h / 2, 0.8], [q.x - 10 - w, q.y + q.h / 2, 0.8]);
+      const best = tagSpot(outs[j], w, avoid, placed, all.filter((l) => l !== outs[j]), sh, VH, extra);
+      if (!best) return;
+      placed.push(best.rc);
+      out += outerize(pillSvg(o.st, o.i, { mid: [best.lx + w / 2, best.cy], horizontal: true, segLen: 1e9 }, ' outer far' + (state.outer === o.i ? ' is-sel' : ''), true, 2, false, num), o, parent);
+    });
+    out += `</g>`;
+  }
+  return { H: VH, body: out, place: (q) => ({ x: im.x + im.k * q.x, y: im.y + im.k * q.y, w: im.k * q.w, h: im.k * q.h }) };
+}
+function tweenDive(target, done) {
+  cancelAnimationFrame(anim.raf);
+  const from = dive.t, start = performance.now(), dur = 950 * Math.abs(target - from);
+  const step = (now) => {
+    const k = dur ? Math.min(1, (now - start) / dur) : 1;
+    dive.t = lerp(from, target, k);
+    drawCanvas();
+    if (k < 1) anim.raf = requestAnimationFrame(step);
+    else if (done) done();
+  };
+  anim.raf = requestAnimationFrame(step);
+}
+function diveInto(boxId, done, quiet) {
+  const b = boxById(flow(), boxId), pid = b && NODES[b.node].paper;
+  if (!pid || !PAPERS[pid]) { if (done) done(); return; }
+  state.path = [...state.path, boxId];
+  if (quiet) { state.step = null; state.node = b.node; } else [state.step, state.node] = PAPERS[pid].start;
+  state.all = false; state.outer = null;
+  if (state.view !== 'map' || reduceMotion) { dive.t = 1; render(); if (done) done(); return; }
+  dive.t = 0; render(); tweenDive(1, done);
+}
+function diveOut(levels, pick, done) {
+  levels = Math.min(levels, state.path.length);
+  if (!levels) { if (done) done(); return; }
+  state.outer = null;
+  const finish = () => {
+    const via = state.path[state.path.length - levels];
+    state.path = state.path.slice(0, state.path.length - levels);
+    dive.t = 1;
+    const f = flow(), b = boxById(f, via);
+    if (pick != null && f.steps[pick]) { state.step = pick; state.node = f.steps[pick].ref; }
+    else if (b) { state.node = b.node; const i = f.steps.findIndex((x) => x.ref === b.node); state.step = i >= 0 ? i : null; } else [state.step, state.node] = f.start;
+    render();
+    if (done) done();
+  };
+  if (state.view !== 'map' || reduceMotion || levels > 1) { finish(); return; }
+  tweenDive(0, finish);
+}
+function diveToNode(id) {
+  const here = flow().boxes.find((b) => b.node === id);
+  if (here) { diveInto(here.id); return; }
+  const loc = locate(NODES[id].paper);
+  if (!loc) return;
+  state.flow = loc.flow; state.path = loc.path; dive.t = 1;
+  [state.step, state.node] = flow().start;
+  render();
+}
+function crumbsHtml() {
+  const trail = paperAt(state.path);
+  if (trail.length < 2) return '';
+  return trail.map((p, i) => (i === trail.length - 1 ? `<span class="here">${esc(paperLabel(p))}</span>`
+      : `<button type="button" class="link-btn" data-crumb="${trail.length - 1 - i}">${esc(paperLabel(p))}</button>`)).join('<span class="sep" aria-hidden="true">›</span>')
+    + `<button type="button" class="crumb-out" data-out="1">外へ戻る（Esc）</button>`;
+}
+
+// ---- Playing the flow: a token carries each step's data along its arrow. At a box with a paper it goes in,
+// enters through the port, walks the paper's steps, leaves through the port it goes out by, and comes back out. ----
+const player = { on: false, run: 0, label: '' };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const tokenLabel = (st) => (st.data ? st.data.label : '');
+function playerHtml() {
+  return player.on
+    ? `<button type="button" data-play="stop" aria-pressed="true"><svg class="icon sm" aria-hidden="true"><use href="#i-stop"/></svg>止める</button><span>${esc(player.label)}</span>`
+    : `<button type="button" data-play="go"><svg class="icon sm" aria-hidden="true"><use href="#i-play"/></svg>順に流す</button>`
+      + (TRACES.length ? `<button type="button" data-playtrace="1"><svg class="icon sm" aria-hidden="true"><use href="#i-play"/></svg>記録で流す</button>` : '')
+      + `<button type="button" data-still="1" aria-pressed="${!state.still}">線を動かす</button>`
+      + `<button type="button" data-lens="1" aria-pressed="${state.lens}">色：誰が走っているか</button><span>手順を順に動かす。中の紙がある箱では、紙の口から中に入って、出てくる。← → でも 1 つずつ送れる（Enter で中の紙へ、Esc で外へ）。</span>`;
+}
+function stopPlay() {
+  player.on = false; player.run++; player.label = '';
+  document.querySelectorAll('#canvas .token').forEach((x) => x.remove());
+  if (state.outer != null) { state.outer = null; render(); } else document.getElementById('player').innerHTML = playerHtml();
+}
+// Put the token on a step's arrow; it walks the arrow unless k pins it to one spot (for a still picture).
+function moveToken(sel, label, alive, k, reverse) {
+  return new Promise((done) => {
+    const path = typeof sel === 'string' ? document.querySelector(sel) : sel;
+    if (!path) { setTimeout(done, 200); return; }
+    const svg = path.ownerSVGElement, len = path.getTotalLength(), g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const tw = label ? textW(label, 11, true) + 14 : 0;
+    g.setAttribute('class', 'token');
+    g.innerHTML = `<circle r="7"/>` + (label ? `<g class="token-tag"><rect x="10" y="-27" width="${tw}" height="18" rx="9"/><text x="${10 + tw / 2}" y="-14" text-anchor="middle">${esc(label)}</text></g>` : '');
+    svg.appendChild(g);
+    const at = (q) => { const p = path.getPointAtLength(len * (reverse ? 1 - q : q)); g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`); };
+    if (k != null) { at(k); done(); return; }
+    if (reduceMotion) { at(1); setTimeout(() => { g.remove(); done(); }, 900); return; }
+    const dur = clamp(len * 2.4, 700, 1600), t0 = performance.now();
+    const step = (now) => {
+      if (!alive()) { g.remove(); done(); return; }
+      const q = Math.min(1, (now - t0) / dur);
+      at(ease(q));
+      if (q < 1) requestAnimationFrame(step); else setTimeout(() => { g.remove(); done(); }, 220);
+    };
+    requestAnimationFrame(step);
+  });
+}
+// ---- Playing what really ran: each recorded entry into a function that has a box here lights that box. Between two
+// lit boxes the token takes the step that joins them; where the map has no such step it jumps on a dashed line. ----
+const threadName = (tr, t) => {
+  const l = (tr.threads || {})[String(t)] || '';
+  return !l ? '' : l.startsWith('kernel:') ? `カーネルのスレッド（${l.slice(7).trim()}）` : /idle/.test(l) ? '走るもの無し（idle）' : `${l} のスレッド`;
+};
+const squeeze = (xs) => { const out = []; for (const x of xs) if (out[out.length - 1] !== x) out.push(x); return out.length > 6 ? [...out.slice(0, 5), '…', out[out.length - 1]] : out; };
+function traceVisits(f, tr) {
+  const visits = [];
+  let via = [];
+  for (const e of tr.events) {
+    if (e.ev === 'irq') { via.push(`割り込み（${(e.cause || []).join('・') || '?'}）`); continue; }
+    if (e.ev !== 'enter') continue;
+    const b = e.n && f.boxes.find((x) => x.node === e.n);
+    if (b) { visits.push({ b, e, via }); via = []; } else if (e.fn) via.push(e.fn);
+  }
+  return visits;
+}
+function jumpPath(a, b) {
+  const ea = document.querySelector(`#canvas [data-box="${a.id}"] .body`), eb = document.querySelector(`#canvas [data-box="${b.id}"] .body`);
+  if (!ea || !eb || ea.ownerSVGElement !== eb.ownerSVGElement) return null;
+  const ra = ea.getBBox(), rb = eb.getBBox(), p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', `M${(ra.x + ra.width / 2).toFixed(1)},${(ra.y + ra.height / 2).toFixed(1)}L${(rb.x + rb.width / 2).toFixed(1)},${(rb.y + rb.height / 2).toFixed(1)}`);
+  p.setAttribute('class', 'tjump');
+  ea.ownerSVGElement.appendChild(p);
+  return p;
+}
+async function playTrace(tr) {
+  const run = ++player.run, alive = () => player.on && player.run === run;
+  player.on = true;
+  const f = flow(), visits = traceVisits(f, tr);
+  let prev = null;
+  for (const v of visits) {
+    if (!alive()) return;
+    const i = prev ? f.steps.findIndex((st) => (st.from === prev.id && st.to === v.b.id) || (st.from === v.b.id && st.to === prev.id)) : -1;
+    state.outer = null;
+    if (i >= 0) { state.step = i; state.node = f.steps[i].ref; } else { state.step = null; state.node = v.b.node; }
+    const who = threadName(tr, v.e.thread), way = squeeze(v.via);
+    player.label = `${v.e.fn}${who ? '・' + who : ''}・${Number(v.e.instr).toLocaleString('ja-JP')} 命令目${way.length ? '・経由 ' + way.join(' → ') : ''}`;
+    render();
+    document.querySelectorAll(`#canvas [data-box="${v.b.id}"]`).forEach((x) => x.classList.add('is-visit'));
+    if (i >= 0) await moveToken(`#canvas .edge:not(.ghost)[data-step="${i}"] .line`, '', alive, null, f.steps[i].from !== prev.id);
+    else if (prev) { const p = jumpPath(prev, v.b); await moveToken(p, '', alive); if (p) p.remove(); }
+    else await sleep(reduceMotion ? 900 : 600);
+    prev = v.b;
+  }
+  if (alive()) { player.on = false; player.label = ''; render(); }
+}
+// The map against the record: which steps really happened, and which functions ran that the map does not show.
+const traceName = (tr) => {
+  const r = tr.run || {}, day = (tr.date || '').replace('T', ' ').slice(0, 16);
+  return tr.title + (day ? `（${day}）` : '');
+};
+function traceCompareHtml(f) {
+  const tr = TRACES[0];
+  if (!tr) return '';
+  const visits = traceVisits(f, tr);
+  if (!visits.length) return `<details class="more trace-cmp"><summary>実際の記録と比べる：${esc(traceName(tr))}</summary><div class="more-body"><p class="small muted">この記録には、この紙の箱の関数が出てこない。</p></div></details>`;
+  const fnOf = (b) => NODES[b.node].fn;
+  const rows = f.steps.map((st, i) => {
+    const A = boxById(f, st.from), B = boxById(f, st.to);
+    if (!fnOf(A) || !fnOf(B)) return [i, 'na', '記録の対象外（置き場・1 文の節・関数でない端）'];
+    if (st.kind === 'return') return [i, 'na', '戻りは記録しない（関数に入ったところだけ）'];
+    for (let k = 1; k < visits.length; k++) if (visits[k - 1].b === A && visits[k].b === B) {
+      const way = squeeze(visits[k].via);
+      return [i, 'ok', way.length ? `起きた。あいだに ${way.join(' → ')}` : '起きた（すぐ次）'];
+    }
+    const a = visits.findIndex((v) => v.b === A), b = visits.findIndex((v, k) => k > a && v.b === B);
+    return a >= 0 && b > a ? [i, 'ok', 'この順に起きた（あいだに他の箱）'] : [i, 'no', '記録に無い'];
+  });
+  const extra = new Map();
+  for (const v of visits) for (const x of v.via) if (!x.startsWith('割り込み')) extra.set(x, (extra.get(x) || 0) + 1);
+  const mark = { ok: '✓', no: '✗', na: '—' };
+  const run = tr.run || {};
+  return `<details class="more trace-cmp"><summary>実際の記録と比べる：${esc(traceName(tr))}</summary><div class="more-body">`
+    + `<p class="small muted">${run.after ? Object.keys(run.after).filter((k) => (run.before || {})[k] !== run.after[k]).map((k) => `${esc(k)}「${esc(run.before?.[k] ?? '')}」→「${esc(run.after[k])}」`).join('、') + '。' : ''}`
+    + `記録した関数に入った順に、この紙の箱をたどる。${visits.length} 回の入りがこの紙の箱に当たった。</p>`
+    + `<table class="branches tr-table"><tbody>${rows.map(([i, k, t]) => `<tr class="tr-${k}"><th><button type="button" class="link-btn" data-step="${i}">${stepNo(f.steps[i], i)}</button></th><td><span class="tr-mark">${mark[k]}</span>${esc(t)}</td></tr>`).join('')}</tbody></table>`
+    + (extra.size ? `<p class="panel-h">図に無い関数（あいだで走ったもの）</p><p class="small">${[...extra].sort((a, b) => b[1] - a[1]).map(([x, c]) => `<code>${esc(x)}</code> ×${c}`).join('　')}</p>` : '')
+    + (DATA.how?.trace ? `<p class="small muted">記録は <code>${esc(DATA.how.trace)}</code> で取り直せる。</p>` : '') + `</div></details>`;
+}
+async function showStep(i, alive) {
+  const f = flow();
+  state.step = i; state.node = f.steps[i].ref; state.outer = null;
+  player.label = `${state.path.length ? paperLabel(f) + '・' : ''}手順 ${stepNo(f.steps[i], i)}`;
+  render();
+  await moveToken(`#canvas .edge:not(.ghost)[data-step="${i}"] .line`, tokenLabel(f.steps[i]), alive);
+}
+async function showOuter(c, alive) {
+  state.outer = c.i;
+  player.label = `外の手順 ${stepNo(c.st, c.i)}`;
+  render();
+  await moveToken(`#canvas .edge[data-outstep="${c.i}"] .line`, tokenLabel(c.st), alive);
+}
+const intoPaper = (f, st) => { const b = boxById(f, st.to), pid = NODES[b.node].paper; return pid && PAPERS[pid] && st.kind !== 'return' && st.kind !== 'data' ? b : null; };
+// Go into the box a step reached, walk the paper from the crossing that step became, and come back out.
+// Returns the outer step the paper left by (it was shown inside), if any.
+async function walkPaper(box, enter, alive, seen) {
+  await new Promise((r) => diveInto(box.id, r, true));
+  if (!alive()) return null;
+  const f = flow(), A = aroundHere(), rows = timeline(f, A), from = rows.findIndex((r) => r.c && r.c.i === enter);
+  let exit = null;
+  for (const row of rows.slice(Math.max(0, from))) {
+    if (!alive()) return null;
+    if (row.o || (row.st || row.c.st).alt) continue;
+    if (row.c) {
+      if (row.c.i === enter) await showOuter(row.c, alive);
+      else if (row.c.via && row.c.dir === 'out' && row.c.i > enter) { await showOuter(row.c, alive); exit = row.c.i; break; }
+      continue;
+    }
+    await walkStep(f, row, alive, seen);
+  }
+  if (alive()) await new Promise((r) => diveOut(1, null, r));
+  return exit;
+}
+// One step of a flow or paper; if it calls into a box with a paper not seen yet in this run, walk that paper too.
+async function walkStep(f, row, alive, seen) {
+  await showStep(row.i, alive);
+  const box = intoPaper(f, row.st);
+  if (!alive() || !box || seen.has(box.id + f.id)) return null;
+  seen.add(box.id + f.id);
+  const inner = PAPERS[NODES[box.node].paper], inside = new Set([box.node, ...inner.boxes.map((b) => b.node)]);
+  const exit = await walkPaper(box, row.i, alive, seen);
+  // steps of this flow that the paper already showed: the one it left by, and those between two nodes inside it
+  return { exit, inside };
+}
+async function play() {
+  const run = ++player.run, alive = () => player.on && player.run === run, seen = new Set();
+  player.on = true;
+  const f = flow(), A = aroundHere(), rows = timeline(f, A), skip = new Set();
+  for (const row of rows) {
+    if (!alive()) return;
+    if ((row.st || (row.c || row.o).st).alt) continue;
+    if (row.c || row.o) { await showOuter(row.c || row.o, alive); continue; }
+    if (skip.has(row.i)) continue;
+    const r = await walkStep(f, row, alive, seen);
+    if (r) f.steps.forEach((st, i) => {
+      if (i <= row.i) return;
+      if (r.exit === i || (r.inside.has(boxById(f, st.from).node) && r.inside.has(boxById(f, st.to).node))) skip.add(i);
+    });
+  }
+  if (alive()) { player.on = false; player.label = ''; state.outer = null; render(); }
+}
+
+function seqOrder(f) {
+  const seen = [];
+  for (const st of f.steps) for (const id of [st.from, st.to]) if (!seen.includes(id)) seen.push(id);
+  for (const b of f.boxes) if (!seen.includes(b.id)) seen.push(b.id);
+  return seen.map((id) => boxById(f, id));
+}
+// The order things happen in a paper: what the outer flow did before calling the box, then the calls into it. An exchange
+// with a box inside comes before that box's first step when something comes in from outside, else after its last step.
+// A step between two boxes outside comes right after the crossing that precedes it in the outer flow.
+function timeline(f, A) {
+  const cr = A ? A.crossings : [], rows = f.steps.map((st, i) => ({ st, i, at: st.alt ? st.alt.at + 0.25 + i / 1000 : i }));
+  const call = Math.min(...cr.filter((c) => c.via && c.dir === 'in').map((c) => c.i));
+  for (const c of cr) {
+    if (c.i < call && !(c.via && c.dir === 'in')) { rows.push({ c, at: -1 + c.i / 1000 }); continue; }
+    const hits = f.steps.map((st, i) => (!st.alt && (st.from === c.target || st.to === c.target) ? i : -1)).filter((i) => i >= 0);
+    const first = hits.length ? hits[0] : f.steps.length, last = hits.length ? hits[hits.length - 1] : f.steps.length;
+    const comesIn = cr.some((d) => d.target === c.target && d.via === c.via && d.dir === 'in');
+    rows.push({ c, at: c.via && c.dir === 'in' ? -0.5 : comesIn && !c.via ? first - 0.5 : last + 0.5 });
+  }
+  const crossed = rows.filter((r) => r.c);
+  for (const o of A ? A.outer || [] : []) {
+    const prev = crossed.filter((r) => r.c.i < o.i).sort((a, b) => b.c.i - a.c.i)[0];
+    rows.push({ o, at: prev ? prev.at : -1 + o.i / 1000 });
+  }
+  const pi = (r) => (r.c ? r.c.i : r.o ? r.o.i : -1);
+  return rows.sort((a, b) => a.at - b.at || pi(a) - pi(b));
+}
+// A lane head is narrow when there are many lanes: long names go on two lines, split after _ or before (, in the small size.
+function seqName(name, maxW) {
+  const mono = !isJa(name), w12 = (t) => textW(t, 12, mono), w11 = (t) => textW(t, 11, mono);
+  if (w12(name) <= maxW) return { lines: [name], small: false };
+  const cut = (t) => { if (w11(t) <= maxW) return t; while (t.length > 1 && w11(t + '…') > maxW) t = t.slice(0, -1); return t + '…'; };
+  let best = null;
+  for (let i = 1; i < name.length; i++) {
+    if (!'_ .,'.includes(name[i - 1]) && name[i] !== '(') continue;
+    const a = name.slice(0, i).trimEnd(), b = name.slice(i).trimStart(), m = Math.max(w11(a), w11(b));
+    if (!best || m < best.m) best = { a, b, m };
+  }
+  return { lines: best ? [cut(best.a), cut(best.b)] : [cut(name)], small: true };
+}
+function renderSeq() {
+  const f = flow(), A = aroundHere(), inner = seqOrder(f), cr = A ? A.crossings : [];
+  const side = new Map();
+  for (const c of cr) if (!side.has(c.nb.id) || c.dir === 'in') side.set(c.nb.id, c.dir === 'in' ? 'L' : 'R');
+  for (const b of A ? [...A.cards].sort((p, q) => A.hop.get(p.id) - A.hop.get(q.id)) : []) {
+    if (side.has(b.id)) continue;
+    const link = A.outer.map((o) => (o.a === b ? o.b : o.b === b ? o.a : null)).find((x) => x && side.has(x.id));
+    side.set(b.id, link ? side.get(link.id) : 'R');
+  }
+  const far = (b) => A.hop.get(b.id);
+  const leftB = A ? A.cards.filter((b) => side.get(b.id) === 'L').sort((p, q) => far(q) - far(p)) : [];
+  const rightB = A ? A.cards.filter((b) => side.get(b.id) === 'R').sort((p, q) => far(p) - far(q)) : [];
+  const lanes = [...leftB.map((b) => ({ key: 'o:' + b.id, b, outer: true })), ...inner.map((b) => ({ key: b.id, b })), ...rightB.map((b) => ({ key: 'o:' + b.id, b, outer: true }))];
+  const rows = timeline(f, A);
+  const left = 56, right = W - 56, gap = (right - left) / Math.max(1, lanes.length - 1);
+  const xs = Object.fromEntries(lanes.map((l, i) => [l.key, left + i * gap]));
+  const top = cr.length ? 44 : 36, headH = 50, stepH = 52, aw = Math.min(124, gap - 8);
+  const H = top + headH + 48 + rows.length * stepH;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(f.title)}。手順を時間の順に並べる">`;
+  if (cr.length) {
+    const x0 = xs[inner[0].id] - aw / 2 - 12, x1 = xs[inner[inner.length - 1].id] + aw / 2 + 12;
+    s += `<rect class="seq-sheet" x="${x0}" y="${top - 30}" width="${x1 - x0}" height="${H - top + 24}" rx="8"><title>この紙の中。外の相手は点線</title></rect>`;
+  }
+  const regionOf = (id) => (f.regions || []).find((r) => r.boxes.includes(id));
+  const runs = [];
+  for (const b of inner) {
+    const rg = regionOf(b.id), last = runs[runs.length - 1];
+    if (last && last.rg === rg) last.ids.push(b.id); else runs.push({ rg, ids: [b.id] });
+  }
+  for (const run of runs.filter((r) => r.rg)) {
+    const x0 = xs[run.ids[0]] - aw / 2, x1 = xs[run.ids[run.ids.length - 1]] + aw / 2, y = top - 8;
+    s += `<g class="region seq-ctx${run.rg.node === state.node ? ' is-node' : ''}" data-node="${run.rg.node}"><title>実行の文脈：${esc(NODES[run.rg.node].title)}</title>`
+      + `<path d="M${x0},${y + 5}V${y}H${x1}V${y + 5}"/><text class="on-0" x="${(x0 + x1) / 2}" y="${y - 6}" text-anchor="middle">${esc(run.rg.seq || NODES[run.rg.node].title)}</text></g>`;
+  }
+  for (const l of lanes) {
+    const x = xs[l.key], b = l.b, n = NODES[b.node], name = b.short || b.title, nm = seqName(name, aw - 8);
+    const attrs = l.outer ? `data-outbox="${b.id}" data-node="${b.node}"` : `data-box="${b.id}"`;
+    s += `<line class="lane${l.outer ? ' outer' : ''}" x1="${x}" x2="${x}" y1="${top + headH}" y2="${H - 8}"/>`
+      + `<g class="actor box k-${n.kind}${l.outer ? ' outer' : ''}${l.outer && A.hop.get(b.id) > 1 ? ' far' : ''}${b.node === state.node ? ' is-node' : ''}" ${attrs} tabindex="0" role="button" aria-label="${esc(n.title)}${l.outer ? '（外）' : ''}"><title>${esc(n.title)}${l.outer ? '：この紙の外' : ''}</title>`
+      + `<rect x="${x - aw / 2}" y="${top}" width="${aw}" height="${headH}" rx="${n.kind === 'hw' ? 2 : 8}"/>`
+      + ((t) => (t ? `<rect class="stripe s-${t}" x="${x - aw / 2 + 8}" y="${top + 3}" width="${aw - 16}" height="3" rx="1.5"/>` : ''))(toneOf(bandsOf(l.outer ? A.parent : f).find((bd) => bd.id === b.layer)))
+      + ((c) => (c && CTX[c] ? `<rect class="cstripe c-${CTX[c]}" x="${x - aw / 2 + 8}" y="${top + 3}" width="${aw - 16}" height="4" rx="2"/>` : ''))(
+        ((l.outer ? A.parent : f).regions || []).find((r) => r.boxes.includes(b.id))?.node || (!l.outer && NODES[b.node].kind === 'func' && state.path.length ? paperContext(state.path) : null))
+      + nm.lines.map((t, j) => `<text class="name${nm.small ? ' sm' : ''}${isJa(name) ? ' ja' : ''}" x="${x}" y="${top + (nm.lines.length > 1 ? 16 + 13 * j : nm.small ? 20 : 21)}" text-anchor="middle">${esc(t)}</text>`).join('')
+      + `<text class="layer" x="${x}" y="${top + (nm.lines.length > 1 ? 43 : 39)}" text-anchor="middle">${esc(l.outer ? '外・' + bandName(A.parent, b.layer) : bandName(f, b.layer))}</text></g>`;
+  }
+  rows.forEach((row, k) => {
+    const y = top + headH + 48 + k * stepH;
+    if (row.o) {
+      const o = row.o, x1 = xs['o:' + o.a.id], x2 = xs['o:' + o.b.id], dir = x2 > x1 ? 1 : -1;
+      const on = state.outer === o.i ? ' is-sel' : '';
+      s += outerize(edgeSvg(o.st, o.i, `M${x1 + dir * 7},${y}L${x2 - dir * 3},${y}`, ' outer far' + on), o, A.parent);
+      s += outerize(pillSvg(o.st, o.i, { mid: [(x1 + x2) / 2, y - 17], horizontal: true, segLen: Math.abs(x2 - x1) }, ' outer far' + on, true, 4, false, outerNum(o)), o, A.parent);
+      return;
+    }
+    if (row.c) {
+      const c = row.c, from = c.dir === 'in' ? 'o:' + c.nb.id : c.target, to = c.dir === 'in' ? c.target : 'o:' + c.nb.id;
+      const x1 = xs[from], x2 = xs[to], dir = x2 > x1 ? 1 : -1;
+      const on = state.outer === c.i ? ' is-sel' : '';
+      s += outerize(edgeSvg(c.st, c.i, `M${x1 + dir * 7},${y}L${x2 - dir * 3},${y}`, ' outer' + on), c, A.parent);
+      s += outerize(pillSvg(c.st, c.i, { mid: [(x1 + x2) / 2, y - 17], horizontal: true, segLen: Math.abs(x2 - x1) }, ' outer' + on, true, 4, false, outerNum(c)), c, A.parent);
+      return;
+    }
+    const st = row.st, i = row.i, x1 = xs[st.from], x2 = xs[st.to], dir = x2 > x1 ? 1 : -1;
+    const cls = stepClass(f, st, i);
+    if (st.alt) {
+      const fx0 = Math.min(x1, x2) - 40, fx1 = Math.max(x1, x2) + 40, label = `もし${st.alt.no}：${st.alt.when}`;
+      s += `<g class="altframe"><rect x="${fx0}" y="${y - 40}" width="${fx1 - fx0}" height="52" rx="4"/><path d="M${fx0},${y - 24}H${fx0 + textW(label, 11) + 12}l6,-8V${y - 40}"/>`
+        + `<text x="${fx0 + 6}" y="${y - 28}">${esc(label)}</text></g>`;
+    }
+    s += edgeSvg(st, i, `M${x1 + dir * 7},${y}L${x2 - dir * 3},${y}`, cls);
+    s += pillSvg(st, i, { mid: [(x1 + x2) / 2, y - 17], horizontal: true, segLen: Math.abs(x2 - x1) }, cls, true, 4);
+  });
+  return s + `</svg>`;
+}
+
+// Orthographic camera: yaw turns the stack, pitch tilts it. Returns screen x, screen y and depth (bigger is farther).
+function proj3(cam) {
+  const ct = Math.cos(cam.yaw), st = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  return (p) => {
+    const xr = p[0] * ct - p[1] * st, yr = p[0] * st + p[1] * ct;
+    return [xr, -(yr * sp + p[2] * cp), yr * cp - p[2] * sp];
+  };
+}
+// World: x along the plate, y from the plate's front edge back, z up. v = 0 is the flat map, v = 1 the stack.
+function scene3d(list, L, v, gap = GAP3) {
+  const bands = bandsOf(list[0]);
+  const plates = bands.map((layer, li) => {
+    const blocks = list.map((f) => {
+      const own = f.boxes.filter((b) => b.layer === layer.id);
+      return own.length ? Math.max(...own.map((b) => (b.lane || 0) + 1)) : 0;
+    });
+    const lanes = blocks.reduce((a, c) => a + c, 0), row = L.rows[li], zs = (bands.length - 1 - li) * gap;
+    return { layer, li, blocks, lanes, depth: lanes ? lanes * LANE_H : EMPTY_H, zs,
+      oy: (1 - v) * (L.height - row.y - row.h), z: v * zs, th: v * T3, gap: v * gap, v };
+  });
+  const boxes = [];
+  list.forEach((f, k) => {
+    for (const b of f.boxes) {
+      const p = plates[bands.findIndex((l) => l.id === b.layer)];
+      const before = p.blocks.slice(0, k).reduce((a, c) => a + c, 0);
+      const y0 = p.oy + (before + p.blocks[k] - 1 - (b.lane || 0)) * LANE_H + (LANE_H - BOX_Y - BOX_H);
+      const hb = (NODES[b.node].kind === 'store' ? HBMAX3 : HB3) * v;
+      boxes.push({ b, f, k, plate: p, x0: b.x, x1: b.x + b.w, y0, y1: y0 + BOX_H, z0: p.z, z1: p.z + hb });
+    }
+  });
+  return { plates, boxes };
+}
+// Edges keep to the aisle in front of the boxes and cross between plates in the air, like the band lines of the map.
+function route3d(sc, f, st) {
+  const A = sc.boxes.find((x) => x.f === f && x.b.id === st.from), B = sc.boxes.find((x) => x.f === f && x.b.id === st.to);
+  const [dxa, dxb] = st.dx || [0, 0];
+  const xa = (A.x0 + A.x1) / 2 + dxa, xb = (B.x0 + B.x1) / 2 + dxb;
+  const am = (A.z0 + A.z1) / 2, bm = (B.z0 + B.z1) / 2;
+  let pts;
+  if (A.plate === B.plate) {
+    const zm = Math.min(am, bm);
+    if (A.y0 === B.y0) {
+      const y = (A.y0 + A.y1) / 2;
+      pts = B.x0 > A.x0 ? [[A.x1, y, zm], [B.x0, y, zm]] : [[A.x0, y, zm], [B.x1, y, zm]];
+    } else if (B.y0 < A.y0) {
+      const ys = (A.y0 + B.y1) / 2;
+      pts = [[xa, A.y0, zm], [xa, ys, zm], [xb, ys, zm], [xb, B.y1, zm]];
+    } else {
+      const ys = (A.y1 + B.y0) / 2;
+      pts = [[xa, A.y1, zm], [xa, ys, zm], [xb, ys, zm], [xb, B.y0, zm]];
+    }
+  } else {
+    const ya = A.y0 - AISLE3, yb = B.y0 - AISLE3, p = B.plate, hmax = HBMAX3 * p.v;
+    const zt = p.zs > A.plate.zs ? p.z - (p.gap - hmax + p.th) / 2 : p.z + (p.gap + hmax - p.th) / 2;
+    pts = xa === xb && ya === yb
+      ? [[xa, A.y0, am], [xa, ya, am], [xb, yb, bm], [xb, B.y0, bm]]
+      : [[xa, A.y0, am], [xa, ya, am], [xa, ya, zt], [xb, ya, zt], [xb, yb, zt], [xb, yb, bm], [xb, B.y0, bm]];
+  }
+  return pts.filter((q, i) => i === 0 || Math.abs(q[0] - pts[i - 1][0]) + Math.abs(q[1] - pts[i - 1][1]) + Math.abs(q[2] - pts[i - 1][2]) > 0.01);
+}
+function bbox3(sc, P, e) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (q) => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); };
+  for (const p of sc.plates) {
+    for (const X of [LABEL_W * e, W]) for (const Y of [p.oy, p.oy + p.depth]) for (const Z of [p.z - p.th, p.z + HBMAX3 + 16]) add(P([X, Y, Z]));
+    const q = P([LABEL_W * e, p.oy + p.depth / 2, p.z]), tw = Math.max(textW(p.layer.name, 14), textW(p.layer.sub, 12));
+    const left = Math.min(P([LABEL_W * e, p.oy, p.z])[0], P([LABEL_W * e, p.oy + p.depth, p.z])[0]);
+    add([lerp(12, left - 16 - tw, e), q[1] - 20]);
+  }
+  return { x0, y0, w: x1 - x0, h: y1 - y0 };
+}
+function fit3(sc, P, VH, e) {
+  const b = bbox3(sc, P, e), m = 12 * e, s = Math.min(1, (W - 2 * m) / b.w, (VH - 2 * m) / b.h);
+  return { s, tx: (W - s * b.w) / 2 - s * b.x0, ty: (VH - s * b.h) / 2 - s * b.y0 };
+}
+function stackGap(list, cam) {
+  const lanes = Math.max(...bandsOf(list[0]).map((l) => list.reduce((a, f) => {
+    const own = f.boxes.filter((b) => b.layer === l.id);
+    return a + (own.length ? Math.max(...own.map((b) => (b.lane || 0) + 1)) : 0);
+  }, 0)));
+  const cp = Math.cos(cam.pitch), need = lanes * LANE_H * Math.sin(cam.pitch) / Math.max(0.3, Math.abs(Math.cos(cam.yaw))) + (HBMAX3 + T3) * cp + 24;
+  return Math.max(GAP3, need / Math.max(0.2, cp));
+}
+function height3d(list, L) {
+  const b = bbox3(scene3d(list, L, 1, stackGap(list, CAM0)), proj3(CAM0), 1), s = Math.min(1, (W - 24) / b.w);
+  return Math.ceil(b.h * s + 24);
+}
+function hull(points) {
+  const ps = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (arr) => {
+    const out = [];
+    for (const p of arr) { while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop(); out.push(p); }
+    return out;
+  };
+  const lower = half(ps), upper = half(ps.slice().reverse());
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+function rectHit(a, b) { return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]; }
+function segHit(p, q, r) {
+  let t0 = 0, t1 = 1;
+  const dx = q[0] - p[0], dy = q[1] - p[1];
+  const clip = (pp, qq) => {
+    if (pp === 0) return qq >= 0;
+    const u = qq / pp;
+    if (pp < 0) { if (u > t1) return false; if (u > t0) t0 = u; } else { if (u < t0) return false; if (u < t1) t1 = u; }
+    return true;
+  };
+  return clip(-dx, p[0] - r[0]) && clip(dx, r[2] - p[0]) && clip(-dy, p[1] - r[1]) && clip(dy, r[3] - p[1]);
+}
+// The emptiest spot along a route for its number tag: rects that hit boxes, tags or labels cost more.
+function placePill(st, sp, avoid, VH) {
+  const chip = st.data && st.data.chip !== false ? st.data.label : '';
+  const bw = st.kind === 'signal' ? 12 : 0, w = chip ? 26 + bw + textW(chip, 11, true) + 26 + 4 + 6 : 22 + bw;
+  let best = null;
+  sp.forEach((p, k) => {
+    if (k === sp.length - 1) return;
+    const q = sp[k + 1], len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (len < 24) return;
+    const hz = Math.abs(q[1] - p[1]) < Math.abs(q[0] - p[0]);
+    for (const f of [0.5, 0.32, 0.68, 0.18, 0.82]) {
+      const m = [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+      for (const side of hz ? [null, 'above'] : [st.side || 'right', st.side === 'left' ? 'right' : 'left']) {
+        const left = side === null || side === 'above' ? m[0] - w / 2 : side === 'left' ? m[0] - 6 - w : m[0] + 6;
+        const mid = side === 'above' ? [m[0], m[1] - 16] : m, rect = [left, mid[1] - 12, left + w, mid[1] + 12];
+        let cost = (f === 0.5 ? 0 : 0.5) + (side === 'above' ? 0.6 : 0) + (side === null && w + 28 > len ? 1.5 : 0) + (side && side !== 'above' && side !== (st.side || 'right') ? 0.3 : 0) - len / 400;
+        if (rect[0] < 2 || rect[2] > W - 2 || rect[1] < 2 || rect[3] > VH - 2) cost += 20;
+        for (const r of avoid) if (rectHit(rect, r)) cost += 4;
+        if (!best || cost < best.cost) best = { cost, rect, r: { mid, horizontal: hz, segLen: len }, side: side === 'above' ? null : side };
+      }
+    }
+  });
+  return best;
+}
+function pillSpot(sp) {
+  let best = -1, at = 0;
+  for (let k = 0; k < sp.length - 1; k++) {
+    const len = Math.hypot(sp[k + 1][0] - sp[k][0], sp[k + 1][1] - sp[k][1]);
+    if (len > best) { best = len; at = k; }
+  }
+  const p = sp[at], q = sp[at + 1];
+  return { mid: [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], horizontal: Math.abs(q[1] - p[1]) < Math.abs(q[0] - p[0]), segLen: best };
+}
+function box3d(bx, S, cam, e, sel) {
+  const b = bx.b, n = NODES[b.node], { x0, x1, y0, y1, z0, z1 } = bx, cur = bx.k === 0;
+  const poly = (c, ps) => `<polygon class="${c}" points="${ps.map((p) => xy(S(p))).join(' ')}"/>`;
+  const cls = (b.node === state.node ? ' is-node' : '') + (cur && sel && (sel.from === b.id || sel.to === b.id) ? ' is-end' : '') + (cur ? '' : ' ghost');
+  let s = `<g class="box k-${n.kind}${cls}" data-box="${b.id}"${cur ? '' : ` data-boxflow="${bx.f.id}"`} tabindex="0" role="button" aria-label="${esc(n.title)}（${esc(KIND_NAME[n.kind])}）">`
+    + `<title>${esc(n.title)}${cur ? '' : `（「${esc(bx.f.tab)}」の流れ）`}</title>`;
+  const bl = S([x0, y1, z1]);
+  if (n.kind === 'store' && e < 0.15) {
+    const fr = S([x1, y0, z1]);
+    s += `<rect class="back" x="${(bl[0] + 5).toFixed(1)}" y="${(bl[1] - 5).toFixed(1)}" width="${(fr[0] - bl[0]).toFixed(1)}" height="${(fr[1] - bl[1]).toFixed(1)}" rx="8" opacity="${(1 - e / 0.15).toFixed(2)}"/>`;
+  }
+  if (z1 - z0 > 0.5) {
+    s += poly('face', [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]]);
+    if (cam.yaw > 0.002) s += poly('face side', [[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]]);
+    if (cam.yaw < -0.002) s += poly('face side', [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]]);
+  }
+  s += poly('body', [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
+  const cells = b.slots ? b.slots.map((t) => [t, 0]) : b.bits ? [['tick 数', 0.64], ['進み', 0.36]] : null;
+  if (cells) {
+    const inner = x1 - x0 - 20, gapc = b.slots ? 4 : 0, ya = y1 - lerp(58, 64, e), yb = y1 - lerp(34, 42, e);
+    let cx = x0 + 10;
+    cells.forEach(([label, frac], k) => {
+      const w = b.slots ? (inner - (cells.length - 1) * gapc) / cells.length : inner * frac, c = S([cx + w / 2, (ya + yb) / 2, z1]);
+      const linked = !!b.slotSchema;
+      const gcls = b.slots ? `slot${linked ? ' linked' : ''}${linked && b.slotSchema === state.node ? ' hot' : ''}` : 'bits';
+      s += `<g class="${gcls}"${linked ? ` data-node="${b.slotSchema}"` : ''}>${poly(b.bits && k === 0 ? 'hi' : '', [[cx, ya, z1], [cx + w, ya, z1], [cx + w, yb, z1], [cx, yb, z1]])}`
+        + `<text x="${c[0].toFixed(1)}" y="${(c[1] + 4).toFixed(1)}" text-anchor="middle">${esc(label)}</text></g>`;
+      cx += w + gapc;
+    });
+  }
+  const ja = isJa(b.title), tw = textW(b.title, 14, !ja), c3 = S([(x0 + x1) / 2, cells ? y1 - 11 : (y0 + y1) / 2, z1]);
+  const label = `<g class="box-label${b.node === state.node ? ' on-node' : ''}${cur ? '' : ' ghost'}" data-box="${b.id}"${cur ? '' : ` data-boxflow="${bx.f.id}"`}>`
+    + `<text class="title${ja ? ' ja' : ''}" x="${lerp(bl[0] + 10, c3[0] - tw / 2, e).toFixed(1)}" y="${lerp(bl[1] + 22, c3[1] + 5, e).toFixed(1)}">${esc(b.title)}</text></g>`;
+  if (!cells && e < 0.6) {
+    const o = (1 - e / 0.6).toFixed(2);
+    if (b.ns) s += `<text class="ns" x="${(bl[0] + 10).toFixed(1)}" y="${(bl[1] + 39).toFixed(1)}" opacity="${o}">${esc(b.ns)}</text>`;
+    if (b.sub) s += `<text class="sub" x="${(bl[0] + 10).toFixed(1)}" y="${(bl[1] + 57).toFixed(1)}" opacity="${o}">${esc(b.sub)}</text>`;
+  }
+  return [s + `</g>`, label];
+}
+function region3d(rg, sc, f, S, v) {
+  const bs = rg.boxes.map((id) => sc.boxes.find((x) => x.f === f && x.b.id === id)).filter(Boolean);
+  const X0 = Math.max(LABEL_W + 6, Math.min(...bs.map((b) => b.x0)) - 12), X1 = Math.min(W - 4, Math.max(...bs.map((b) => b.x1)) + 12);
+  const Y0 = Math.min(...bs.map((b) => b.y0)) - 12, Y1 = Math.max(...bs.map((b) => b.y1)) + 18;
+  const Z0 = Math.min(...bs.map((b) => b.z0)), Z1 = Math.max(...bs.map((b) => b.z1)) + 10 * v;
+  const corners = [];
+  for (const X of [X0, X1]) for (const Y of [Y0, Y1]) for (const Z of [Z0, Z1]) corners.push(S([X, Y, Z]));
+  const lab = S([X0, Y1, Z1]);
+  return `<g class="region${rg.node === state.node ? ' is-node' : ''}" data-node="${rg.node}"><title>実行の文脈：${esc(NODES[rg.node].title)}</title>`
+    + `<polygon points="${hull(corners).map(xy).join(' ')}"/><text class="on-0" x="${(lab[0] + 10).toFixed(1)}" y="${(lab[1] + 4).toFixed(1)}">${esc(rg.label)}</text></g>`;
+}
+function render3d() {
+  const f = flow(), L = layout(f), list = [f, ...(state.all && !state.path.length ? FLOWS.filter((x) => x !== f) : [])];
+  const t = state.all ? 1 : anim.t, e = ease(t), v = ease(clamp((t - 0.15) / 0.85, 0, 1));
+  const cam = { yaw: state.cam.yaw * e, pitch: lerp(Math.PI / 2, state.cam.pitch, e) };
+  const sc = scene3d(list, L, v, stackGap(list, state.cam)), P = proj3(cam);
+  const VH = lerp(L.height, height3d(list, L), e), T = fit3(sc, P, VH, e);
+  // Contexts: one dashed outline on the flat map, a dashed footprint on each plate once stacked.
+  const foot = new Map();
+  for (const rg of f.regions || []) {
+    const bs = rg.boxes.map((id) => sc.boxes.find((x) => x.k === 0 && x.b.id === id)).filter(Boolean);
+    for (const pl of new Set(bs.map((b) => b.plate))) {
+      const on = bs.filter((b) => b.plate === pl);
+      if (!foot.has(pl)) foot.set(pl, []);
+      foot.get(pl).push({ rg, X0: Math.max(LABEL_W + 6, Math.min(...on.map((b) => b.x0)) - 12), X1: Math.min(W - 4, Math.max(...on.map((b) => b.x1)) + 12),
+        Y0: Math.min(...on.map((b) => b.y0)) - 12, Y1: Math.max(...on.map((b) => b.y1)) + 18 });
+    }
+  }
+  const S = (p) => { const q = P(p); return [q[0] * T.s + T.tx, q[1] * T.s + T.ty, q[2]]; };
+  const poly = (c, ps) => `<polygon class="${c}" points="${ps.map((p) => xy(S(p))).join(' ')}"/>`;
+  const line = (c, a, b) => { const p = S(a), q = S(b); return `<line class="${c}" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}"/>`; };
+  const sel = state.step != null ? f.steps[state.step] : null, px0 = LABEL_W * e;
+  const plateLabels = [], titles = [];
+  let s = `<svg viewBox="0 0 ${W} ${VH.toFixed(1)}" role="img" aria-label="${esc(f.title)}。層を板にして積み、手順の矢印で結ぶ">`;
+  if (e < 1) s += `<line class="band-line" x1="${LABEL_W}" x2="${LABEL_W}" y1="${TOP}" y2="${L.height - TOP}" opacity="${(1 - e).toFixed(2)}"/>`;
+  for (const p of [...sc.plates].sort((a, c) => a.zs - c.zs)) {
+    const z = p.z, zb = z - p.th, Y0 = p.oy, Y1 = p.oy + p.depth;
+    s += `<g class="plate">`;
+    if (p.th > 0.5) {
+      const tc = toneCls(p.layer);
+      s += poly('pface' + tc, [[px0, Y0, zb], [W, Y0, zb], [W, Y0, z], [px0, Y0, z]]);
+      if (cam.yaw > 0.002) s += poly('pface side' + tc, [[px0, Y0, zb], [px0, Y1, zb], [px0, Y1, z], [px0, Y0, z]]);
+      if (cam.yaw < -0.002) s += poly('pface side' + tc, [[W, Y0, zb], [W, Y1, zb], [W, Y1, z], [W, Y0, z]]);
+    }
+    s += poly(`ptop band-${bandShades(bandsOf(f))[p.li] ?? p.li % 2}${toneCls(p.layer)}`, [[px0, Y0, z], [W, Y0, z], [W, Y1, z], [px0, Y1, z]]);
+    let acc = 0;
+    p.blocks.forEach((nl, k) => {
+      for (let j = 1; j < nl; j++) s += line('lane-line', [LABEL_W, Y0 + (acc + j) * LANE_H, z], [W, Y0 + (acc + j) * LANE_H, z]);
+      acc += nl;
+      if (nl && acc < p.lanes) s += line('block-line', [LABEL_W, Y0 + acc * LANE_H, z], [W, Y0 + acc * LANE_H, z]);
+    });
+    const anchor = S([px0, Y0 + p.depth / 2, z]), tw = Math.max(textW(p.layer.name, 14), textW(p.layer.sub, 12)), lx = lerp(12, Math.min(P([px0, Y0, z])[0], P([px0, Y1, z])[0]) - 16 - tw, e) * T.s + T.tx;
+    plateLabels.push([lx - 2, anchor[1] - 18, lx + tw + 2, anchor[1] + 18]);
+    s += `<text class="band-name" x="${lx.toFixed(1)}" y="${(anchor[1] - 4).toFixed(1)}">${esc(p.layer.name)}</text><text class="band-sub" x="${lx.toFixed(1)}" y="${(anchor[1] + 14).toFixed(1)}">${esc(p.layer.sub)}</text>`;
+    if (!p.lanes) { const q = S([LABEL_W + 14, Y0 + p.depth / 2, z]); s += `<text class="band-empty" x="${q[0].toFixed(1)}" y="${(q[1] + 4).toFixed(1)}">${state.all ? 'どの流れも通らない' : 'この流れは通らない'}</text>`; }
+    if (e > 0) for (const r of foot.get(p) || []) {
+      s += `<g class="region${r.rg.node === state.node ? ' is-node' : ''}" data-node="${r.rg.node}" opacity="${e.toFixed(2)}"><title>実行の文脈：${esc(NODES[r.rg.node].title)}</title>`
+        + poly('', [[r.X0, r.Y0, p.z], [r.X1, r.Y0, p.z], [r.X1, r.Y1, p.z], [r.X0, r.Y1, p.z]]) + `</g>`;
+    }
+    const here = sc.boxes.filter((b) => b.plate === p).map((b) => ({ b, d: S([(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.z1])[2] })).sort((a, c) => c.d - a.d);
+    for (const { b } of here) { const [body, label] = box3d(b, S, cam, e, sel); s += body; titles.push(label); }
+    s += `</g>`;
+  }
+  if (e < 1) for (const rg of f.regions || []) s += region3d(rg, sc, f, S, v).replace('<g class="region', `<g opacity="${(1 - e).toFixed(2)}" class="region`);
+
+  if (state.all) {
+    for (const a of sc.boxes.filter((x) => x.k === 0)) for (const b of sc.boxes.filter((x) => x.k > 0 && x.b.node === a.b.node)) {
+      const p = S([(a.x0 + a.x1) / 2, (a.y0 + a.y1) / 2, a.z1 + 6]), q = S([(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, b.z1 + 6]);
+      s += `<g class="same" data-node="${a.b.node}"><title>同じ節：${esc(NODES[a.b.node].title)}。実体は 1 つ</title>`
+        + `<line class="same-link" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}"/>`
+        + `<text class="same-label" x="${((p[0] + q[0]) / 2).toFixed(1)}" y="${((p[1] + q[1]) / 2 - 6).toFixed(1)}" text-anchor="middle">同じ節</text></g>`;
+    }
+    list.slice(1).forEach((g, j) => {
+      const k = j + 1, p = [...sc.plates].sort((a, c) => c.zs - a.zs).find((pl) => pl.blocks[k] > 0);
+      if (!p) return;
+      const back = p.blocks.slice(0, k + 1).reduce((a, c) => a + c, 0), q = S([LABEL_W + 14, p.oy + back * LANE_H - 12, p.z]);
+      s += `<text class="ghost-label" data-goflow="${g.id}" x="${q[0].toFixed(1)}" y="${q[1].toFixed(1)}">奥：「${esc(g.tab)}」の流れ（押すと手前へ）</text>`;
+    });
+  }
+  const shown = clamp((t - 0.85) / 0.15, 0, 1);
+  const avoid = sc.boxes.filter((b) => b.k === 0).map((b) => {
+    const ps = [[b.x0, b.y0, b.z1], [b.x1, b.y0, b.z1], [b.x0, b.y1, b.z1], [b.x1, b.y1, b.z1]].map(S);
+    return [Math.min(...ps.map((q) => q[0])) - 2, Math.min(...ps.map((q) => q[1])) - 2, Math.max(...ps.map((q) => q[0])) + 2, Math.max(...ps.map((q) => q[1])) + 2];
+  }).concat(plateLabels);
+  const routes = f.steps.map((st) => route3d(sc, f, st).map(S));
+  let pills = '';
+  if (shown > 0) {
+    for (const g of list.slice(1)) for (const st of g.steps) {
+      s += `<g class="edge ghost k-${st.kind}"><path class="line" d="${pathD(route3d(sc, g, st).map(S))}" marker-end="url(#${st.kind === 'return' ? 'o' : 'h'})"/></g>`;
+    }
+    s += `<g opacity="${shown.toFixed(2)}">` + f.steps.map((st, i) => edgeSvg(st, i, pathD(routes[i]), stepClass(f, st, i))).join('') + `</g>`;
+    f.steps.forEach((st, i) => {
+      const spot = placePill(st, routes[i], avoid, VH);
+      if (!spot) return;
+      avoid.push(spot.rect);
+      pills += pillSvg(Object.assign({}, st, { side: spot.side || st.side }), i, spot.r, stepClass(f, st, i), true, 4, true);
+    });
+  }
+  s += titles.join('');
+  if (e > 0) for (const rg of f.regions || []) {
+    const label = rg.label3 || rg.label, lw = textW(label, 12) + 8;
+    const segs = routes.flatMap((sp) => sp.slice(1).map((q, k) => [sp[k], q]));
+    let best = null;
+    for (const [pl, rs] of [...foot.entries()].filter(([, x]) => x.some((r) => r.rg === rg)).sort((a, c) => c[0].zs - a[0].zs)) {
+      const r = rs.find((x) => x.rg === rg), hz = pl.z + HBMAX3 * v + 4;
+      const spots = [
+        ['start', S([r.X0, r.Y1, hz]), 4, 0], ['end', S([r.X1, r.Y1, hz]), -4, 0],
+        ['start', S([r.X1, (r.Y0 + r.Y1) / 2, pl.z]), 10, 4], ['end', S([r.X0, (r.Y0 + r.Y1) / 2, pl.z]), -10, 4],
+        ['start', S([r.X0, pl.oy, pl.z - pl.th]), 4, 16],
+      ];
+      spots.forEach(([anchor, q, ox, oy], k) => {
+        const x = q[0] + ox, y = q[1] + oy, rect = anchor === 'start' ? [x - 2, y - 12, x + lw, y + 4] : [x - lw, y - 12, x + 2, y + 4];
+        let cost = k * 0.2;
+        if (rect[0] < 2 || rect[2] > W - 2 || rect[1] < 2 || rect[3] > VH - 2) cost += 20;
+        for (const o of avoid) if (rectHit(rect, o)) cost += 4;
+        for (const [a, b] of segs) if (segHit(a, b, rect)) cost += 3;
+        if (!best || cost < best.cost) best = { cost, x, y, anchor, rect };
+      });
+    }
+    if (!best) continue;
+    avoid.push(best.rect);
+    s += `<g class="region${rg.node === state.node ? ' is-node' : ''}" data-node="${rg.node}" opacity="${e.toFixed(2)}"><title>実行の文脈：${esc(NODES[rg.node].title)}</title>`
+      + `<text class="on-0" x="${best.x.toFixed(1)}" y="${best.y.toFixed(1)}" text-anchor="${best.anchor}">${esc(label)}</text></g>`;
+  }
+  if (pills) s += `<g opacity="${shown.toFixed(2)}">${pills}</g>`;
+  const flat = 1 - clamp(t / 0.12, 0, 1);
+  if (flat > 0) {
+    const routes = [];
+    for (const st of f.steps) routes.push(route(L, f, st, routes));
+    const spots = mapPillSpots(L, f, routes);
+    s += `<g opacity="${flat.toFixed(2)}">` + f.steps.map((st, i) => edgeSvg(st, i, routes[i].d, stepClass(f, st, i))).join('')
+      + f.steps.map((st, i) => pillSvg(st, i, spots[i], stepClass(f, st, i), true, LABEL_W + 4)).join('') + `</g>`;
+  }
+  return s + `</svg>`;
+}
+// Time as depth: x is the participant, height is the layer, depth is the step.
+// From the front it reads as the layered map, from above as the sequence.
+function timeScene(f) {
+  const order = seqOrder(f), left = 64, right = W - 64, gap = (right - left) / (order.length - 1);
+  const xs = Object.fromEntries(order.map((b, i) => [b.id, left + i * gap])), hw = Math.min(124, gap - 8);
+  const bands = [];
+  let z = 0;
+  for (const l of [...bandsOf(f)].reverse()) {
+    const own = f.boxes.filter((b) => b.layer === l.id);
+    const lanes = own.length ? Math.max(...own.map((b) => (b.lane || 0) + 1)) : 0, h = lanes ? lanes * TIME.laneZ : TIME.emptyZ;
+    bands.push({ layer: l, li: bandsOf(f).indexOf(l), z0: z, z1: z + h, lanes });
+    z += h;
+  }
+  const heads = order.map((b) => {
+    const band = bands.find((x) => x.layer.id === b.layer);
+    return { b, x: xs[b.id], zc: band.z1 - ((b.lane || 0) + 0.5) * TIME.laneZ, band };
+  });
+  const yStep = (i) => -TIME.headD - TIME.stepD * (i + 1);
+  return { order, heads, bands, hw, top: z, yStep, yEnd: yStep(f.steps.length - 1) - TIME.stepD * 0.6, wall0: left - hw / 2 - 18, wall1: right + hw / 2 + 18 };
+}
+function timeRoute(sc, st, i) {
+  const a = sc.heads.find((h) => h.b.id === st.from), b = sc.heads.find((h) => h.b.id === st.to), y = sc.yStep(i), zm = (a.zc + b.zc) / 2;
+  const pts = Math.abs(a.zc - b.zc) < 1 ? [[a.x, y, a.zc], [b.x, y, b.zc]] : [[a.x, y, a.zc], [a.x, y, zm], [b.x, y, zm], [b.x, y, b.zc]];
+  const p = pts[pts.length - 2], q = pts[pts.length - 1], len = Math.hypot(q[0] - p[0], q[2] - p[2]) || 1;
+  pts[pts.length - 1] = [q[0] - (q[0] - p[0]) / len * 5, y, q[2] - (q[2] - p[2]) / len * 5];
+  return pts;
+}
+function timePts(sc, P, k) {
+  const pts = [];
+  for (const X of [sc.wall0, sc.wall1]) for (const Z of [-24, sc.top]) for (const Y of [0, sc.yEnd]) pts.push(P([X, Y, Z]));
+  pts.push(P([sc.wall0 - 30, sc.yEnd, -14]));
+  for (const bd of sc.bands) {
+    const q = P([sc.wall0, 0, (bd.z0 + bd.z1) / 2]), tw = Math.max(textW(bd.layer.name, 14), textW(bd.layer.sub, 12));
+    pts.push([q[0] - (14 + tw) * 1.35, q[1]]);
+  }
+  return pts;
+}
+function fitPts(pts, VH) {
+  const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), bw = Math.max(...xs) - x0 || 1, bh = Math.max(...ys) - y0 || 1, m = 14;
+  const s = Math.min(1, (W - 2 * m) / bw, (VH - 2 * m) / bh);
+  return { s, tx: (W - s * bw) / 2 - s * x0, ty: (VH - s * bh) / 2 - s * y0 };
+}
+function heightTime(f) {
+  const pts = timePts(timeScene(f), proj3(CAMT0), Math.pow(Math.sin(CAMT0.pitch), 2)), xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+  const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+  return Math.ceil(bh * Math.min(1, (W - 28) / bw) + 28);
+}
+function renderTime() {
+  const f = mainOnly(flow()), sc = timeScene(f), cam = state.camT, P = proj3(cam), k = Math.pow(Math.sin(cam.pitch), 2), lo = 1 - k;
+  const VH = heightTime(f), T = fitPts(timePts(sc, P, k), VH);
+  const S = (p) => { const q = P(p); return [q[0] * T.s + T.tx, q[1] * T.s + T.ty, q[2]]; };
+  const poly = (c, ps) => `<polygon class="${c}" points="${ps.map((q) => xy(S(q))).join(' ')}"/>`;
+  const sel = state.step != null ? f.steps[state.step] : null;
+  let s = `<svg viewBox="0 0 ${W} ${VH}" role="img" aria-label="${esc(f.title)}。手順の順番を奥行きにした立体。正面から見ると層の地図、真上から見ると時系列">`;
+  // The back wall carries the layer bands, as the map does.
+  const shade = bandShades(bandsOf(f));
+  for (const bd of sc.bands) s += poly(`ptop band-${shade[bd.li] ?? bd.li % 2}${toneCls(bd.layer)}`, [[sc.wall0, 0, bd.z0], [sc.wall1, 0, bd.z0], [sc.wall1, 0, bd.z1], [sc.wall0, 0, bd.z1]]);
+  if (lo > 0.02) {
+    for (const bd of sc.bands) {
+      const q = S([sc.wall0, 0, (bd.z0 + bd.z1) / 2]);
+      s += `<g opacity="${lo.toFixed(2)}"><text class="band-name" x="${(q[0] - 10).toFixed(1)}" y="${(q[1] - 2).toFixed(1)}" text-anchor="end">${esc(bd.layer.name)}</text>`
+        + `<text class="band-sub" x="${(q[0] - 10).toFixed(1)}" y="${(q[1] + 14).toFixed(1)}" text-anchor="end">${esc(bd.layer.sub)}</text></g>`;
+      if (!bd.lanes) { const q2 = S([sc.wall0 + 14, 0, (bd.z0 + bd.z1) / 2]); s += `<text class="band-empty" x="${q2[0].toFixed(1)}" y="${(q2[1] + 4).toFixed(1)}" opacity="${lo.toFixed(2)}">この流れは通らない</text>`; }
+    }
+    // a context frame for each run of its participants that stand side by side
+    for (const rg of f.regions || []) {
+      const idx = rg.boxes.map((id) => sc.order.findIndex((b) => b.id === id)).filter((i) => i >= 0).sort((a, c) => a - c);
+      const runs = [];
+      for (const i of idx) { const r = runs[runs.length - 1]; if (r && i === r[r.length - 1] + 1) r.push(i); else runs.push([i]); }
+      runs.forEach((run, j) => {
+        const hs = run.map((i) => sc.heads[i]);
+        const X0 = Math.min(...hs.map((h) => h.x)) - sc.hw / 2 - 7, X1 = Math.max(...hs.map((h) => h.x)) + sc.hw / 2 + 7;
+        const Z0 = Math.min(...hs.map((h) => h.zc)) - TIME.headH / 2 - 7, Z1 = Math.max(...hs.map((h) => h.zc)) + TIME.headH / 2 + 18;
+        const lab = S([X0, 0, Z1]);
+        const named = clamp((25 * DEG - Math.abs(cam.yaw)) / (15 * DEG), 0, 1);
+        s += `<g class="region${rg.node === state.node ? ' is-node' : ''}" data-node="${rg.node}" opacity="${(lo * 0.8).toFixed(2)}"><title>実行の文脈：${esc(NODES[rg.node].title)}</title>`
+          + poly('', [[X0, 0, Z0], [X1, 0, Z0], [X1, 0, Z1], [X0, 0, Z1]])
+          + (j === 0 && named > 0 ? `<text opacity="${named.toFixed(2)}" class="on-0" x="${(lab[0] + 6).toFixed(1)}" y="${(lab[1] + 12).toFixed(1)}">${esc(rg.label3 || rg.label)}</text>` : '') + `</g>`;
+      });
+    }
+  }
+  // Each participant is a block on the wall with its lifeline running toward the viewer.
+  const titles = [], avoid = [];
+  const heads = [...sc.heads].sort((a, c) => S([c.x, -TIME.headD / 2, c.zc])[2] - S([a.x, -TIME.headD / 2, a.zc])[2]);
+  for (const h of heads) {
+    const b = h.b, n = NODES[b.node], x0 = h.x - sc.hw / 2, x1 = h.x + sc.hw / 2, z0 = h.zc - TIME.headH / 2, z1 = h.zc + TIME.headH / 2, y0 = -TIME.headD, y1 = 0;
+    const cls = (b.node === state.node ? ' is-node' : '') + (sel && (sel.from === b.id || sel.to === b.id) ? ' is-end' : '');
+    s += `<g class="box k-${n.kind}${cls}" data-box="${b.id}" tabindex="0" role="button" aria-label="${esc(n.title)}（${esc(KIND_NAME[n.kind])}）"><title>${esc(n.title)}</title>`;
+    if (cam.yaw > 0.002) s += poly('face side', [[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]]);
+    if (cam.yaw < -0.002) s += poly('face side', [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]]);
+    s += poly(k < 0.5 ? 'face' : 'body', [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]);
+    s += poly(k < 0.5 ? 'body' : 'face', [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]]) + `</g>`;
+    const fc = S([h.x, y0, h.zc]), tc = S([h.x, (y0 + y1) / 2, z1]), ax = lerp(fc[0], tc[0], k), ay = lerp(fc[1], tc[1], k);
+    const name = b.short || b.title, second = k > 0.5 ? bandName(f, b.layer) : b.ns || KIND_NAME[n.kind];
+    const straight = clamp((12 * DEG - Math.abs(cam.yaw)) / (8 * DEG), 0, 1) * (k < 0.5 ? clamp(1 - k / 0.2, 0, 1) : clamp((k - 0.8) / 0.2, 0, 1));
+    titles.push(`<g class="box-label${b.node === state.node ? ' on-node' : ''}" data-box="${b.id}"><text class="title${isJa(name) ? ' ja' : ''}" x="${ax.toFixed(1)}" y="${(ay - 1).toFixed(1)}" text-anchor="middle">${esc(name)}</text>`
+      + (straight > 0 ? `<text class="ns${isJa(second) ? ' ja' : ''}" x="${ax.toFixed(1)}" y="${(ay + 13).toFixed(1)}" text-anchor="middle" opacity="${straight.toFixed(2)}">${esc(second)}</text>` : '') + `</g>`);
+    const ps = [[x0, y0, z0], [x1, y0, z0], [x0, y1, z1], [x1, y1, z1], [x0, y0, z1], [x1, y0, z1]].map(S);
+    avoid.push([Math.min(...ps.map((q) => q[0])), Math.min(...ps.map((q) => q[1])), Math.max(...ps.map((q) => q[0])), Math.max(...ps.map((q) => q[1]))]);
+  }
+  for (const h of sc.heads) {
+    const a = S([h.x, -TIME.headD, h.zc]), b = S([h.x, sc.yEnd, h.zc]);
+    s += `<line class="rail" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"/>`;
+  }
+  const ta = S([sc.wall0 - 30, -TIME.headD, -14]), tb = S([sc.wall0 - 30, sc.yEnd, -14]);
+  if (Math.hypot(tb[0] - ta[0], tb[1] - ta[1]) > 40) {
+    s += `<g class="time-axis"><line x1="${ta[0].toFixed(1)}" y1="${ta[1].toFixed(1)}" x2="${tb[0].toFixed(1)}" y2="${tb[1].toFixed(1)}" marker-end="url(#h)"/>`
+      + f.steps.map((st, i) => {
+        const p = S([sc.wall0 - 30, sc.yStep(i), -14]), q = S([sc.wall0 - 22, sc.yStep(i), -14]);
+        return `<line class="tick" x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}"/><text class="num" x="${(p[0] - 6).toFixed(1)}" y="${(p[1] + 4).toFixed(1)}" text-anchor="end">${i + 1}</text>`;
+      }).join('')
+      + `<text x="${(tb[0] + 8).toFixed(1)}" y="${(tb[1] + 4).toFixed(1)}">時間</text></g>`;
+  }
+  // Steps, from the first (by the wall) to the last (nearest the viewer).
+  const routes = f.steps.map((st, i) => timeRoute(sc, st, i).map(S));
+  f.steps.forEach((st, i) => { s += edgeSvg(st, i, pathD(routes[i]), stepClass(f, st, i)); });
+  s += titles.join('');
+  const apart = TIME.stepD * T.s * Math.hypot(Math.sin(cam.yaw), Math.cos(cam.yaw) * Math.sin(cam.pitch)), seen = clamp((apart - 6) / 12, 0, 1);
+  f.steps.forEach((st, i) => {
+    if (seen === 0 && state.step !== i) return;
+    const spot = placePill(st, routes[i], avoid, VH);
+    if (!spot) return;
+    avoid.push(spot.rect);
+    const tag = pillSvg(Object.assign({}, st, { side: spot.side || st.side }), i, spot.r, stepClass(f, st, i), true, 4, true);
+    s += state.step === i || seen === 1 ? tag : `<g opacity="${seen.toFixed(2)}">${tag}</g>`;
+  });
+  return s + `</svg>`;
+}
+function toolsTimeHtml() {
+  return `<span>ドラッグで回せます</span><button type="button" data-camto="front">正面から（層の地図）</button>`
+    + `<button type="button" data-camto="tilt">斜めから</button><button type="button" data-camto="top">真上から（時系列）</button>`;
+}
+function tweenCam(key, to, dur, done) {
+  cancelAnimationFrame(anim.raf);
+  const from = { ...state[key] }, start = performance.now();
+  if (reduceMotion) { state[key] = { ...to }; drawCanvas(); if (done) done(); return; }
+  const step = (now) => {
+    const k = Math.min(1, (now - start) / dur), e = ease(k);
+    state[key] = { yaw: lerp(from.yaw, to.yaw, e), pitch: lerp(from.pitch, to.pitch, e) };
+    drawCanvas();
+    if (k < 1) anim.raf = requestAnimationFrame(step);
+    else if (done) done();
+  };
+  anim.raf = requestAnimationFrame(step);
+}
+function toolsAroundHtml() {
+  return `<span>まわり</span>` + [[1, 'すぐ外'], [2, 'さらに外まで']]
+    .map(([d, t]) => `<button type="button" data-depth="${d}" aria-pressed="${state.depth === d}">${t}</button>`).join('');
+}
+function tools3dHtml() {
+  return `<span>ドラッグで回せます</span><button type="button" data-resetcam="1">角度を戻す</button>`
+    + (state.path.length ? '' : `<button type="button" data-toggleall="1" aria-pressed="${state.all}">ほかの流れも重ねる</button>`);
+}
+function drawCanvas() {
+  const canvas = document.getElementById('canvas');
+  canvas.classList.toggle('is-3d', state.view === '3d' || state.view === 'time');
+  canvas.innerHTML = state.view === 'seq' ? renderSeq() : state.view === '3d' ? render3d() : state.view === 'time' ? renderTime() : renderMap();
+}
+function animateTo(target, done) {
+  cancelAnimationFrame(anim.raf);
+  const from = anim.t, start = performance.now(), dur = 950 * Math.abs(target - from);
+  const step = (now) => {
+    const k = dur ? Math.min(1, (now - start) / dur) : 1;
+    anim.t = lerp(from, target, k);
+    drawCanvas();
+    if (k < 1) anim.raf = requestAnimationFrame(step);
+    else if (done) done();
+  };
+  anim.raf = requestAnimationFrame(step);
+}
+
+function arrowSample(k) {
+  const end = k === 'return' ? 'o' : 'h';
+  const start = k === 'data' ? ' marker-start="url(#dot)"' : k === 'syscall' ? ' marker-start="url(#gate)"' : '';
+  return `<svg width="46" height="14" viewBox="0 0 46 14" aria-hidden="true"><g class="edge k-${k}"><path class="line" d="M7,7L43,7"${start} marker-end="url(#${end})"/>${BEADS.includes(k) ? '<path class="flow" d="M7,7L43,7"/>' : ''}</g>${k === 'signal' ? bolt(24, 7) : ''}</svg>`;
+}
+function legendHtml() {
+  let h = state.lens
+    ? `<ul class="legend"><li class="lg-h">走る</li>` + RUNS.map((r, i) => `<li><i class="sw c-${RUN_SLOTS[i]}"></i>${esc(r)}</li>`).join('')
+      + (Object.keys(CTX).some((id) => NODES[id].kernel) ? `<li><i class="sw c-k"></i>斜線はカーネルの中で走る所</li>` : '') + `</ul>`
+    : `<ul class="legend"><li class="lg-h">層</li>` + LAYERS.map((l) => `<li>${SLOT[l.id] ? `<i class="sw s-${SLOT[l.id]}"></i>` : ''}${esc(l.name)}</li>`).join('') + `</ul>`;
+  h += `<ul class="legend"><li class="lg-h">矢印</li>` + Object.entries(EDGE_KINDS).map(([k, v]) => `<li>${arrowSample(k)}${esc(v)}</li>`).join('')
+    + `<li class="lg-note">線の動きは進む向き。通知は速く、列は遅い</li>`;
+  h += `</ul><ul class="legend"><li class="lg-h">形</li>`;
+  h += `<li><svg width="40" height="20" viewBox="0 0 40 20" aria-hidden="true"><rect class="lg-box" x="1" y="2" width="38" height="16" rx="4"/><text class="lg-t" x="6" y="14">f(x)</text></svg>関数（名前と引数）</li>`;
+  h += `<li><svg width="42" height="22" viewBox="0 0 42 22" aria-hidden="true"><rect class="lg-back" x="4" y="1" width="36" height="17" rx="3"/><rect class="lg-box" x="1" y="4" width="36" height="17" rx="3"/><rect class="lg-cell" x="4" y="8" width="9" height="9"/><rect class="lg-cell" x="15" y="8" width="9" height="9"/><rect class="lg-cell" x="26" y="8" width="8" height="9"/></svg>置き場（中に入るもの）</li>`;
+  h += `<li><svg width="40" height="20" viewBox="0 0 40 20" aria-hidden="true"><rect class="lg-box" x="1" y="2" width="38" height="16" rx="1" style="stroke-width:2"/><rect class="lg-cell hi" x="4" y="5" width="22" height="10"/><rect class="lg-cell" x="26" y="5" width="10" height="10"/></svg>レジスタ（ビットの並び）</li>`;
+  h += `<li><svg width="58" height="20" viewBox="0 0 58 20" aria-hidden="true"><g class="chip"><rect x="1" y="1" width="56" height="18" rx="4"/><path d="M6,5.5h10v9h-10z M6,8.5h10 M10,8.5v6"/><text x="21" y="14">Type</text></g></svg>データの形（押すとフィールド）</li>`;
+  h += `<li><svg width="40" height="20" viewBox="0 0 40 20" aria-hidden="true"><g class="region"><rect x="2" y="3" width="36" height="14" rx="5"/></g></svg>実行の文脈</li>`;
+  h += `<li><svg width="58" height="22" viewBox="0 0 58 22" aria-hidden="true"><g class="pill alt"><rect class="pbg" x="1" y="1" width="56" height="20" rx="10"/><g class="num"><rect x="4" y="3.5" width="40" height="15" rx="7.5"/><text x="24" y="14.5" text-anchor="middle">もしA</text></g></g></svg>別の道（条件付き）</li>`;
+  h += `<li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><g class="pill"><path class="fork" d="M11,4L18,11L11,18L4,11Z"/></g></svg>手順の中で分かれる</li>`;
+  h += `<li><svg width="66" height="22" viewBox="0 0 66 22" aria-hidden="true"><g class="diveb"><rect x="1" y="1" width="64" height="20" rx="10"/><path d="M10,5h7l3,3v9h-10z M17,5v3h3"/><text x="25" y="15.5">中の紙</text></g></svg>箱の中の紙（押すと潜る）</li>`;
+  if (state.path.length) h += `<li><svg width="40" height="22" viewBox="0 0 40 22" aria-hidden="true"><g class="pill outer"><rect class="pbg" x="1" y="1" width="38" height="20" rx="10"/><g class="num"><rect x="4" y="3.5" width="28" height="15" rx="7.5"/><text x="18" y="14.5" text-anchor="middle">外4</text></g></g></svg>外の流れの手順（押すと外へ）</li>`
+    + `<li><svg width="18" height="22" viewBox="0 0 18 22" aria-hidden="true"><line class="band-line" x1="1" x2="17" y1="11" y2="11"/><circle class="port" cx="9" cy="11" r="4"/></svg>紙の縁の口</li>`;
+  return h + `</ul>`;
+}
+
+// ---- Text with pointers, signatures and shapes ----
+function linkify(s) {
+  let out = '', last = 0;
+  for (const m of s.matchAll(/!?\[\[([\w.\-]+)\]\]/g)) {
+    out += esc(s.slice(last, m.index));
+    const n = NODES[m[1]];
+    out += n ? `<a href="#" data-node="${m[1]}">${esc(n.title)}</a>` : `<span class="muted">[[${esc(m[1])}]]</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
+// A type name in a signature or a field points at the one node that defines that shape.
+function typeLinks(s) {
+  return esc(s).replace(/\b[A-Z][A-Za-z]*\b/g, (m) => (SCHEMA_BY_NAME[m] ? `<a href="#" data-node="${SCHEMA_BY_NAME[m]}">${m}</a>` : m));
+}
+function shapeHtml(id, hot) {
+  const n = NODES[id], on = new Set(hot || []), inStep = !!hot;
+  const fld = (code, note, isHot, always) => `<div class="fld${isHot ? ' hot' : ''}"${note ? ` title="${esc(plain(note))}"` : ''}><span class="ln">${code}</span>`
+    + (note && (!inStep || isHot || always) ? `<span class="note">${linkify(note)}</span>` : '') + `</div>`;
+  let h = '';
+  if (n.kind === 'schema') {
+    h = `<span class="ln kw">struct ${esc(n.title)} {</span>` + n.fields.map(([t, f, note]) => fld(`    ${typeLinks(t)} ${esc(f)};`, note, on.has(f))).join('') + `<span class="ln kw">};</span>`;
+  } else if (n.kind === 'enum') {
+    h = `<span class="ln kw">enum ${esc(n.title)} {</span>`
+      + n.values.map(([v, note]) => (v === '…' ? fld(`    // …`, note, false, true) : fld(`    ${esc(v)},`, note, on.has(v)))).join('') + `<span class="ln kw">};</span>`;
+  } else if (n.kind === 'hw') {
+    h = `<span class="ln kw">${esc(n.reg)}（32 ビット）</span>` + n.fields.map(([bits, f, note]) => fld(`    [${esc(bits)}]  ${esc(f)}`, note, on.has(f))).join('');
+  } else {
+    h = n.fields.map(([t, f, note]) => fld(`${typeLinks(t)} ${esc(f)};`, note, on.has(f))).join('');
+  }
+  return `<div class="shape">${h}</div>`;
+}
+function apiCard(a) {
+  let h = `<div class="api"><p class="api-h">API</p><pre><code>${typeLinks(a.sig)}</code></pre>`;
+  const rows = (a.params || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${linkify(v)}</dd>`).join('') + (a.ret ? `<dt>返す</dt><dd>${linkify(a.ret)}</dd>` : '');
+  if (rows) h += `<dl>${rows}</dl>`;
+  return h + `</div>`;
+}
+function renderText(text, depth = 0) {
+  return text.split('\n').map((para) => {
+    const m = para.match(/^!\[\[([\w.\-]+)\]\]$/);
+    if (!m) return `<p>${linkify(para)}</p>`;
+    const n = NODES[m[1]];
+    if (!n) return `<p class="muted">[[${esc(m[1])}]]</p>`;
+    const body = depth > 0 ? `<p>${linkify(n.text.split('\n')[0])}</p>`
+      : n.svg ? `<div class="scroll-x fig">${n.svg()}</div>` + renderText(n.text, depth + 1)
+      : ((n.fields || n.values) ? shapeHtml(m[1]) : '') + renderText(n.text, depth + 1);
+    return `<figure class="embed"><figcaption>埋め込み：<a href="#" data-node="${m[1]}">${esc(n.title)}</a>（${esc(LAYER_NAME[n.layer])}）。実体はそちらに 1 つだけ</figcaption>${body}</figure>`;
+  }).join('');
+}
+function references(id) {
+  const out = [], target = NODES[id];
+  const re = target && (target.kind === 'schema' || target.kind === 'enum') ? new RegExp(`\\b${target.title}\\b`) : null;
+  for (const [k, n] of Object.entries(NODES)) {
+    if (k === id) continue;
+    const extra = JSON.stringify([n.api || {}, n.fields || [], n.values || []]);
+    if (n.text.includes(`![[${id}]]`)) out.push({ kind: '埋め込み', node: k });
+    else if (n.text.includes(`[[${id}]]`) || extra.includes(`[[${id}]]`)) out.push({ kind: 'リンク', node: k });
+    else if (re && n.api && re.test(n.api.sig)) out.push({ kind: 'API の型', node: k });
+    else if (re && n.fields && n.kind !== 'hw' && n.fields.some(([t]) => re.test(t))) out.push({ kind: 'フィールドの型', node: k });
+  }
+  for (const f of allPapers()) {
+    f.steps.forEach((st, i) => {
+      if (st.ref === id) out.push({ kind: '手順', paper: f.id, step: i });
+      else if (st.data && st.data.schema === id) out.push({ kind: 'データとして通る', paper: f.id, step: i });
+    });
+    for (const b of f.boxes) if (b.slotSchema === id) out.push({ kind: '置き場の中身', paper: f.id, step: null });
+    for (const rg of f.regions || []) if (rg.node === id) out.push({ kind: '文脈の枠', paper: f.id, step: null });
+  }
+  for (const [k, n] of Object.entries(NODES)) if (k !== id && n.paper && PAPERS[n.paper] && PAPERS[n.paper].boxes.some((b) => b.node === id)) out.push({ kind: '中の紙に出てくる', node: k });
+  return out;
+}
+// The way a data shape travels: each flow's steps in order, going into a paper where a step calls a box that has one.
+function lineage(id) {
+  const out = [];
+  const walk = (top, f, path, depth, seen, via) => {
+    for (const row of timeline(f, null)) {
+      const st = row.st;
+      if (st.data && st.data.schema === id) out.push({ top, f, path, i: row.i, st, depth, via });
+      const box = !st.alt && intoPaper(f, st), key = box && box.id + '@' + path.join('/');
+      if (box && !seen.has(key)) { seen.add(key); walk(top, PAPERS[NODES[box.node].paper], [...path, box.id], depth + 1, seen, box); }
+    }
+  };
+  for (const top of FLOWS) walk(top, top, [], 0, new Set(), null);
+  return out;
+}
+function lineageHtml(id) {
+  const way = lineage(id);
+  if (!way.length) return '';
+  const go = (e) => `data-goto="${e.top.id}|${e.path.join(',')}|${e.i}"`;
+  let h = `<h3 class="panel-h">このデータが通る道（${way.length} か所）</h3><ol class="lineage">`;
+  let top = null, here = null;
+  const short = (st) => st.verb || (plain(st.label).length > 16 ? plain(st.label).slice(0, 16) + '…' : plain(st.label));
+  for (const e of way) {
+    if (e.top !== top) { top = e.top; here = null; h += `<li class="lin-flow">${esc(paperLabel(top))}</li>`; }
+    if (e.f !== here) {
+      if (e.depth) h += `<li class="lin-paper" style="--d:${e.depth}">${esc(e.f.tab)} の中</li>`;
+      else if (here) h += `<li class="lin-paper" style="--d:1">${esc(paperLabel(e.f))}に戻る</li>`;
+      here = e.f;
+    }
+    const cur = e.f === flow() && state.step === e.i;
+    h += `<li class="lin-step${cur ? ' is-cur' : ''}" style="--d:${e.depth}"><button type="button" class="link-btn" ${go(e)}>`
+      + `<span class="n${e.st.alt ? ' outer-n' : ''}">${stepNo(e.st, e.i)}</span><span class="lin-l">${esc(short(e.st))}</span></button>`
+      + (e.st.data.fields ? `<span class="lin-fields">${e.st.data.fields.map((x) => `<code>${esc(x)}</code>`).join('')}</span>` : '') + `</li>`;
+  }
+  h += `</ol>`;
+  // field by field: where each one is made, changed or used
+  const byField = new Map();
+  for (const e of way) for (const x of e.st.data.fields || []) { if (!byField.has(x)) byField.set(x, []); byField.get(x).push(e); }
+  if (byField.size) {
+    h += `<p class="panel-h">フィールドごと</p><table class="branches lin-table"><tbody>`
+      + [...byField].map(([x, es]) => `<tr><th><code>${esc(x)}</code></th><td>${es.map((e) => `<button type="button" class="link-btn" ${go(e)} title="${esc(paperLabel(e.f))}の手順 ${stepNo(e.st, e.i)}">${esc(e.via ? (e.via.short || e.via.id) + ' ' : '')}${stepNo(e.st, e.i)}</button>`).join(' → ')}</td></tr>`).join('')
+      + `</tbody></table>`;
+  }
+  return h;
+}
+function kindBadge(k) { return `<span class="kind-badge">${arrowSample(k)}${esc(EDGE_KINDS[k])}</span>`; }
+
+// ---- The panel: the chosen step, then the chosen node ----
+function altNote(f, st) {
+  return st.alt ? `<p class="alt-when">もし${esc(st.alt.when)}${st.alt.also ? `（${stepNo(f.steps[st.alt.at], st.alt.at)} のあとに起きる）` : `（${stepNo(f.steps[st.alt.at], st.alt.at)} の代わり）`}</p>` : '';
+}
+function branchTable(st) {
+  return st.branches ? `<p class="panel-h">この手順の中で分かれる</p><table class="branches"><tbody>${st.branches.map(([w, d]) => `<tr><th>${linkify(w)}</th><td>${linkify(d)}</td></tr>`).join('')}</tbody></table>` : '';
+}
+function stepCard(f, st, i, num) {
+  const a = boxById(f, st.from), b = boxById(f, st.to), no = num || stepNo(st, i);
+  let h = `<section class="step-card" aria-label="手順 ${no}"><div class="lbl"><span class="n is-on${num || st.alt ? ' outer-n' : ''}">${no}</span><span>${esc(st.label)}</span></div>` + altNote(f, st)
+    + `<div class="route">${kindBadge(st.kind)}<span class="path">${ends(f, a, f, b)}</span></div>`;
+  const d = st.data;
+  if (d && d.note) h += `<p class="panel-h">渡す値：<span class="type-tag">${esc(d.label)}</span></p><p class="small" style="margin:0">${linkify(d.note)}</p>`;
+  else if (d && d.schema) {
+    h += `<p class="panel-h">渡るデータ：<a href="#" data-node="${d.schema}" class="mono">${esc(NODES[d.schema].title)}</a></p>` + shapeHtml(d.schema, d.fields);
+    if (d.fields) h += `<p class="shape-tip">色の付いた行が、この手順で作る・変える・使うフィールド。</p>`;
+  } else if (d) h += `<p class="panel-h">渡す値：<span class="type-tag">${esc(d.type || d.label)}</span></p>`;
+  return h + branchTable(st) + `</section>`;
+}
+function nodeCard(id, n, st) {
+  const f = flow(), refs = references(id);
+  const inFlow = (x) => x.boxes.some((b) => b.node === id) || (x.regions || []).some((r) => r.node === id);
+  const here = inFlow(f), elsewhere = allPapers().filter((x) => x !== f && inFlow(x));
+  let h = `<div class="node-meta"><span class="badge${SLOT[n.layer] ? ' layer-b' : ' accent'}">${SLOT[n.layer] ? `<i class="sw s-${SLOT[n.layer]}"></i>` : ''}${esc(LAYER_NAME[n.layer])}</span><span class="badge">${esc(KIND_NAME[n.kind])}</span><code>${esc(id)}</code></div>`;
+  h += `<h2 class="node-title${/^[\w.]+$/.test(n.title) ? ' mono' : ''}">${esc(n.title)}</h2>`;
+  if (n.code) h += `<p class="code-ptr"><svg class="icon sm"><use href="#i-file"/></svg><span><code>${esc(n.code[0]).replace(/\//g, '/<wbr>')}</code>${n.code[1] ? ` の <code>${esc(n.code[1])}</code>` : ''}</span></p>`;
+  if (n.api) h += apiCard(n.api);
+  const shownAbove = st && st.data && st.data.schema === id && !st.data.note;
+  if ((n.fields || n.values) && !shownAbove) h += shapeHtml(id);
+  if (n.svg) h += `<div class="scroll-x fig">${n.svg()}</div>`;
+  h += `<div class="node-body">${renderText(n.text)}</div>`;
+  if (n.kind === 'schema' || n.kind === 'enum' || n.kind === 'hw') h += lineageHtml(id);
+  if (n.paper && PAPERS[n.paper]) h += `<p><button type="button" data-divenode="${id}"><svg class="icon sm" style="vertical-align:-3px"><use href="#i-file"/></svg> 中の紙を開く（手順 ${PAPERS[n.paper].steps.length}）</button></p>`;
+  if (elsewhere.length) h += `<p class="small muted">${here ? 'ほかの紙にも出てくる（実体は同じ節）：' : 'この紙には箱が無い：'}${elsewhere.map((x) => `<button type="button" class="link-btn" data-gopaper="${x.id}">${esc(paperLabel(x))}で見る</button>`).join('　')}</p>`;
+  h += `<h3 class="panel-h">ここを指している所（${refs.length}）</h3>`;
+  h += refs.length ? `<ul class="refs">${refs.map((r) => r.node
+      ? `<li><a href="#" data-node="${r.node}">${esc(NODES[r.node].title)}</a><span class="kind">${r.kind}</span></li>`
+      : `<li><button type="button" class="link-btn" data-gopaper="${r.paper}"${r.step != null ? ` data-gostep="${r.step}"` : ''}>${esc(paperLabel(paperById(r.paper)))}${r.step != null ? `の手順 ${stepNo(paperById(r.paper).steps[r.step], r.step)}` : ''}</button><span class="kind">${r.kind}</span></li>`).join('')}</ul>`
+    : `<p class="small muted">まだ無い</p>`;
+  return h;
+}
+function renderPanel() {
+  const A = state.outer != null ? aroundHere() : null;
+  if (A && A.parent.steps[state.outer]) {
+    const ost = A.parent.steps[state.outer], on = NODES[ost.ref];
+    return stepCard(A.parent, ost, state.outer, `外${state.outer + 1}`) + `<p class="small muted">外の流れ ${esc(paperLabel(A.parent))} の手順。</p>` + (on ? nodeCard(ost.ref, on, ost) : '');
+  }
+  const f = flow(), st = state.step != null ? f.steps[state.step] : null, n = NODES[state.node];
+  return (st ? stepCard(f, st, state.step) : '') + (n ? nodeCard(state.node, n, st) : '<p class="muted">節を選ぶと、ここに出ます。</p>');
+}
+
+function renderSteps() {
+  const f = flow(), A = aroundHere(), tag = (st) => (st.data ? `<span class="type-tag">${esc(st.data.label)}</span>` : '');
+  return timeline(f, A).map(({ c, o, st, i }) => {
+    if (o) {
+      return `<li class="outer far"><button type="button" data-outstep="${o.i}" title="外へ戻ってこの手順を見る"><span class="n">${outerNum(o)}</span>`
+        + `<span><span class="lbl">${esc(o.st.label)}</span><span class="route"><span class="where">外どうし（${esc(paperLabel(A.parent))}の手順）</span>`
+        + `${kindBadge(o.st.kind)}${tag(o.st)}<span class="path">${ends(A.parent, o.a, A.parent, o.b)}</span></span></span></button></li>`;
+    }
+    if (c) {
+      const a = c.dir === 'in' ? c.nb : boxById(f, c.target), b = c.dir === 'in' ? boxById(f, c.target) : c.nb;
+      const fa = c.dir === 'in' ? A.parent : f, fb = c.dir === 'in' ? f : A.parent;
+      return `<li class="outer"><button type="button" data-outstep="${c.i}" title="外へ戻ってこの手順を見る"><span class="n">${outerNum(c)}</span>`
+        + `<span><span class="lbl">${esc(c.st.label)}</span><span class="route"><span class="where">${c.dir === 'in' ? '外から入る' : '外へ出る'}（${esc(paperLabel(A.parent))}の手順）</span>`
+        + `${kindBadge(c.st.kind)}${tag(c.st)}<span class="path">${ends(fa, a, fb, b)}</span></span></span></button></li>`;
+    }
+    const a = boxById(f, st.from), b = boxById(f, st.to);
+    return `<li${st.alt ? ' class="alt"' : ''}><button type="button" data-step="${i}" aria-current="${state.step === i}"><span class="n${st.alt ? ' outer-n' : ''}">${stepNo(st, i)}</span>`
+      + `<span><span class="lbl">${esc(st.label)}</span><span class="route">${st.alt ? `<span class="where">もし${esc(st.alt.when)}</span>` : ''}${kindBadge(st.kind)}${tag(st)}<span class="path">${ends(f, a, f, b)}</span>${st.branches ? `<span class="where">${st.branches.length} 通りに分かれる</span>` : ''}</span></span></button></li>`;
+  }).join('');
+}
+function renderLayers() {
+  return [...LAYERS, ...CROSS].map((l) => {
+    const ids = Object.keys(NODES).filter((k) => NODES[k].layer === l.id);
+    if (!ids.length) return '';
+    return `<div class="layer-row"><h3>${SLOT[l.id] ? `<i class="sw s-${SLOT[l.id]}"></i>` : ''}${esc(l.name)}<span>${esc(l.sub)}</span></h3><div class="chips">`
+      + ids.map((k) => `<button type="button" class="nchip${/^[\w.]+$/.test(NODES[k].title) ? ' code-title' : ''}" data-node="${k}" aria-current="${state.node === k}">${esc(NODES[k].title)}<span class="kindmark">${esc(KIND_NAME[NODES[k].kind])}</span><span class="uses" title="指している所の数">${references(k).length}</span></button>`).join('')
+      + `</div></div>`;
+  }).join('');
+}
+function sourceOf() {
+  const n = NODES[state.node], f = flow();
+  return [n ? n.src || '' : '', f.src || ''];
+}
+
+function render() {
+  const f = flow();
+  document.getElementById('crumbs').innerHTML = crumbsHtml();
+  document.getElementById('flow-tabs').innerHTML = FLOWS.map((x) => `<button type="button" role="tab" data-flow="${x.id}" aria-selected="${x.id === f.id}">${esc(x.tab)}</button>`).join('');
+  document.querySelectorAll('#view-seg [data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+  const st = state.step != null ? f.steps[state.step] : null;
+  const A = state.outer != null ? aroundHere() : null, ost = A && A.parent.steps[state.outer];
+  document.getElementById('step-now').innerHTML = ost ? `<span class="n outer-n">外${state.outer + 1}</span><span>${esc(ost.label)}</span>`
+    : st ? `<span class="n${st.alt ? ' outer-n' : ''}">${stepNo(st, state.step)}</span><span>${esc(st.label)}</span>` : `<span class="muted">${esc(f.title)}</span>`;
+  document.getElementById('player').innerHTML = playerHtml();
+  drawCanvas();
+  document.getElementById('tools3d').innerHTML = state.view === '3d' ? tools3dHtml() : state.view === 'time' ? toolsTimeHtml() : state.path.length ? toolsAroundHtml() : '';
+  document.getElementById('legend').innerHTML = legendHtml();
+  document.getElementById('caption').textContent = `${f.title}。`
+    + (state.view === 'seq' ? '同じ手順を時間の順に並べた見え方。'
+      : state.view === 'time' ? '手順の順番を奥行きにした立体。正面から見ると層の地図、真上から見ると時系列になる。'
+      : state.view === '3d' ? '層を板にして積んだ見え方。縦の線が層をまたぐ手順で、板の上の点線の囲みが実行の文脈。' + (state.all ? '奥の薄い箱はほかの流れで、点線の「同じ節」は 1 つの実体を指す。' : '')
+      : state.path.length ? '箱の中の紙。上下の帯はこの箱の外の層で、この箱に入ってくる・出ていく相手だけを置いた。外の手順は紙の縁の口を通って、中でそれを受け持つ箱につながる。「外4」の札は外の流れの手順 4 で、押すと外へ戻ってその手順を見る。「さらに外まで」にすると、外の相手のさらに外（灰色の箱）と、外どうしの手順も出る。帯の空いた所を押すか Esc でも外へ戻る。'
+      : '帯が層、箱が関数・置き場・レジスタ、点線の枠が実行の文脈、番号付きの矢印が手順。「中の紙」の付いた箱は、押すとその中の紙に潜れる。')
+    + '矢印の札はその手順で渡るデータの形で、押すとフィールドが出て、同じ形が通る矢印だけが残る。';
+  document.getElementById('node').innerHTML = renderPanel();
+  document.getElementById('steps').innerHTML = renderSteps();
+  { const tc = document.getElementById('trace-cmp'), open = tc.querySelector('details')?.open; tc.innerHTML = traceCompareHtml(f); if (open) tc.querySelector('details').open = true; }
+  document.getElementById('layers').innerHTML = renderLayers();
+  const [nodeSrc, flowSrc] = sourceOf();
+  document.getElementById('source-node').textContent = nodeSrc;
+  document.getElementById('source-flow').textContent = flowSrc;
+  document.body.classList.toggle('lens', state.lens);
+  syncHash();
+  const canvas = document.getElementById('canvas');
+  const mark = canvas.querySelector('.pill.is-sel') || canvas.querySelector('.is-node');
+  if (mark && canvas.scrollWidth > canvas.clientWidth) {
+    const r = mark.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+    canvas.scrollLeft += (r.left + r.width / 2) - (c.left + c.width / 2);
+  }
+}
+
+// ---- Interaction ----
+document.addEventListener('click', (e) => {
+  if (swallowClick) { swallowClick = false; return; }
+  const pb = e.target.closest('[data-play]');
+  if (pb) { if (player.on) stopPlay(); else play(); return; }
+  if (e.target.closest('[data-playtrace]')) { if (player.on) stopPlay(); else playTrace(TRACES[0]); return; }
+  if (e.target.closest('[data-lens]')) { state.lens = !state.lens; render(); return; }
+  if (e.target.closest('[data-still]')) { state.still = !state.still; document.body.classList.toggle('still', state.still); document.getElementById('player').innerHTML = playerHtml(); return; }
+  if (player.on && e.target.closest('#canvas, .toolbar, .crumbs, .tools3d, .steps, #node')) stopPlay();
+  const t = e.target.closest('[data-node],[data-step],[data-outstep],[data-box],[data-flow],[data-view],[data-goflow],[data-resetcam],[data-toggleall],[data-camto],[data-dive],[data-divenode],[data-out],[data-crumb],[data-gopaper],[data-depth],[data-goto]');
+  if (!t) return;
+  if (t.tagName === 'A') e.preventDefault();
+  const f = flow(), d = t.dataset;
+  if (d.node || d.step != null || d.box || d.flow || d.goflow || d.gopaper) state.outer = null;
+  if (d.dive) { diveInto(d.dive); return; }
+  if (d.divenode) { diveToNode(d.divenode); return; }
+  if (d.out) { diveOut(1); return; }
+  if (d.outstep != null) { diveOut(1, Number(d.outstep)); return; }
+  if (d.depth) { state.depth = Number(d.depth); render(); return; }
+  if (d.goto) {
+    const [fl, p, i] = d.goto.split('|');
+    state.flow = fl; state.path = p ? p.split(',') : []; state.step = Number(i); state.outer = null; dive.t = 1;
+    render();
+    return;
+  }
+  if (d.crumb) { diveOut(Number(d.crumb)); return; }
+  if (d.gopaper) {
+    const loc = locate(d.gopaper);
+    if (!loc) return;
+    state.flow = loc.flow; state.path = loc.path; dive.t = 1;
+    const nf = flow();
+    if (d.gostep != null) state.step = Number(d.gostep);
+    else { const i = nf.steps.findIndex((x) => x.ref === state.node || (x.data && x.data.schema === state.node)); state.step = i >= 0 ? i : null; }
+    render();
+    return;
+  }
+  if (d.goflow) {
+    state.flow = d.goflow; state.path = [];
+    const nf = flow();
+    if (d.gostep != null) state.step = Number(d.gostep);
+    else { const i = nf.steps.findIndex((s) => s.ref === state.node || (s.data && s.data.schema === state.node)); state.step = i >= 0 ? i : null; }
+  }
+  else if (d.node) { state.node = d.node; if (d.chip != null) state.step = Number(d.chip); }
+  else if (d.step != null) { state.step = Number(d.step); state.node = f.steps[state.step].ref; }
+  else if (d.box) {
+    if (d.boxflow && d.boxflow !== state.flow) { state.flow = d.boxflow; state.path = []; }
+    const nf = flow(), b = boxById(nf, d.box), i = nf.steps.findIndex((s) => s.ref === b.node);
+    state.node = b.node;
+    if (i >= 0) state.step = i;
+  }
+  else if (d.flow) { state.flow = d.flow; state.path = []; dive.t = 1; [state.step, state.node] = flow().start; }
+  else if (d.resetcam) { tweenCam(state.view === 'time' ? 'camT' : 'cam', state.view === 'time' ? CAMT0 : CAM0, 600); return; }
+  else if (d.camto) { tweenCam('camT', CAM_PRESETS[d.camto], 900); return; }
+  else if (d.toggleall) { state.all = !state.all; anim.t = 1; }
+  else if (d.view) {
+    const to = d.view, from = state.view, morph = !state.all && !reduceMotion;
+    if (to === from) return;
+    if (morph && from === 'map' && to === '3d') { state.view = '3d'; anim.t = 0; render(); animateTo(1); return; }
+    if (morph && from === '3d' && to === 'map') { animateTo(0, () => { state.view = 'map'; anim.t = 1; render(); }); return; }
+    if (!reduceMotion && to === 'time' && (from === 'seq' || from === 'map')) {
+      const goal = { ...state.camT };
+      state.camT = { ...(from === 'seq' ? CAM_PRESETS.top : CAM_PRESETS.front) };
+      state.view = 'time'; render(); tweenCam('camT', goal, 1100); return;
+    }
+    if (!reduceMotion && from === 'time' && (to === 'seq' || to === 'map')) {
+      const keep = { ...state.camT };
+      tweenCam('camT', to === 'seq' ? CAM_PRESETS.top : CAM_PRESETS.front, 800, () => { state.camT = keep; state.view = to; render(); });
+      return;
+    }
+    cancelAnimationFrame(anim.raf);
+    state.view = to; anim.t = 1;
+  }
+  render();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && player.on) { stopPlay(); return; }
+  if (e.key === 'Escape' && state.path.length) { diveOut(1); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-box],[data-outbox]')) {
+    e.preventDefault();
+    e.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return;
+  }
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); stepBy(e.key === 'ArrowRight' ? 1 : -1); return; }
+  if (e.key === 'Enter' && !(e.target.closest && e.target.closest('button, a'))) { e.preventDefault(); enterSelected(); }
+});
+// ← → move through the steps in the order they happen, outer steps included where they are drawn.
+function stepBy(dir) {
+  if (player.on) stopPlay();
+  const outerShown = state.path.length && (state.view === 'map' || state.view === 'seq');
+  const rows = timeline(flow(), aroundHere()).filter((r) => r.st || outerShown);
+  if (!rows.length) return;
+  const at = rows.findIndex((r) => (state.outer != null ? (r.c || r.o) && (r.c || r.o).i === state.outer : r.st && r.i === state.step));
+  const r = rows[at < 0 ? (dir > 0 ? 0 : rows.length - 1) : clamp(at + dir, 0, rows.length - 1)];
+  if (r.st) { state.outer = null; state.step = r.i; state.node = r.st.ref; } else state.outer = (r.c || r.o).i;
+  render();
+}
+// Enter goes where the chosen step leads: into the paper of the box it reaches, or out to an outer step.
+function enterSelected() {
+  if (state.outer != null) { diveOut(1, state.outer); return; }
+  const f = flow(), st = state.step != null ? f.steps[state.step] : null;
+  const b = st && boxById(f, st.to), pid = b && NODES[b.node].paper;
+  if (pid && PAPERS[pid]) diveInto(b.id);
+}
+
+// Drag the stack to turn it; a drag is not a click.
+const canvasEl = document.getElementById('canvas');
+const drag = { on: false, moved: false, x: 0, y: 0, yaw: 0, pitch: 0, raf: 0 };
+let swallowClick = false;
+canvasEl.addEventListener('pointerdown', (e) => {
+  if ((state.view !== '3d' && state.view !== 'time') || e.button !== 0) return;
+  const c = state.view === 'time' ? state.camT : state.cam;
+  Object.assign(drag, { on: true, moved: false, x: e.clientX, y: e.clientY, yaw: c.yaw, pitch: c.pitch });
+});
+canvasEl.addEventListener('pointermove', (e) => {
+  if (!drag.on) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved) {
+    if (Math.hypot(dx, dy) < 5) return;
+    drag.moved = true;
+    try { canvasEl.setPointerCapture(e.pointerId); } catch (err) { /* the pointer is gone */ }
+    canvasEl.classList.add('is-dragging');
+  }
+  const time = state.view === 'time';
+  state[time ? 'camT' : 'cam'] = { yaw: clamp(drag.yaw + dx * 0.005, -57 * DEG, 57 * DEG), pitch: clamp(drag.pitch + dy * 0.005, (time ? 0 : 10) * DEG, (time ? 90 : 50) * DEG) };
+  if (!drag.raf) drag.raf = requestAnimationFrame(() => { drag.raf = 0; drawCanvas(); });
+});
+const endDrag = () => {
+  if (!drag.on) return;
+  drag.on = false;
+  if (drag.moved) { swallowClick = true; canvasEl.classList.remove('is-dragging'); setTimeout(() => { swallowClick = false; }, 0); }
+};
+canvasEl.addEventListener('pointerup', endDrag);
+canvasEl.addEventListener('pointercancel', endDrag);
+canvasEl.addEventListener('dblclick', (e) => {
+  const box = e.target.closest && e.target.closest('[data-box]');
+  if (state.view === 'map' && box) { diveInto(box.dataset.box); return; }
+  if (state.view === '3d') tweenCam('cam', CAM0, 600);
+  if (state.view === 'time') tweenCam('camT', CAMT0, 600);
+});
+// Pointing at a 中の紙 badge shows that paper small, next to it.
+const peekEl = document.getElementById('peek');
+function showPeek(badge) {
+  const b = boxById(flow(), badge.dataset.dive), p = b && PAPERS[NODES[b.node].paper];
+  if (!p) return;
+  const m = withState({ step: null, node: null, bare: true }, () => mapParts(p));
+  peekEl.innerHTML = `<p class="peek-h">${esc(p.title)}</p><svg viewBox="0 0 ${W} ${m.H}" aria-hidden="true">${m.body}</svg>`
+    + `<p class="peek-s">手順 ${p.steps.length}・押すと潜る</p>`;
+  peekEl.hidden = false;
+  const host = peekEl.offsetParent || document.body, hr = host.getBoundingClientRect(), r = badge.getBoundingClientRect();
+  const w = peekEl.offsetWidth, h = peekEl.offsetHeight;
+  let x = r.left - hr.left + r.width / 2 - w / 2, y = r.top - hr.top - h - 10;
+  if (y < 4) y = r.bottom - hr.top + 10;
+  peekEl.style.left = `${clamp(x, 8, hr.width - w - 8)}px`;
+  peekEl.style.top = `${y}px`;
+}
+const hidePeek = () => { peekEl.hidden = true; };
+canvasEl.addEventListener('mouseover', (e) => { const bd = e.target.closest && e.target.closest('.diveb'); if (bd) showPeek(bd); else hidePeek(); });
+canvasEl.addEventListener('mouseleave', hidePeek);
+canvasEl.addEventListener('click', hidePeek);
+// Pointing at a box lights the steps that start or end there.
+canvasEl.addEventListener('mouseover', (e) => {
+  canvasEl.querySelectorAll('.is-hover').forEach((x) => x.classList.remove('is-hover'));
+  const b = e.target.closest && e.target.closest('[data-box],[data-outbox]');
+  if (!b || b.dataset.boxflow || drag.moved) return;
+  if (b.dataset.outbox) { canvasEl.querySelectorAll(`[data-xout="${b.dataset.outbox}"], [data-xout2="${b.dataset.outbox}"]`).forEach((x) => x.classList.add('is-hover')); return; }
+  flow().steps.forEach((st, i) => {
+    if (st.from === b.dataset.box || st.to === b.dataset.box) canvasEl.querySelectorAll(`.edge[data-step="${i}"], .pill[data-step="${i}"]`).forEach((x) => x.classList.add('is-hover'));
+  });
+  canvasEl.querySelectorAll(`[data-xin="${b.dataset.box}"]`).forEach((x) => x.classList.add('is-hover'));
+});
+canvasEl.addEventListener('mouseleave', () => canvasEl.querySelectorAll('.is-hover').forEach((x) => x.classList.remove('is-hover')));
+
+// Every pointer has to land on a node.
+for (const [k, n] of Object.entries(NODES)) {
+  const all = n.text + JSON.stringify([n.api || {}, n.fields || [], n.values || []]);
+  for (const m of all.matchAll(/\[\[([\w.\-]+)\]\]/g)) if (!NODES[m[1]]) console.error(`broken pointer in ${k}: ${m[1]}`);
+}
+for (const f of allPapers()) {
+  const firstAlt = f.steps.findIndex((st) => st.alt);
+  if (firstAlt >= 0 && f.steps.slice(firstAlt).some((st) => !st.alt)) console.error(`flow ${f.id}: another way must come after the main steps`);
+  for (const st of f.steps) if (st.alt && !(st.alt.at >= 0 && st.alt.at < firstAlt)) console.error(`flow ${f.id}: alt.at ${st.alt.at}`);
+}
+for (const p of Object.values(PAPERS)) {
+  if (!boxById(p, p.entry)) console.error(`paper ${p.id} entry: ${p.entry}`);
+  for (const [k, v] of Object.entries(p.ports || {})) if (!NODES[k] || !boxById(p, v)) console.error(`paper ${p.id} port ${k}: ${v}`);
+}
+for (const f of allPapers()) {
+  for (const b of f.boxes) if (!NODES[b.node]) console.error(`box ${f.id}/${b.id} points nowhere: ${b.node}`);
+  for (const b of f.boxes) if (!bandsOf(f).some((l) => l.id === b.layer)) console.error(`box ${f.id}/${b.id} band: ${b.layer}`);
+  f.steps.forEach((st, i) => {
+    if (!NODES[st.ref]) console.error(`step ${f.id}/${i + 1} ref: ${st.ref}`);
+    if (!boxById(f, st.from) || !boxById(f, st.to)) console.error(`step ${f.id}/${i + 1} ends`);
+    if (st.data && st.data.schema && !NODES[st.data.schema]) console.error(`step ${f.id}/${i + 1} data: ${st.data.schema}`);
+  });
+}
+for (const f of allPapers()) { autoLayout(f); autoPorts(f); }
+document.body.classList.toggle('still', state.still);
+render();
+try {
+  const p = new URLSearchParams(OPENED);
+  if (p.get('play')) {
+    const rows = timeline(flow(), aroundHere()), row = rows[Number(p.get('play')) - 1];
+    if (row) {
+      if (row.st) { state.step = row.i; state.node = row.st.ref; } else state.outer = (row.c || row.o).i;
+      player.on = true; player.label = row.st ? `手順 ${stepNo(row.st, row.i)}` : `外の手順 ${(row.c || row.o).i + 1}`;
+      render();
+      const st = row.st || (row.c || row.o).st;
+      moveToken(row.st ? `#canvas .edge:not(.ghost)[data-step="${row.i}"] .line` : `#canvas .edge[data-outstep="${(row.c || row.o).i}"] .line`, tokenLabel(st), () => true, Number(p.get('pt') || 0.5));
+    }
+  }
+  if (p.get('trace') && TRACES.length) playTrace(TRACES[0]);
+  if (p.get('peek')) { const bd = document.querySelector(`#canvas .diveb[data-dive="${p.get('peek')}"]`); if (bd) showPeek(bd); }
+} catch (e) { console.error(e); }
+</script>
+</body>
+</html>
