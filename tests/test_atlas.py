@@ -251,6 +251,24 @@ class AtlasTest(unittest.TestCase):
         self.assertEqual(data['docs'], 'docs/atlas')
         self.assertNotIn('_where', json.dumps(data))
 
+    def page_data(self, text):
+        return json.loads(text.split('const DATA = ', 1)[1].split(';\n', 1)[0])
+
+    def test_markup_in_the_text_cannot_leave_the_script(self):
+        self.fx.edit('docs/atlas/layers/os.md', '列に入れる。', '列に入れる。<!-- <script> </script>')
+        text, _ = page(Project(self.fx.root), Report())
+        blob = text.split('const DATA = ', 1)[1].split(';\n', 1)[0]
+        for markup in ('<!--', '<script', '</script', '<'):
+            self.assertNotIn(markup, blob)
+        self.assertEqual(self.page_data(text)['nodes']['os.push']['text'], '列に入れる。<!-- <script> </script>')
+
+    def test_a_title_that_spells_a_placeholder_stays_text(self):
+        self.fx.edit('docs/atlas/atlas.md', '# 小さな地図', '# 地図 __ATLAS_DATA__ <b>')
+        text, _ = page(Project(self.fx.root), Report())
+        self.assertIn('<title>地図 __ATLAS_DATA__ &lt;b&gt;</title>', text)
+        self.assertEqual(text.count('const DATA = {'), 1)
+        self.assertEqual(self.page_data(text)['title'], '地図 __ATLAS_DATA__ <b>')
+
     def test_an_error_writes_no_page(self):
         self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
         self.assertIsNone(page(Project(self.fx.root), Report()))
