@@ -230,6 +230,32 @@ class AtlasTest(unittest.TestCase):
         rep, _ = self.fx.check()
         self.assertIn('os.kind: 図のファイルが無い: docs/atlas/figures/kind.svg', self.messages(rep))
 
+    def test_a_figure_outside_the_map_is_not_read(self):
+        self.fx.edit('docs/atlas/layers/os.md', '列挙・src/queue.mln の Kind\n', '列挙・src/queue.mln の Kind\n図：../../src/queue.mln\n')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertIn('os.kind: 図のファイルは地図のディレクトリの中に置く: ../../src/queue.mln', self.messages(rep))
+        self.assertNotIn('figure', nodes['os.kind'])
+        self.assertIsNone(page(Project(self.fx.root), Report()))
+
+    def test_code_outside_the_root_is_not_read(self):
+        fx = Fixture(self.fx.root / 'inner')   # the outer fixture's code lies beside it, outside its root
+        fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain', '関数・../src/queue.mln の drain')
+        fx.edit('docs/atlas/layers/os.md', '構造体・src/queue.mln の Message', f'構造体・{fx.root}/src/queue.mln の Message')
+        rep, (_, _, nodes, _, _) = fx.check()
+        errors = self.messages(rep)
+        self.assertIn('os.drain: コードのファイルは --root の中に置く: ../src/queue.mln', errors)
+        self.assertIn(f'os.message: コードのファイルは --root の中に置く: {fx.root}/src/queue.mln', errors)
+        self.assertNotIn('sig', nodes['os.drain']['api'])
+        self.assertNotIn('fields', nodes['os.message'])
+        self.assertIsNone(Project(fx.root).code_text('../src/queue.mln'))
+        self.assertIsNone(page(Project(fx.root), Report()))
+
+    def test_a_path_that_climbs_back_in_stays_allowed(self):
+        self.fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain', '関数・src/../src/queue.mln の drain')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        self.assertEqual(nodes['os.drain']['api']['sig'], 'void (borrow Queue q) drain()')
+
     def test_a_trace_names_the_nodes_it_ran(self):
         events = [{'seq': 0, 'ev': 'enter', 'fn': 'queue.push', 'thread': 1, 'program': 'app', 'instr': 5},
                   {'seq': 1, 'ev': 'exit', 'fn': 'queue.push', 'thread': 1, 'program': 'app', 'instr': 9},

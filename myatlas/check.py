@@ -7,6 +7,7 @@ import re
 
 from . import code_mylang, code_rust
 from .dsa import OPS, attach_dsa
+from .project import leaves
 from .read import LINK, parse_flow, parse_layer, read_index
 
 
@@ -37,6 +38,9 @@ def attach_code(project, nid, n, rep):
         text_only(n)
         return
     path, sym = code
+    if leaves(path):
+        rep.error(where, f'{nid}: コードのファイルは --root の中に置く: {path}')
+        return
     text = project.code_text(path)
     if text is None:
         rep.error(where, f'{nid}: コードのファイルが無い: {path}')
@@ -135,7 +139,9 @@ def load(project, rep):
         attach_code(project, nid, n, rep)
         if n.get('_figure_file'):
             fp = project.docs / n['_figure_file']
-            if fp.is_file():
+            if leaves(n['_figure_file']):
+                rep.error(n['_where'], f'{nid}: 図のファイルは地図のディレクトリの中に置く: {n["_figure_file"]}')
+            elif fp.is_file():
                 n['figure'] = fp.read_text(encoding='utf-8')
             else:
                 rep.error(n['_where'], f'{nid}: 図のファイルが無い: {project.rel(fp)}')
