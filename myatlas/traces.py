@@ -41,14 +41,28 @@ def load_traces(project, nodes, rep):
         except ValueError as e:
             rep.error(project.rel(p), f'記録が読めない: {e}')
             continue
+        if not isinstance(t, dict):
+            rep.error(project.rel(p), '記録の一番外は JSON のオブジェクト')
+            continue
+        raw = t.get('events', [])
+        if not isinstance(raw, list):
+            rep.error(project.rel(p), 'events は JSON の配列')
+            raw = []
+        bad = [i for i, e in enumerate(raw) if not isinstance(e, dict)]
+        if bad:
+            rep.error(project.rel(p), f'events の {len(bad)} 個がオブジェクトでない（{bad[0]} 番目から）。飛ばす')
+        build = t.get('build', {})
+        if not isinstance(build, dict):
+            rep.error(project.rel(p), 'build は JSON のオブジェクト')
+            build = {}
         events = []
-        for e in t.get('events', []):
-            if e.get('ev') not in ('enter', 'irq', 'switch', 'request'):
+        for e in raw:
+            if not isinstance(e, dict) or e.get('ev') not in ('enter', 'irq', 'switch', 'request'):
                 continue
             x = {k: e[k] for k in KEEP if e.get(k) is not None}
-            if e.get('fn') in by_fn:
+            if isinstance(e.get('fn'), str) and e['fn'] in by_fn:
                 x['n'] = by_fn[e['fn']]
             events.append(x)
         out.append({'id': p.stem, 'title': t.get('title', p.stem), 'date': t.get('date'), 'run': t.get('run', {}),
-                    'build': t.get('build', {}).get('sources', {}), 'threads': t.get('threads', {}), 'events': events})
+                    'build': build.get('sources', {}), 'threads': t.get('threads', {}), 'events': events})
     return out

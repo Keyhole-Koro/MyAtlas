@@ -293,6 +293,24 @@ class AtlasTest(unittest.TestCase):
         self.assertEqual([e.get('n') for e in traces[0]['events']], ['os.push', 'os.drain'])
         self.assertEqual(nodes['os.push']['fn'], 'queue.push')   # the node with the paper, not app.main
 
+    def test_a_malformed_trace_is_an_error(self):
+        files = {'list': '[]', 'events': '{"events":[1, {"ev": "enter", "fn": "queue.push"}, {"ev": "enter", "fn": [1]}]}',
+                 'build': '{"build":"x"}', 'nolist': '{"events":{"ev":"enter"}}'}
+        for name, content in files.items():
+            self.fx.write(self.fx.docs / 'traces' / f'{name}.json', content)
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        traces = {t['id']: t for t in load_traces(Project(self.fx.root), nodes, rep)}
+        self.assertEqual(self.located(rep), [
+            ('docs/atlas/traces/build.json', 'build は JSON のオブジェクト'),
+            ('docs/atlas/traces/events.json', 'events の 1 個がオブジェクトでない（0 番目から）。飛ばす'),
+            ('docs/atlas/traces/list.json', '記録の一番外は JSON のオブジェクト'),
+            ('docs/atlas/traces/nolist.json', 'events は JSON の配列')])
+        self.assertEqual(sorted(traces), ['build', 'events', 'nolist'])
+        self.assertEqual(traces['build']['build'], {})
+        self.assertEqual(traces['events']['events'], [{'ev': 'enter', 'fn': 'queue.push', 'n': 'os.push'}, {'ev': 'enter', 'fn': [1]}])
+        self.assertEqual(traces['nolist']['events'], [])
+
     def test_the_page_carries_the_map(self):
         out = self.fx.root / 'build' / 'atlas' / 'index.html'
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
