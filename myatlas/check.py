@@ -259,7 +259,7 @@ def check_model(layers, nodes, flows, papers, rep):
         if main and not (0 <= n0 < len(main)):
             rep.error(where, f'はじめ の手順 {n0 + 1} が無い')
             n0 = 0
-        f['start'] = [n0, main[n0]['ref'] if main else None]
+        f['start'] = [n0, main[n0].get('ref') if main else None]   # no ref when its box is missing
         # another way comes after the main steps, so the main steps keep their numbers
         f['steps'] = main + [s for s in f['steps'] if 'alt' in s]
         if f.get('bands'):

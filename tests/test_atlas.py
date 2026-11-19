@@ -250,6 +250,33 @@ class AtlasTest(unittest.TestCase):
         self.assertIsNone(Project(fx.root).code_text('../src/queue.mln'))
         self.assertIsNone(page(Project(fx.root), Report()))
 
+    def located(self, rep):
+        return [(where, m) for lv, where, m in rep.items if lv == 'error']
+
+    def test_a_heading_without_an_id_is_an_error(self):
+        self.fx.edit('docs/atlas/layers/os.md', '## os.drain  Queue.drain', '## \n関数・src/queue.mln の push\n\n## os.drain  Queue.drain')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/layers/os.md:12', '節の見出しは「## ID  題」')])
+        self.assertIn('os.drain', nodes)
+
+    def test_a_start_that_is_not_a_number_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '入口：app', '入口：app\nはじめ：二')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:4', 'はじめ は手順の番号: 二')])
+        self.assertEqual(flows[0]['start'], [0, 'app.main'])
+
+    def test_a_lane_that_is_not_a_number_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '｜略 p', '｜略 p｜段 x')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:6', '箱の段は数: x')])
+        self.assertNotIn('lane', flows[0]['boxes'][1])
+
+    def test_a_first_step_from_a_missing_box_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. ap → push')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:8', '手順の箱 ap が無い')])
+        self.assertEqual(flows[0]['start'], [0, None])
+
     def test_a_path_that_climbs_back_in_stays_allowed(self):
         self.fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain', '関数・src/../src/queue.mln の drain')
         rep, (_, _, nodes, _, _) = self.fx.check()

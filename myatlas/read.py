@@ -49,6 +49,10 @@ def parse_layer(project, path, layer_id, rep):
         if line.startswith('## '):
             finish()
             parts = line[3:].strip().split(None, 1)
+            if not parts:
+                rep.error(where, '節の見出しは「## ID  題」')
+                cur = None   # its lines belong to no node
+                continue
             nid, title = parts[0], parts[1].strip() if len(parts) > 1 else parts[0]
             if nid in nodes:
                 rep.error(where, f'節 {nid} が 2 回ある（実体は 1 つ）')
@@ -225,7 +229,10 @@ def parse_flow(project, path, rep):
             else:
                 rep.error(where, f'出口の行が読めない: {s}')
         elif s.startswith('はじめ：'):
-            f['start_no'] = int(s[4:].strip())
+            try:
+                f['start_no'] = int(s[4:].strip())
+            except ValueError:
+                rep.error(where, f'はじめ は手順の番号: {s[4:].strip()}')
         elif s.startswith('文脈 '):
             m = re.match(r'文脈 \[\[([\w.\-]+)\]\] (.+?)：(.+)$', s)
             if not m:
@@ -272,7 +279,10 @@ def parse_flow(project, path, rep):
                 elif k == 'ビット':
                     b['bits'] = parse_bits(v, where, rep) if v else True
                 elif k == '段':
-                    b['lane'] = int(v)
+                    try:
+                        b['lane'] = int(v)
+                    except ValueError:
+                        rep.error(where, f'箱の段は数: {v}')
                 else:
                     rep.error(where, f'箱の知らない指定「{k}」')
             f['boxes'].append(b)
