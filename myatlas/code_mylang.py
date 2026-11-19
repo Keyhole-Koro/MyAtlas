@@ -25,6 +25,18 @@ def close_paren(body, open_at):
     return None
 
 
+def definition_head(body, at):
+    """What stands before the name at `at` on its line when the name is being defined: its type, and a
+    method's receiver in parentheses, without export and annotations. None when it is a call or an
+    expression instead."""
+    line_start = body.rfind('\n', 0, at) + 1
+    before = re.sub(r'^(export\s+)?(@\w+(\([^)]*\))?\s+)*', '', body[line_start:at].strip()).strip()
+    head = re.sub(r'\s*\([^()]*\)$', '', before)
+    if not head or head.endswith(('.', '=', '(', ',', 'return', 'else', '!', '&&', '||')) or not re.match(r'^[\w<>,\[\]\*\s.:]+$', head):
+        return None
+    return before
+
+
 def find_function(text, sym):
     """The definition's signature, or None. A definition is a type, the name, its parameters and then a body;
     a method has its receiver in parentheses before the name: void (borrow Tasks t) show()."""
@@ -34,10 +46,8 @@ def find_function(text, sym):
         if close is None or not body[close + 1:close + 200].lstrip().startswith('{'):
             continue
         params = ' '.join(body[m.end():close].split())
-        line_start = body.rfind('\n', 0, m.start()) + 1
-        before = re.sub(r'^(export\s+)?(@\w+(\([^)]*\))?\s+)*', '', body[line_start:m.start()].strip()).strip()
-        head = re.sub(r'\s*\([^()]*\)$', '', before)
-        if not head or head.endswith(('.', '=', '(', ',', 'return', 'else', '!', '&&', '||')) or not re.match(r'^[\w<>,\[\]\*\s.:]+$', head):
+        before = definition_head(body, m.start())
+        if before is None:
             continue
         return f'{" ".join(before.split())} {sym}({params})'
     return None
@@ -149,10 +159,7 @@ def functions(text):
         stripped = after.lstrip()
         if not stripped.startswith('{'):
             continue
-        line_start = body.rfind('\n', 0, m.start()) + 1
-        before = re.sub(r'^(export\s+)?(@\w+(\([^)]*\))?\s+)*', '', body[line_start:m.start()].strip()).strip()
-        head = re.sub(r'\s*\([^()]*\)$', '', before)
-        if not head or head.endswith(('.', '=', '(', ',', 'return', 'else', '!', '&&', '||')) or not re.match(r'^[\w<>,\[\]\*\s.:]+$', head):
+        if definition_head(body, m.start()) is None:
             continue
         open_at = close + 1 + (len(after) - len(stripped))
         out.append((m.group(1), body[open_at:close_brace(body, open_at) + 1]))
