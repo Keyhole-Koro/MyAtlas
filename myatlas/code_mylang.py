@@ -90,8 +90,76 @@ def find_enum(text, name):
     m = re.search(rf'\benum\s+{re.escape(name)}\s*\{{(.*?)\}}', body, re.S)
     if not m:
         return None
-    return [v.split('=')[0].strip() for v in m.group(1).split(',') if v.strip()]
+    # a value may carry data: Blocked(WaitReason), Exiting(i32); the name is what comes first
+    values, depth, cur = [], 0, ''
+    for ch in m.group(1) + ',':
+        if ch in '(<':
+            depth += 1
+        elif ch in ')>':
+            depth -= 1
+        if ch == ',' and depth == 0:
+            name = re.match(r'\s*(\w+)', cur)
+            if name:
+                values.append(name.group(1))
+            cur = ''
+        else:
+            cur += ch
+    return values
 
 
 def has_word(text, sym):
     return re.search(rf'\b{re.escape(sym)}\b', strip_comments(text)) is not None
+
+
+NUMBER = r'(0x[0-9a-fA-F]+|\d+)'
+
+
+def find_number(text, name):
+    """A size the code states for a name: a constant's value, an array's length or an entity's max."""
+    body = strip_comments(text)
+    n = re.escape(name)
+    for pattern in (rf'\b{n}\s*=\s*{NUMBER}\s*;', rf'\b{n}\s*\[\s*{NUMBER}\s*\]\s*;', rf'\bentity\s+{n}\s+max\s+{NUMBER}\b'):
+        m = re.search(pattern, body)
+        if m:
+            return int(m.group(1), 0)
+    return None
+
+
+def close_brace(body, open_at):
+    depth = 0
+    for i in range(open_at, len(body)):
+        if body[i] == '{':
+            depth += 1
+        elif body[i] == '}':
+            depth -= 1
+            if depth == 0:
+                return i
+    return len(body) - 1
+
+
+def functions(text):
+    """Every function defined in the text, as (name, body), the body with its braces."""
+    body = strip_comments(text)
+    out = []
+    for m in re.finditer(r'\b(\w+)\s*\(', body):
+        close = close_paren(body, m.end() - 1)
+        if close is None:
+            continue
+        after = body[close + 1:]
+        stripped = after.lstrip()
+        if not stripped.startswith('{'):
+            continue
+        line_start = body.rfind('\n', 0, m.start()) + 1
+        before = re.sub(r'^(export\s+)?(@\w+(\([^)]*\))?\s+)*', '', body[line_start:m.start()].strip()).strip()
+        head = re.sub(r'\s*\([^()]*\)$', '', before)
+        if not head or head.endswith(('.', '=', '(', ',', 'return', 'else', '!', '&&', '||')) or not re.match(r'^[\w<>,\[\]\*\s.:]+$', head):
+            continue
+        open_at = close + 1 + (len(after) - len(stripped))
+        out.append((m.group(1), body[open_at:close_brace(body, open_at) + 1]))
+    return out
+
+
+def stores(text, enum, field):
+    """(function, value) for each place a function stores `enum::value` into `field`."""
+    pattern = re.compile(rf'\b{re.escape(field)}\s*[:=]\s*{re.escape(enum)}::(\w+)')
+    return [(name, m.group(1)) for name, body in functions(text) for m in pattern.finditer(body)]

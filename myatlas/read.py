@@ -106,6 +106,28 @@ def parse_meta(node, line, where, rep):
         node.setdefault('_values_doc', []).append([key[2:].strip(), val.strip()])
     elif key == '図':
         node['_figure_file'] = val.strip()
+    elif key == '形':
+        node['_shape'] = (val.strip(), where)
+    elif key == '状態の欄':
+        node.setdefault('_states', {'moves': []})['field'] = val.strip()
+    elif key.startswith('移る '):
+        m = re.match(r'移る (\S+) → (\S+)$', key)
+        if not m:
+            rep.error(where, f'移る の行は「移る A → B：関数・関数」: {line}')
+            return
+        fns = [x.strip() for x in re.split(r'[・、,]', val) if x.strip()]
+        node.setdefault('_states', {'moves': []})['moves'].append({'from': m.group(1), 'to': m.group(2), 'fns': fns, '_where': where})
+    elif key.startswith('操作 '):
+        name, _, kind = key[3:].strip().partition(' ')
+        text, _, cost = val.partition('｜')
+        op = {'name': name, 'text': text.strip(), '_where': where}
+        if kind.strip():
+            op['kind'] = kind.strip()
+        if cost.strip():
+            op['cost'] = cost.strip()
+        node.setdefault('ops', []).append(op)
+    elif key == '不変':
+        node.setdefault('invariants', []).append(val.strip())
     elif key == '走る':
         node['run'] = val.strip()
     elif key == 'カーネルの中':
@@ -132,6 +154,18 @@ def parse_data(text, where, rep):
     if m.group(5):
         d['chip'] = False
     return d
+
+
+def parse_bits(text, where, rep):
+    """ビット tick 数 24、進み 8: the fields of a register from the high bits down, each with its width."""
+    out = []
+    for item in text.split('、'):
+        label, _, width = item.strip().rpartition(' ')
+        if not label or not width.isdigit():
+            rep.error(where, f'ビットは「名前 幅、名前 幅」: {item.strip()}')
+            return True
+        out.append([label, int(width)])
+    return out
 
 
 REGION_ATTRS = {'短く': 'label3', '位置': 'at', '時系列': 'seq'}
@@ -162,6 +196,13 @@ def parse_flow(project, path, rep):
         if indented and step is not None and not s.startswith('箱 '):
             if s.startswith('渡す値：'):
                 (step.setdefault('data', {'label': ''}))['note'] = s[4:].strip()
+            elif s.startswith('操作：'):
+                for part in s[3:].split('／'):
+                    m = re.match(r'\s*\[\[([\w.\-]+)\]\]\s*(\S+)\s*$', part)
+                    if m:
+                        step.setdefault('ops', []).append({'node': m.group(1), 'kind': m.group(2)})
+                    else:
+                        rep.error(where, f'手順の操作は「操作：[[節]] 入れる」: {part.strip()}')
             elif s.startswith('分かれる：'):
                 step['branches'] = [[a.strip(), b.strip()] for a, _, b in (x.partition('→') for x in s[5:].split('／'))]
             elif 'label' not in step:
@@ -229,7 +270,7 @@ def parse_flow(project, path, rep):
                 elif k == '中身の形':
                     b['slotSchema'] = v.strip('[]')
                 elif k == 'ビット':
-                    b['bits'] = True
+                    b['bits'] = parse_bits(v, where, rep) if v else True
                 elif k == '段':
                     b['lane'] = int(v)
                 else:

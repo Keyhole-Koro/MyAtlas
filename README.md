@@ -30,6 +30,8 @@ as a single file. It shows:
 - the paper inside a node, opened in place, with the steps around it that come in and go out
 - the same flow as a 3D stack, as time running back, and as a sequence diagram
 - who runs each part (execution contexts), and a node's text, code and fields beside the map
+- data structures in their boxes (rings, lists, tables, trees) and state machines, with their
+  operations played step by step and moved by the flow's steps
 - a recorded run played over the map, and compared with the steps
 
 The address keeps where you are (`#flow=cpu&view=seq&step=5`), so a link opens the same place.
@@ -38,7 +40,7 @@ The address keeps where you are (`#flow=cpu&view=seq&step=5`), so a link opens t
 
 | Language | Read |
 |---|---|
-| MyLang (`.mln`) | functions and methods with their parameters, structs, enums, a file's namespace |
+| MyLang (`.mln`) | functions and methods with their parameters, structs, enums, a file's namespace, constants, array lengths and entity sizes, the places a function stores an enum value into a field |
 | Rust (`.rs`) | `fn` signatures and their parameters |
 
 Anything else can still be named: the check then only looks for the symbol.
@@ -51,6 +53,7 @@ myatlas/read.py      the text format
 myatlas/check.py     loading the map and checking it
 myatlas/code_mylang.py, code_rust.py   what the code says
 myatlas/traces.py    recorded runs tied to nodes
+myatlas/dsa.py       shapes, state machines, operations and invariants
 myatlas/build.py     filling viewer.html
 viewer.html          the page, with the map's data filled in at build time
 ```

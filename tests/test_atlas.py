@@ -256,6 +256,88 @@ class AtlasTest(unittest.TestCase):
         self.assertIsNone(page(Project(self.fx.root), Report()))
 
 
+DSA_CODE = """
+i32 SLOTS = 8;
+struct Ring {
+    i32 head;
+    i32 tail;
+};
+enum State { Idle, Busy(i32), Done }
+struct Job {
+    State state;
+};
+void start(Job j) { j.state = State::Busy(1); }
+void finish(Job j) { j.state = State::Done; }
+void reset(Job j) { j.state = State::Idle; }
+"""
+
+DSA_NODES = """
+## os.ring  Ring
+置き場・src/queue.mln の Ring
+形：リング（枠 SLOTS、読む head、書く tail）
+フィールド head：次に読む
+フィールド tail：次に書く
+操作 push 入れる：tail に書く｜O(1)
+不変：head と tail は SLOTS より小さい
+
+## os.copy  要求の列
+置き場・src/queue.mln の Ring
+形：[[os.ring]]
+フィールド head：
+フィールド tail：
+
+## os.state  State
+列挙・src/queue.mln の State
+状態の欄：Job.state
+移る はじめ → Idle：reset
+移る Idle → Busy：start
+移る Busy → Done：finish
+"""
+
+
+class DsaTest(AtlasTest):
+    def setUp(self):
+        super().setUp()
+        self.fx.edit('src/queue.mln', 'namespace queue;\n', 'namespace queue;\n' + DSA_CODE)
+        self.fx.write(self.fx.docs / 'layers' / 'os.md', (self.fx.docs / 'layers' / 'os.md').read_text(encoding='utf-8') + DSA_NODES)
+
+    def test_shapes_and_states_come_from_the_code(self):
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        shape = nodes['os.ring']['shape']
+        self.assertEqual((shape['kind'], shape['roles']['n'], shape['roles']['read']), ('ring', {'name': 'SLOTS', 'num': 8}, {'name': 'head'}))
+        self.assertEqual(nodes['os.copy']['shape'], {'of': 'os.ring'})
+        self.assertEqual([v for v, _ in nodes['os.state']['values']], ['Idle', 'Busy', 'Done'])
+        self.assertEqual([m['to'] for m in nodes['os.state']['states']['moves']], ['Idle', 'Busy', 'Done'])
+
+    def test_a_move_the_text_leaves_out_is_reported(self):
+        self.fx.edit('docs/atlas/layers/os.md', '移る はじめ → Idle：reset\n', '')
+        rep, _ = self.fx.check()
+        self.assertIn('os.state: reset も Job.state を Idle にするが、移る に無い', self.messages(rep, 'warning'))
+
+    def test_a_move_the_code_does_not_make_is_an_error(self):
+        self.fx.edit('docs/atlas/layers/os.md', '移る Busy → Done：finish', '移る Busy → Done：finish・start')
+        rep, _ = self.fx.check()
+        self.assertIn('os.state: start は Job.state を Done にしていない', self.messages(rep))
+
+    def test_names_sizes_operations_and_invariants_are_checked(self):
+        self.fx.edit('docs/atlas/layers/os.md', '枠 SLOTS、', '枠 SIZE、')
+        self.fx.edit('docs/atlas/layers/os.md', '操作 push 入れる', '操作 pull 回す')
+        self.fx.edit('docs/atlas/layers/os.md', '不変：head と tail は SLOTS より小さい', '不変：length は SLOTS より小さい')
+        rep, _ = self.fx.check()
+        errors = self.messages(rep)
+        self.assertIn('os.ring: src/queue.mln に SIZE の大きさが無い（定数・配列・entity の max）', errors)
+        self.assertTrue(any('操作 pull は src/queue.mln の関数に無い' in m for m in errors))
+        self.assertTrue(any('操作 pull の 回す は、ring では 入れる・出す のどれか' in m for m in errors))
+        self.assertIn('os.ring: 不変の length が src/queue.mln に無い', errors)
+
+    def test_a_step_names_what_it_does_to_a_structure(self):
+        self.fx.edit('docs/atlas/flows/send.md', '   アプリが列に入れる\n', '   アプリが列に入れる\n   操作：[[os.copy]] 入れる／[[os.push]] 入れる\n')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(flows[0]['steps'][0]['ops'], [{'node': 'os.copy', 'kind': '入れる'}, {'node': 'os.push', 'kind': '入れる'}])
+        self.assertIn('手順の操作 [[os.push]] は、形のある節にする', self.messages(rep))
+
+
 class CodeTest(unittest.TestCase):
     def test_mylang_function_skips_calls_and_comments(self):
         text = '// f(x) { is a comment\nvoid g() { f(1); }\ni32 f(i32 x) {\n  return x;\n}\n'

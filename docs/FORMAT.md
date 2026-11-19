@@ -109,7 +109,8 @@ In the text, `[[id]]` links to a node and `![[id]]` shows it in place, a figure 
   in the sequence view.
 - `箱 id [[node]] title` places a node. Options: `｜略 x` a shorter title, `｜名前空間 x`,
   `｜説明 x` a line under the title, `｜中身 a, b` slots drawn inside, `｜中身の形 [[schema]]` what
-  the slots are, `｜ビット` drawn as a register, `｜段 n` the lane, when the automatic one is wrong.
+  the slots are, `｜ビット` drawn as a register (`｜ビット tick 数 24、進み 8` names its fields from the
+  high bits down, with their widths), `｜段 n` the lane, when the automatic one is wrong.
   A box sits in its node's layer.
 - A step is `n. from → to  kind「verb」 渡す data [[node]]`, and the indented line under it says
   what happens. The kinds are `呼び出し`, `syscall`, `戻り`, `通知`, `割り込み`, `列を通す`,
@@ -118,6 +119,8 @@ In the text, `[[id]]` links to a node and `![[id]]` shows it in place, a figure 
   `=[[schema.x]]` when the name is not a node's title, `「type」` for the type as written, and
   `札なし` to leave it off the line. An indented `渡す値：…` says more about it.
 - An indented `分かれる：a → b ／ c → d` lists where the step branches.
+- An indented `操作：[[node]] 入れる` says what the step does to a data structure (see below); the
+  viewer moves the structure drawn in that node's box with the steps. `／` separates several.
 - `もし when（n の代わり）.` is another way instead of step n; `もし when（n のあと）.` comes after it.
   They are lettered A, B, … after the numbered steps.
 
@@ -129,6 +132,52 @@ has the same lines, plus:
 - `入口：box` is where the steps coming in from outside land.
 - `出口 [[node]]：box` and `入口 [[node]]：box` tie a step outside the paper that goes to or comes
   from that node to a box inside, so the viewer can draw it through the paper's edge.
+
+## Data structures and algorithms
+
+A node that stores something can say what shape it has, bound to the names its code uses. The viewer
+draws the shape in the node's box and, larger, beside the map, and plays its operations.
+
+```
+## kernel.channel  Channel
+置き場・system/MyKernel/src/kernel/ipc.unsafe.mln の Channel
+形：リング（枠 SLOTS、読む head、書く tail、1 通 MSG_WORDS 語）
+操作 send 入れる：tail の枠に書いて 1 進める。進めた先が head なら false｜O(1)
+操作 recv 出す：head の枠から読んで 1 進める。head == tail なら false｜O(1)
+不変：入っているのは tail − head 通（SLOTS で一周）
+```
+
+| Shape | Roles | Operations the viewer plays |
+|---|---|---|
+| `リング` | `枠` size, `読む` read index, `書く` write index, `1 通` size of one item | `入れる`, `出す` |
+| `リスト` | `先頭` head, `次` the link, `頭` header size, `順` order (text), `繰り上げ` a bump pointer | `先頭から探す` (first fit), `順に差し込む` (ordered insert that merges neighbours), `先頭に積む`, `先頭から取る` |
+| `表` | `枠` the array or its size, `鍵` key, `空き` what an empty slot holds | `一周して探す` (round robin) |
+| `木` | `子` children, `親` parent, `節` the node type's size, `兄弟の順` sibling order (text) | `深さ優先`, `最後に当たったもの` (hit test that keeps the last hit) |
+
+- A role's value is a name the check looks up in the node's code. A size is the value of a
+  constant, the length of an array or the `max` of an entity, so `枠 SLOTS` draws 32 cells when the
+  code says `SLOTS = 32`. `順` and `兄弟の順` take text, and so do `次` and `空き` when they are not a
+  name.
+- `形：[[node]]` borrows another node's shape: one channel of the kind that node describes.
+- `操作 name kind：text｜cost` names a function in the node's code, or a function node as
+  `[[node]]`. The kind is optional; without it the operation is listed but not played.
+- `不変：text` states what always holds. Every ASCII name in it has to be in the node's code.
+
+An enum can be a state machine:
+
+```
+## kernel.thread-state  ThreadState
+列挙・system/MyKernel/src/kernel/thread.unsafe.mln の ThreadState
+状態の欄：Thread.state
+移る はじめ → Runnable：publish_boot・publish_kernel
+移る Runnable → Running：make_running
+移る Running → Blocked：sleep_until・futex_wait
+```
+
+`状態の欄` is the struct field that holds the state. Each `移る` names the functions that make the
+move. The check finds every place the code stores a value of the enum into that field: a function
+that does not store the move's target is an error, and a store no move mentions is a warning. So a
+move added to the code shows up as soon as the map is checked. `はじめ` is where a new one starts.
 
 ## Traces
 

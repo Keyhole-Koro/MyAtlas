@@ -6,6 +6,7 @@ they mean. Anything that no longer matches is reported.
 import re
 
 from . import code_mylang, code_rust
+from .dsa import OPS, attach_dsa
 from .read import LINK, parse_flow, parse_layer, read_index
 
 
@@ -138,6 +139,7 @@ def load(project, rep):
                 n['figure'] = fp.read_text(encoding='utf-8')
             else:
                 rep.error(n['_where'], f'{nid}: 図のファイルが無い: {project.rel(fp)}')
+    attach_dsa(project, nodes, rep)
     flows, papers = [], {}
     for fid in index['flows']:
         p = project.docs / 'flows' / f'{fid}.md'
@@ -181,6 +183,7 @@ def check_model(layers, nodes, flows, papers, rep):
             runs.append(n['run'])   # the viewer's colours go in this order
         texts = [n.get('text', '')] + [d for _, d in n.get('api', {}).get('params', [])] + [n.get('api', {}).get('ret', '')]
         texts += [d for *_, d in n.get('_fields_doc', [])] + [d for _, d in n.get('_values_doc', [])]
+        texts += [op['text'] for op in n.get('ops', [])] + n.get('invariants', [])
         for t in texts:
             for m in LINK.finditer(t or ''):
                 if m.group(1) not in nodes:
@@ -234,6 +237,14 @@ def check_model(layers, nodes, flows, papers, rep):
                 for m in LINK.finditer(t):
                     if m.group(1) not in nodes:
                         rep.error(w, f'ポインタ [[{m.group(1)}]] の先が無い')
+            for op in st.get('ops', []):
+                target = nodes.get(op['node'])
+                shape = (target or {}).get('shape') or {}
+                base = (nodes.get(shape['of']) or {}).get('shape') if 'of' in shape else shape
+                if not base or 'kind' not in base:
+                    rep.error(w, f'手順の操作 [[{op["node"]}]] は、形のある節にする')
+                elif op['kind'] not in OPS[base['kind']]:
+                    rep.error(w, f'手順の操作 {op["kind"]} は、{base["kind"]} では {"・".join(OPS[base["kind"]])} のどれか')
             if 'alt' in st and not (0 <= st['alt']['at'] < len(main)):
                 rep.error(w, f'もし の手順番号 {st["alt"]["at"] + 1} が無い')
         if not main:
