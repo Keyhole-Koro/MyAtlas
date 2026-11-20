@@ -118,15 +118,25 @@ def main():
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(project.root / path, dest)
 
-    # Where each step happens: the line in the box it starts from that names the box it goes to.
-    def place(box_from, box_to):
+    # Where each step happens: the line in the box it starts from that calls the function it goes to,
+    # or assigns the store it writes. A bare mention (an argument, a local of the same name, a read)
+    # is not where the step happens, so it places nothing; neither does a return.
+    def place(step, box_from, box_to):
         a, b = code['nodes'].get(box_from.get('node') or ''), code['nodes'].get(box_to.get('node') or '')
-        if not a or not a.get('start') or not b or not b.get('symbol'):
+        if step.get('kind') == 'return' or not a or not a.get('start') or not b or not b.get('symbol'):
             return None
+        kind = data['nodes'].get(box_to.get('node') or '', {}).get('kind')
+        writes = kind == 'store' and data['nodes'].get(box_from.get('node') or '', {}).get('kind') == 'func'
+        name = re.escape(b['symbol'].split('.')[-1])
+        if kind == 'func':
+            pattern = rf'\b{name}\s*\('
+        elif writes:
+            pattern = rf'\b{name}(\s*\[[^\]]*\])?(\.\w+)*\s*=(?!=)'
+        else:
+            pattern = rf'\b{name}\b'
         text = project.code_text(a['path']).split('\n')
-        name = b['symbol'].split('.')[-1]
-        for k in range(a['start'], (a['end'] or a['start']) + 1):
-            if k - 1 < len(text) and re.search(rf'\b{re.escape(name)}\b', text[k - 1]) and k != a['start']:
+        for k in range(a['start'] + 1, (a['end'] or a['start']) + 1):
+            if k - 1 < len(text) and re.search(pattern, text[k - 1]):
                 return {'path': a['path'], 'line': k}
         return None
 
@@ -135,7 +145,7 @@ def main():
         spots = {}
         for i, st in enumerate(f['steps']):
             if st.get('from') in boxes and st.get('to') in boxes:
-                spot = place(boxes[st['from']], boxes[st['to']])
+                spot = place(st, boxes[st['from']], boxes[st['to']])
                 if spot:
                     spots[str(i)] = spot
         code['steps'][f['id']] = spots

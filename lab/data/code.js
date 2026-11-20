@@ -488,10 +488,6 @@ window.ATLAS_CODE = {
  },
  "steps": {
   "ui": {
-   "1": {
-    "path": "system/MyAppFramework/src/elements.mln",
-    "line": 586
-   },
    "6": {
     "path": "system/MyOS/src/ipc/channel.unsafe.mln",
     "line": 164
@@ -531,21 +527,13 @@ window.ATLAS_CODE = {
    },
    "5": {
     "path": "system/MyKernel/src/kernel/scheduler.unsafe.mln",
-    "line": 111
+    "line": 112
    }
   },
   "os.gateway": {
-   "1": {
-    "path": "system/MyOS/src/ipc/gateway.unsafe.mln",
-    "line": 102
-   },
    "2": {
     "path": "system/MyOS/src/ipc/gateway.unsafe.mln",
     "line": 213
-   },
-   "8": {
-    "path": "system/MyOS/src/ipc/channel.unsafe.mln",
-    "line": 136
    }
   },
   "os.submit": {}

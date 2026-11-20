@@ -111,8 +111,9 @@ python3 lab/export.py          # MyComputer は既定で ~/Workspaces/MyComputer
 ### まず：データを正す（どの見せ方にも効き、小さく直せる）
 
 1. **手順の行を正す。** export.py（本来は MyAtlas）で、手順の行を「受ける側を呼ぶ（名前の後に括弧）・置き場に書く（代入）・return」の行に絞って確かめる。
-   今の code.json は 13 か所のうち 4 か所が別の行を指す（ui 2、os.gateway 2 ともし A、kernel.cpu-time 6。同じ名前の引数や変数に当たっている）。
-   4 つの試作（code-tour・graph-notebook・story・zoom-atlas）が別々に同じ誤りを見つけた。そのうえで code-tour の推し方
+   試作を作った時の code.json は 13 か所のうち 4 か所が別の行を指していた（ui 2、os.gateway 2 ともし A、kernel.cpu-time 6。同じ名前の引数や変数に当たっていた）。
+   4 つの試作（code-tour・graph-notebook・story・zoom-atlas）が別々に同じ誤りを見つけた。**ラボの export.py はこの規則に直した**（2026-11-20）：
+   3 か所は行を出さなくなり、kernel.cpu-time 6 は 111 行から 112 行（`g_clock_charged = now;`）になった。残る 10 か所は変わらない。そのうえで code-tour の推し方
    （`code-tour/lines.js` の 12 の決まり）か、`code-tour/NOTES.md` の表の 29 行を code.json に持たせれば、49 手順のうち 42 で行が出せる。
 2. **記録を正す。** `traces.py` で exit・iret（と from・interrupted・syscall・trap）を残す。それだけで長さ・入れ子・待ちが描ける。
    `kernel.os-call` を付けるのは OS_CALL の syscall の下の dispatch だけにする。WAIT_NOTIFICATION の 3 回を外すと、
@@ -148,7 +149,7 @@ python3 lab/export.py          # MyComputer は既定で ~/Workspaces/MyComputer
 
 ### データ（ラボの外。まだ直していない）
 
-- code.json の手順の行の誤り 4 つと、traces.py の OS_CALL の対応・exit と iret の欠け（上の 1 と 2）。試作はそれぞれページの側で補っている。
+- traces.py の OS_CALL の対応・exit と iret の欠け（上の 2）。試作はそれぞれページの側で補っている。手順の行の誤り（上の 1）は、ラボの export.py では直した。
   trace-timeline は MyComputer の記録ファイルの写し（`trace-timeline/data/trace-full.js`）に頼っている。
 - 地図の文の古い数。Request は 13 語と書いてあるが、実際は 15 語（`REQUEST_WORD_COUNT = 15`）。result_out は「差し替える」とだけ書いてあるが、
   コードが差し替えるのは書き込み先がある時（`result_out != 0 && result_size > 0`）だけ。数のずれは atlas-check では拾えない。
