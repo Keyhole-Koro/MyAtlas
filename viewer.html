@@ -273,13 +273,28 @@ body.still .edge .flow { display: none; }
 
 /* the panel */
 .step-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-3); margin: 0 0 var(--space-4); }
-.step-card .lbl { font-weight: 600; line-height: 1.6; display: flex; gap: var(--space-2); align-items: flex-start; }
-.step-card .route { margin-top: var(--space-2); }
+.sc-head { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: center; }
+.sc-name { display: flex; gap: var(--space-2); align-items: center; flex: 0 1 auto; min-width: 0; }
+.sc-title { font-size: var(--text-md); font-weight: 700; line-height: 1.45; margin: 0; min-width: 0; }
+.sc-route { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: center; margin: var(--space-2) 0 0; color: var(--text-2); font-size: var(--text-xs); }
+.sc-head .kind-badge { margin-left: auto; }
+.end-chip { display: inline-flex; align-items: center; max-width: 100%; font: 600 var(--text-xs)/1.6 var(--font-mono); color: var(--text); background: var(--surface-2); border-radius: 4px; padding: 0 var(--space-2); overflow-wrap: anywhere; }
+.sc-text { font-size: var(--text-sm); line-height: 1.7; margin: var(--space-2) 0 0; }
+.node-card.under { border-top: 1px solid var(--border); padding-top: var(--space-3); }
+.sec-label { font-size: var(--text-xs); font-weight: 700; color: var(--text-2); margin: 0 0 var(--space-2); }
+.node-title.sm { font-size: var(--text-md); }
+.node-body { font-size: var(--text-sm); line-height: 1.75; }
+.embed-ref { font-size: var(--text-xs); color: var(--text-2); }
 .node-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .node-title { font-size: var(--text-lg); margin: var(--space-2) 0; }
 .node-title.mono { font-family: var(--font-mono); font-size: var(--text-md); overflow-wrap: anywhere; }
 .code-ptr { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--text-sm); color: var(--text-2); margin: 0 0 var(--space-3); }
-.code-ptr code { overflow-wrap: normal; }
+.code-ptr code { overflow-wrap: anywhere; background: none; padding: 0; color: var(--text); font-size: var(--text-xs); }
+.code-ptr .dir { display: block; font: var(--text-2xs)/1.5 var(--font-mono); color: var(--text-2); overflow-wrap: anywhere; }
+.shape .fold > summary { list-style: none; cursor: pointer; color: var(--text-3); }
+.shape .fold > summary::-webkit-details-marker { display: none; }
+.shape .fold > summary:hover { color: var(--accent); }
+.shape .fold[open] > summary { display: none; }
 .code-ptr .icon { margin-top: 3px; }
 .node-body p { margin: 0 0 var(--space-3); }
 .panel-h { font-size: var(--text-sm); font-weight: 650; color: var(--text-2); margin: var(--space-3) 0 var(--space-2); }
@@ -2380,16 +2395,28 @@ function shapeHtml(id, hot) {
   const n = NODES[id], on = new Set(hot || []), inStep = !!hot;
   const fld = (code, note, isHot, always) => `<div class="fld${isHot ? ' hot' : ''}"${note ? ` title="${esc(plain(note))}"` : ''}><span class="ln">${code}</span>`
     + (note && (!inStep || isHot || always) ? `<span class="note">${linkify(note)}</span>` : '') + `</div>`;
+  const fold = (rows, pad) => {
+    if (!inStep || !on.size) return rows.map((r) => r[1]).join('');
+    let out = '', run = [];
+    const flush = () => {
+      if (run.length > 1) out += `<details class="fold"><summary class="ln">${pad}…（ほか ${run.length} つ）</summary>${run.join('')}</details>`;
+      else out += run.join('');
+      run = [];
+    };
+    for (const [hot, html] of rows) { if (hot) { flush(); out += html; } else run.push(html); }
+    flush();
+    return out;
+  };
   let h = '';
   if (n.kind === 'schema') {
-    h = `<span class="ln kw">struct ${esc(n.title)} {</span>` + n.fields.map(([t, f, note]) => fld(`    ${typeLinks(t)} ${esc(f)};`, note, on.has(f))).join('') + `<span class="ln kw">};</span>`;
+    h = `<span class="ln kw">struct ${esc(n.title)} {</span>` + fold(n.fields.map(([t, f, note]) => [on.has(f), fld(`    ${typeLinks(t)} ${esc(f)};`, note, on.has(f))]), '    ') + `<span class="ln kw">};</span>`;
   } else if (n.kind === 'enum') {
     h = `<span class="ln kw">enum ${esc(n.title)} {</span>`
-      + n.values.map(([v, note]) => (v === '…' ? fld(`    // …`, note, false, true) : fld(`    ${esc(v)},`, note, on.has(v)))).join('') + `<span class="ln kw">};</span>`;
+      + fold(n.values.map(([v, note]) => (v === '…' ? [false, fld(`    // …`, note, false, true)] : [on.has(v), fld(`    ${esc(v)},`, note, on.has(v))])), '    ') + `<span class="ln kw">};</span>`;
   } else if (n.kind === 'hw') {
-    h = `<span class="ln kw">${esc(n.reg)}（32 ビット）</span>` + n.fields.map(([bits, f, note]) => fld(`    [${esc(bits)}]  ${esc(f)}`, note, on.has(f))).join('');
+    h = `<span class="ln kw">${esc(n.reg)}（32 ビット）</span>` + fold(n.fields.map(([bits, f, note]) => [on.has(f), fld(`    [${esc(bits)}]  ${esc(f)}`, note, on.has(f))]), '    ');
   } else {
-    h = n.fields.map(([t, f, note]) => fld(`${typeLinks(t)} ${esc(f)};`, note, on.has(f))).join('');
+    h = fold(n.fields.map(([t, f, note]) => [on.has(f), fld(`${typeLinks(t)} ${esc(f)};`, note, on.has(f))]), '');
   }
   return `<div class="shape">${h}</div>`;
 }
@@ -2399,12 +2426,13 @@ function apiCard(a) {
   if (rows) h += `<dl>${rows}</dl>`;
   return h + `</div>`;
 }
-function renderText(text, depth = 0) {
+function renderText(text, depth = 0, shown = null) {
   return text.split('\n').map((para) => {
     const m = para.match(/^!\[\[([\w.\-]+)\]\]$/);
     if (!m) return `<p>${linkify(para)}</p>`;
     const n = NODES[m[1]];
     if (!n) return `<p class="muted">[[${esc(m[1])}]]</p>`;
+    if (m[1] === shown) return `<p class="embed-ref">埋め込み：<a href="#" data-node="${m[1]}">${esc(n.title)}</a>（上の「渡るデータ」と同じもの）</p>`;
     const body = depth > 0 ? `<p>${linkify(n.text.split('\n')[0])}</p>`
       : n.svg ? `<div class="scroll-x fig">${n.svg()}</div>` + renderText(n.text, depth + 1)
       : ((n.fields || n.values) ? shapeHtml(m[1]) : '') + renderText(n.text, depth + 1);
@@ -2484,20 +2512,24 @@ function kindBadge(k) { return `<span class="kind-badge">${arrowSample(k)}${esc(
 
 // ---- The panel: the chosen step, then the chosen node ----
 function altNote(f, st) {
-  return st.alt ? `<p class="alt-when">もし${esc(st.alt.when)}${st.alt.also ? `（${stepNo(f.steps[st.alt.at], st.alt.at)} のあとに起きる）` : `（${stepNo(f.steps[st.alt.at], st.alt.at)} の代わり）`}</p>` : '';
+  return st.alt ? `<p class="alt-when">手順 ${stepNo(f.steps[st.alt.at], st.alt.at)} ${st.alt.also ? 'のあとに起きる' : 'の代わりに起きる'}</p>` : '';
 }
 function branchTable(st) {
   return st.branches ? `<p class="panel-h">この手順の中で分かれる</p><table class="branches"><tbody>${st.branches.map(([w, d]) => `<tr><th>${linkify(w)}</th><td>${linkify(d)}</td></tr>`).join('')}</tbody></table>` : '';
 }
 function stepCard(f, st, i, num) {
   const a = boxById(f, st.from), b = boxById(f, st.to), no = num || stepNo(st, i);
-  let h = `<section class="step-card" aria-label="手順 ${no}"><div class="lbl"><span class="n is-on${num || st.alt ? ' outer-n' : ''}">${no}</span><span>${esc(st.label)}</span></div>` + altNote(f, st)
-    + `<div class="route">${kindBadge(st.kind)}<span class="path">${ends(f, a, f, b)}</span></div>`;
+  // The verb is the step's name, as on its pill; the sentence says what happens. A step without a verb is named by its sentence.
+  const title = st.alt ? `${st.alt.when}なら${st.verb ? '：' + st.verb : ''}` : st.verb || st.label;
+  const chip = (x) => `<span class="end-chip">${toneMark(f, x)}${esc(x.title)}</span>`;
+  let h = `<section class="step-card" aria-label="手順 ${no}"><div class="sc-head"><div class="sc-name"><span class="n is-on${num || st.alt ? ' outer-n' : ''}">${no}</span><h2 class="sc-title">${esc(title)}</h2></div>${kindBadge(st.kind)}</div>` + altNote(f, st)
+    + `<div class="sc-route">${chip(a)}<span aria-hidden="true">→</span>${chip(b)}</div>`
+    + (title !== st.label ? `<p class="sc-text">${esc(st.label)}</p>` : '');
   const d = st.data;
   if (d && d.note) h += `<p class="panel-h">渡す値：<span class="type-tag">${esc(d.label)}</span></p><p class="small" style="margin:0">${linkify(d.note)}</p>`;
   else if (d && d.schema) {
     h += `<p class="panel-h">渡るデータ：<a href="#" data-node="${d.schema}" class="mono">${esc(NODES[d.schema].title)}</a></p>` + shapeHtml(d.schema, d.fields);
-    if (d.fields) h += `<p class="shape-tip">色の付いた行が、この手順で作る・変える・使うフィールド。</p>`;
+    if (d.fields) h += `<p class="shape-tip">色の付いた行が、この手順で作る・変える・使うフィールド。「…」を押すと残りも出る。</p>`;
   } else if (d) h += `<p class="panel-h">渡す値：<span class="type-tag">${esc(d.type || d.label)}</span></p>`;
   return h + stepOpsHtml(f, st, i) + branchTable(st) + `</section>`;
 }
@@ -2887,15 +2919,20 @@ function nodeCard(id, n, st) {
   const f = flow(), refs = references(id);
   const inFlow = (x) => x.boxes.some((b) => b.node === id) || (x.regions || []).some((r) => r.node === id);
   const here = inFlow(f), elsewhere = allPapers().filter((x) => x !== f && inFlow(x));
-  let h = `<div class="node-meta"><span class="badge${SLOT[n.layer] ? ' layer-b' : ' accent'}">${SLOT[n.layer] ? `<i class="sw s-${SLOT[n.layer]}"></i>` : ''}${esc(LAYER_NAME[n.layer])}</span><span class="badge">${esc(KIND_NAME[n.kind])}</span><code>${esc(id)}</code></div>`;
-  h += `<h2 class="node-title${/^[\w.]+$/.test(n.title) ? ' mono' : ''}">${esc(n.title)}</h2>`;
-  if (n.code) h += `<p class="code-ptr"><svg class="icon sm"><use href="#i-file"/></svg><span><code>${esc(n.code[0]).replace(/\//g, '/<wbr>')}</code>${n.code[1] ? ` の <code>${esc(n.code[1])}</code>` : ''}</span></p>`;
+  let h = `<section class="node-card${st ? ' under' : ''}">` + (st ? `<p class="sec-label">${st.ref === id ? 'この手順の節' : '選んだ節'}</p>` : '');
+  h += `<div class="node-meta"><span class="badge${SLOT[n.layer] ? ' layer-b' : ' accent'}">${SLOT[n.layer] ? `<i class="sw s-${SLOT[n.layer]}"></i>` : ''}${esc(LAYER_NAME[n.layer])}</span><span class="badge">${esc(KIND_NAME[n.kind])}</span><code>${esc(id)}</code></div>`;
+  h += `<h2 class="node-title${/^[\w.]+$/.test(n.title) ? ' mono' : ''}${st ? ' sm' : ''}">${esc(n.title)}</h2>`;
+  if (n.code) {
+    // The file and the symbol on one line; the directory, which is long and the same for many nodes, under it.
+    const cut = n.code[0].lastIndexOf('/') + 1, dir = n.code[0].slice(0, cut), file = n.code[0].slice(cut);
+    h += `<p class="code-ptr"><svg class="icon sm"><use href="#i-file"/></svg><span><code>${esc(file)}</code>${n.code[1] ? ` の <code>${esc(n.code[1])}</code>` : ''}${dir ? `<span class="dir">${esc(dir).replace(/\//g, '/<wbr>')}</span>` : ''}</span></p>`;
+  }
   if (n.api) h += apiCard(n.api);
   const shownAbove = st && st.data && st.data.schema === id && !st.data.note;
   if ((n.fields || n.values) && !shownAbove) h += shapeHtml(id);
   if (n.svg) h += `<div class="scroll-x fig">${n.svg()}</div>`;
   h += dsaHtml(id);
-  h += `<div class="node-body">${renderText(n.text)}</div>`;
+  h += `<div class="node-body">${renderText(n.text, 0, st && st.data && st.data.schema && !st.data.note ? st.data.schema : null)}</div>`;
   if (n.kind === 'schema' || n.kind === 'enum' || n.kind === 'hw') h += lineageHtml(id);
   if (n.paper && PAPERS[n.paper]) h += `<p><button type="button" data-divenode="${id}"><svg class="icon sm" style="vertical-align:-3px"><use href="#i-file"/></svg> 中の紙を開く（手順 ${PAPERS[n.paper].steps.length}）</button></p>`;
   if (elsewhere.length) h += `<p class="small muted">${here ? 'ほかの紙にも出てくる（実体は同じ節）：' : 'この紙には箱が無い：'}${elsewhere.map((x) => `<button type="button" class="link-btn" data-gopaper="${x.id}">${esc(paperLabel(x))}で見る</button>`).join('　')}</p>`;
@@ -2904,7 +2941,7 @@ function nodeCard(id, n, st) {
       ? `<li><a href="#" data-node="${r.node}">${esc(NODES[r.node].title)}</a><span class="kind">${r.kind}</span></li>`
       : `<li><button type="button" class="link-btn" data-gopaper="${r.paper}"${r.step != null ? ` data-gostep="${r.step}"` : ''}>${esc(paperLabel(paperById(r.paper)))}${r.step != null ? `の手順 ${stepNo(paperById(r.paper).steps[r.step], r.step)}` : ''}</button><span class="kind">${r.kind}</span></li>`).join('')}</ul>`
     : `<p class="small muted">まだ無い</p>`;
-  return h;
+  return h + `</section>`;
 }
 function renderPanel() {
   const A = state.outer != null ? aroundHere() : null;
