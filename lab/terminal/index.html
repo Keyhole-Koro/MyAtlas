@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ターミナルで見る：MyComputer 文書マップ</title>
+<link rel="stylesheet" href="web/page.css">
+</head>
+<body>
+<header class="top">
+  <div class="title">
+    <h1>ターミナルで見る</h1>
+    <p>文書マップを端末の中で。層は帯、手順は番号付きの線。<span class="nowrap">SSH 越しでも、狭い画面でも。</span></p>
+  </div>
+  <div class="run">
+    <code id="cmd">python3 lab/terminal/atlas_tui.py</code>
+    <button id="copy" type="button" title="コマンドをコピー">コピー</button>
+  </div>
+</header>
+
+<main>
+  <section class="window" aria-label="atlas_tui.py の画面">
+    <div class="bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="name" id="wname">atlas_tui.py</span>
+      <span class="toast" id="toast" aria-live="polite"></span>
+      <span class="sizes" role="group" aria-label="端末の大きさ">
+        <button type="button" data-preset="wide">160×44</button>
+        <button type="button" data-preset="medium">112×34</button>
+        <button type="button" data-preset="narrow">46×40</button>
+      </span>
+      <span class="themes" role="group" aria-label="端末の色">
+        <button type="button" data-theme="dark" title="--theme dark">暗い</button>
+        <button type="button" data-theme="light" title="--theme light">明るい</button>
+      </span>
+    </div>
+    <div class="screen" id="screen" tabindex="0" aria-describedby="keys-help">
+      <canvas id="term" role="img" aria-label="ターミナルの画面"></canvas>
+      <p class="loading" id="loading">読み込み中…</p>
+    </div>
+  </section>
+
+  <nav class="keys" id="keys" aria-label="キー">
+    <span class="hint" id="keys-help">キーでも、画面の番号・箱・タブを押しても動きます</span>
+    <span class="group" role="group" aria-label="手順">
+      <button type="button" data-key="left"><kbd>←</kbd>前</button>
+      <button type="button" data-key="right"><kbd>→</kbd>次</button>
+      <button type="button" data-key="home"><kbd>Home</kbd>最初</button>
+      <button type="button" data-key="a"><kbd>a</kbd>もし</button>
+    </span>
+    <span class="group" role="group" aria-label="中の紙">
+      <button type="button" data-key="enter"><kbd>Enter</kbd>中の紙へ</button>
+      <button type="button" data-key="esc"><kbd>Esc</kbd>外へ</button>
+    </span>
+    <span class="group" role="group" aria-label="箱と説明">
+      <button type="button" data-key="up" aria-label="前の箱"><kbd>↑</kbd></button>
+      <button type="button" data-key="down"><kbd>↓</kbd>箱を選ぶ</button>
+      <button type="button" data-key="i"><kbd>i</kbd>説明</button>
+      <button type="button" data-key="pgdn"><kbd>PgDn</kbd>説明を送る</button>
+    </span>
+    <span class="group" role="group" aria-label="見方">
+      <button type="button" data-key="v"><kbd>v</kbd>地図/道のり</button>
+      <button type="button" data-key="c"><kbd>c</kbd>コード</button>
+    </span>
+    <span class="group" role="group" aria-label="画面">
+      <button type="button" data-key="1"><kbd>1</kbd>UI の要求</button>
+      <button type="button" data-key="2"><kbd>2</kbd>CPU 時間</button>
+      <button type="button" data-key="n"><kbd>n</kbd>節の一覧</button>
+      <button type="button" data-key="t"><kbd>t</kbd>記録</button>
+      <button type="button" data-key="?"><kbd>?</kbd>キー</button>
+    </span>
+  </nav>
+
+  <div class="cols">
+    <section class="card">
+      <h2>動かし方</h2>
+      <p>Python 3 の標準ライブラリだけで動きます。入れるものはありません。</p>
+      <pre class="cmd">python3 lab/terminal/atlas_tui.py</pre>
+      <p>図だけを出して終わる（テストや文書に貼る用）：</p>
+      <pre class="cmd">python3 lab/terminal/atlas_tui.py --render ui
+python3 lab/terminal/atlas_tui.py --render cpu --step 5
+python3 lab/terminal/atlas_tui.py --render os.gateway --view route --width 60
+python3 lab/terminal/atlas_tui.py --list</pre>
+      <p>罫線が崩れる端末（曖昧幅を全角にした日本語向けの設定など）では <code>--ascii</code>、明るい端末では <code>--theme light</code>、点の動きを止めるなら <code>--still</code>。</p>
+    </section>
+    <section class="card">
+      <h2>読み方</h2>
+      <ul class="legend">
+        <li><canvas class="sw" data-sw="now"></canvas>今の手順。線も箱の枠も太くなる</li>
+        <li><canvas class="sw" data-sw="done"></canvas>通った手順（青）</li>
+        <li><canvas class="sw" data-sw="later"></canvas>これからの手順（灰）</li>
+        <li><canvas class="sw" data-sw="badge"></canvas>手順の番号（今・通った・これから）。今の手順だけ動詞も付く</li>
+        <li><canvas class="sw" data-sw="alt"></canvas>「もし」の手順（ある手順の代わりに起きる。<kbd>a</kbd> で見る）</li>
+        <li class="kinds">線の形が手順の種類：
+          <span><canvas class="sw" data-sw="call"></canvas>呼び出し・読み書き</span>
+          <span><canvas class="sw" data-sw="syscall"></canvas>syscall</span>
+          <span><canvas class="sw" data-sw="msg"></canvas>列を通す（破線）</span>
+          <span><canvas class="sw" data-sw="signal"></canvas>通知（点線、出る所に ◆）</span>
+          <span><canvas class="sw" data-sw="return"></canvas>戻り（長い破線、中が空の矢じり）</span></li>
+        <li><canvas class="sw" data-sw="func"></canvas>関数　<canvas class="sw" data-sw="store"></canvas>置き場（角が丸い）　<canvas class="sw" data-sw="paper"></canvas>中に紙がある箱</li>
+        <li><canvas class="sw" data-sw="region"></canvas>薄い面は実行の文脈（だれが走らせているか）</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="card wide">
+    <div class="head">
+      <h2><code>python3 lab/terminal/atlas_tui.py --render ui</code> の出力</h2>
+      <button type="button" id="copy-render">文字としてコピー</button>
+    </div>
+    <p>対話しないで図と手順の一覧だけを出して終わります。端末なら色付き、パイプに流すと文字だけ（<code>--color never</code>）。</p>
+    <div class="render-box"><canvas id="render-canvas" role="img" aria-label="--render ui の出力"></canvas></div>
+  </section>
+</main>
+
+<script src="web/term.js"></script>
+<script src="web/render-sample.js"></script>
+<script src="web/page.js"></script>
+</body>
+</html>

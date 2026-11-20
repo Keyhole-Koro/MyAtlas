@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>記録を時間で見る — MyAtlas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-main">
+    <h1 id="title">記録</h1>
+    <p class="meta" id="meta"></p>
+  </div>
+  <dl class="change" id="change" aria-label="打つ前と後"></dl>
+</header>
+
+<section class="story-band" aria-label="あらすじ">
+    <div class="story-head">
+    <h2>あらすじ</h2>
+    <p class="hint" id="story-hint">キーを押してから DOM が変わるまでを、CPU を持ったスレッドの番ごとに区切った。</p>
+    <div class="story-actions">
+      <button type="button" id="path-btn" class="btn"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M2 12c3 0 3-8 6-8s3 8 6 8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>キー → DOM の道筋</span></button>
+      <button type="button" id="play" class="btn"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg><span>順に見る</span></button>
+      <button type="button" id="prev" class="btn icon" aria-label="前の場面"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+      <button type="button" id="next" class="btn icon" aria-label="次の場面"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+    </div>
+  </div>
+  <ol class="story" id="story"></ol>
+</section>
+
+<main class="layout">
+  <section class="timeline-card" aria-label="時間の流れ">
+    <div class="overview-wrap">
+      <canvas id="overview" aria-label="記録の全体。四角が今見ている範囲"></canvas>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="呼び出し">
+        <span class="seg-label">呼び出し</span>
+        <button type="button" data-fold="on" aria-pressed="true" title="割り込みと syscall は 1 本にたたみ、その外は地図のノード・アプリの関数・場面の要所だけを描く">要所だけ</button>
+        <button type="button" data-fold="off" aria-pressed="false" title="記録した呼び出しを、入れ子のまま全部描く">すべて</button>
+      </div>
+      <div class="seg" role="group" aria-label="時間の軸">
+        <span class="seg-label">時間の軸</span>
+        <button type="button" data-mode="compress" aria-pressed="true" title="記録外の長い間を短く詰め、短い場面（1）は少し広げて描く">記録外を詰める</button>
+        <button type="button" data-mode="linear" aria-pressed="false" title="命令の数どおりの長さ">実際の長さ</button>
+      </div>
+      <div class="zoom" role="group" aria-label="拡大">
+        <button type="button" class="btn icon" id="zoom-out" aria-label="縮める">−</button>
+        <button type="button" class="btn icon" id="zoom-in" aria-label="広げる">＋</button>
+        <button type="button" class="btn" id="zoom-all">全体</button>
+      </div>
+      <label class="check"><input type="checkbox" id="show-links" checked> スレッドをまたぐ矢印</label>
+    </div>
+    <div class="legend" id="legend" aria-label="色の意味"></div>
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="main" aria-label="スレッドごとの呼び出し。横が命令数、縦が呼び出しの深さ"></canvas>
+      <div class="tip" id="tip" role="tooltip" hidden></div>
+    </div>
+    <p class="foot" id="nav-hint">ホイールで拡大・ドラッグで移動・目盛りをドラッグで範囲を選ぶ・呼び出しや番号の札を押すと説明・2 回押すとその呼び出しに寄る</p>
+    <div class="peek" id="peek" role="status" hidden>
+      <span class="peek-sw" id="peek-sw"></span>
+      <div class="peek-main"><b id="peek-t"></b><span id="peek-s"></span></div>
+      <button type="button" class="btn" id="peek-go">説明 ↓</button>
+      <button type="button" class="btn icon" id="peek-x" aria-label="閉じる">×</button>
+    </div>
+  </section>
+
+  <aside class="side" aria-label="まとめと詳しく">
+    <section class="summary" id="summary" aria-label="まとめ"></section>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="scene" aria-selected="true">場面</button>
+      <button type="button" role="tab" data-tab="flow" aria-selected="false">流れ</button>
+      <button type="button" role="tab" data-tab="node" aria-selected="false">ノード</button>
+      <button type="button" role="tab" data-tab="list" aria-selected="false">一覧</button>
+    </div>
+    <div class="panel" id="panel" role="tabpanel"></div>
+  </aside>
+</main>
+
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="data/trace-full.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

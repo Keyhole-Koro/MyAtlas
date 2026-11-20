@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>MyComputer 文書マップ — リンクでつながるノート</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="btn icon ghost only-narrow" id="menu" aria-label="目次を開く" title="目次"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button>
+  <div class="hist" role="group" aria-label="履歴">
+    <button class="btn icon ghost" id="back" aria-label="戻る" title="戻る（[ か Alt+←）"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
+    <button class="btn icon ghost" id="fwd" aria-label="進む" title="進む（] か Alt+→）"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
+  </div>
+  <a class="brand" href="#/"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.6"/><circle cx="17.5" cy="5.5" r="2.1"/><circle cx="13" cy="17" r="3"/><path d="M8.3 8.3 11.4 15M15.8 7 14 14.2M8.5 6.6l7-.9"/></svg><span class="brand-name">MyComputer 文書マップ</span><span class="brand-sub">リンクでつながるノート</span></a>
+  <div class="top-right">
+    <button class="btn small ghost only-mid" id="graph-btn" aria-label="グラフを開く・閉じる" aria-pressed="false">グラフ</button>
+    <button class="btn icon ghost" id="help-btn" aria-label="キーの一覧" title="キーの一覧（?）"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="4" width="12.4" height="8" rx="1.6"/><path d="M4.5 6.6h.01M7 6.6h.01M9.5 6.6h.01M12 6.6h.01M5 9.4h6"/></svg></button>
+  </div>
+</header>
+
+<aside class="side" id="side" aria-label="目次とさがす">
+  <div class="search">
+    <svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2 13.5 13.5"/></svg>
+    <input id="q" type="search" placeholder="節をさがす" autocomplete="off" spellcheck="false" aria-label="節をさがす">
+    <kbd>/</kbd>
+  </div>
+  <div class="side-scroll" id="side-scroll">
+    <div id="results" class="results" hidden></div>
+    <nav id="tree" class="tree" aria-label="目次"></nav>
+  </div>
+</aside>
+
+<main class="main" id="main">
+  <article class="page" id="page" aria-live="polite"></article>
+</main>
+
+<aside class="graphpane" id="graphpane" aria-label="グラフ">
+  <div class="g-head">
+    <div class="seg" id="scope" role="group" aria-label="グラフの範囲"></div>
+    <span class="g-tools">
+      <button class="btn icon ghost" id="graph-reset" hidden title="元の位置に戻す" aria-label="元の位置に戻す"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 6.5A5 5 0 1 1 3 9.5M3 3v3.6h3.6"/></svg></button>
+      <button class="btn icon ghost" id="graph-wide" title="大きく見る（f）" aria-label="グラフを大きく見る" aria-pressed="false"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg></button>
+      <button class="btn icon ghost only-mid" id="graph-close" title="グラフを閉じる（Esc）" aria-label="グラフを閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+    </span>
+  </div>
+  <div class="graph-host" id="graph-host"><div class="graph-alone" id="graph-alone" hidden><p>この節には、ほかの節とのリンクも流れの手順もありません</p><button class="btn small" type="button" data-scope="all">全体の中で見る</button></div></div>
+  <p class="g-cap" id="graph-cap"></p>
+  <div class="g-legend" aria-label="グラフの見方">
+    <span><svg viewBox="-7 -7 14 14" class="lg"><circle r="5"/></svg>関数</span>
+    <span><svg viewBox="-7 -7 14 14" class="lg"><rect x="-4.6" y="-4.6" width="9.2" height="9.2" rx="2"/></svg>置き場</span>
+    <span><svg viewBox="-7 -7 14 14" class="lg"><path d="M0,-6L6,0L0,6L-6,0Z"/></svg>構造体・列挙</span>
+    <span><svg viewBox="-7 -7 14 14" class="lg hollow"><circle r="4.6"/></svg>文脈</span>
+    <span><svg viewBox="0 0 26 10" class="ll"><line x1="1" y1="5" x2="25" y2="5"/></svg>リンク・手順</span>
+    <span><svg viewBox="0 0 26 10" class="ll dot"><line x1="1" y1="5" x2="25" y2="5"/></svg>中の紙</span>
+    <span><svg viewBox="0 0 26 10" class="ll dash"><line x1="1" y1="5" x2="25" y2="5"/></svg>型・文脈</span>
+    <span class="lg-region"><svg viewBox="0 0 26 14" class="lr"><rect x="1.5" y="1.5" width="23" height="11" rx="5.5"/></svg>実行の文脈の枠</span>
+  </div>
+  <nav class="toc" id="toc" aria-label="このページ"></nav>
+</aside>
+
+<div class="scrim" id="scrim"></div>
+<div class="pop" id="pop" hidden role="tooltip"></div>
+
+<div class="help" id="help" hidden role="dialog" aria-modal="true" aria-label="キーの一覧">
+  <div class="help-card">
+    <div class="help-h"><b>キーの一覧</b><button class="btn icon ghost" data-close aria-label="閉じる"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <dl>
+      <dt><kbd>/</kbd> <kbd>Ctrl</kbd>+<kbd>K</kbd></dt><dd>節をさがす（↑↓ で選び Enter）</dd>
+      <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>戻る・進む（Alt+← →でも）</dd>
+      <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>流れを歩いている時、前・次の手順のノートへ</dd>
+      <dt><kbd>i</kbd></dt><dd>歩いている手順の箱に中の紙があれば、中へ</dd>
+      <dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></dt><dd>手順の一覧で選び、その節を開く</dd>
+      <dt><kbd>g</kbd></dt><dd>グラフの範囲を切り替える</dd>
+      <dt><kbd>f</kbd></dt><dd>グラフを大きく見る</dd>
+      <dt><kbd>h</kbd></dt><dd>目次へ</dd>
+      <dt><kbd>Esc</kbd></dt><dd>閉じる・歩くのをやめる</dd>
+    </dl>
+  </div>
+</div>
+
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="vendor/d3.min.js"></script>
+<script src="model.js"></script>
+<script src="graph.js"></script>
+<script src="diagrams.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

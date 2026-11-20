@@ -1,0 +1,20 @@
+// Quick look at the grid layout: node tools/try.mjs [iterations] [seed]
+import { readFileSync } from "node:fs";
+import { buildModel } from "../js/model.js";
+import { gridProblem, initialState, anneal, evaluate } from "../js/layout.js";
+const here = new URL("..", import.meta.url).pathname;
+const atlas = JSON.parse(readFileSync(here + "../data/atlas.json", "utf8"));
+const code = JSON.parse(readFileSync(here + "../data/code.json", "utf8"));
+const model = buildModel(atlas, code);
+const P = gridProblem(model);
+const S0 = initialState(P, model);
+const iters = Number(process.argv[2] || 20000), seed = Number(process.argv[3] || 1);
+console.log("zones", P.zones.map(z => `${z.id}:${z.r0}-${z.r1}`).join(" "));
+console.log("initial", JSON.stringify(evaluate(P, S0, undefined, true)));
+let t = Date.now();
+const { state, cost } = anneal(P, S0, { iterations: iters, seed });
+console.log("annealed", cost.toFixed(1), (Date.now() - t) + "ms", JSON.stringify(evaluate(P, state, undefined, true).parts, (k, v) => typeof v === "number" ? Math.round(v * 10) / 10 : v));
+const W = Math.max(...state.X) + 1;
+const grid = Array.from({ length: P.rows }, () => Array(W).fill(" . "));
+P.stations.forEach((s, i) => { grid[state.Y[i]][state.X[i]] = s.id.split(/[.-]/).pop().slice(0, 3).padEnd(3); });
+grid.forEach((r, y) => console.log(String(y).padStart(2), P.zones.find(z => y >= z.r0 && y <= z.r1).id.padEnd(6), r.join("")));

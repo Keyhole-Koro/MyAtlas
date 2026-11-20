@@ -1,0 +1,138 @@
+/* ---- Tokens (same palette as the atlas) ---- */
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #ffffff; --surface-2: #f0f0ed; --surface-3: #e9e8e4;
+  --text: #1a1a19; --text-2: #5c5b57; --text-3: #8b8a85;
+  --border: #e3e2de; --border-strong: #cdcbc5;
+  --accent: #2f5bd3; --accent-soft: #e8eefc; --accent-text: #fff;
+  --bad: #c9361f; --bad-soft: #fbe9e5; --good: #1f7a4d; --good-soft: #e3f3ea; --warn: #8a5a00; --warn-soft: #fbf1dc;
+  --font-sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  --l-app: #eb6834; --l-lib: #1baf7a; --l-os: #eda100; --l-kernel: #e87ba4; --l-emu: #008300;
+  --app-t0: #fef6f2; --app-t1: #fdeee8; --app-box: #fff7f3;
+  --lib-t0: #f0faf6; --lib-t1: #e5f6ef; --lib-box: #f2fbf7;
+  --os-t0: #fef9ef; --os-t1: #fdf4e1; --os-box: #fffaf0;
+  --kernel-t0: #fdf7fa; --kernel-t1: #fcf0f5; --kernel-box: #fef6f9;
+  --emu-t0: #eef7ee; --emu-t1: #e2f1e2; --emu-box: #f1f8f1;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(20, 20, 19, .06), 0 4px 16px rgba(20, 20, 19, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #131312; --surface: #1c1c1b; --surface-2: #252523; --surface-3: #2e2e2b;
+    --text: #ecebe8; --text-2: #aeada7; --text-3: #7c7b76;
+    --border: #2e2e2b; --border-strong: #45443f;
+    --accent: #7c9dff; --accent-soft: #1f2843; --accent-text: #0e1220;
+    --bad: #ff7a66; --bad-soft: #3a1f1a; --good: #5fd39a; --good-soft: #17301f; --warn: #e3b450; --warn-soft: #33281a;
+    --l-app: #d95926; --l-lib: #199e70; --l-os: #c98500; --l-kernel: #d55181; --l-emu: #008300;
+    --app-t0: #261c18; --app-t1: #2d1f19; --app-box: #2a201c;
+    --lib-t0: #17221e; --lib-t1: #182a23; --lib-box: #1a2621;
+    --os-t0: #252017; --os-t1: #2c2416; --os-box: #29231a;
+    --kernel-t0: #261c20; --kernel-t1: #2d1f25; --kernel-box: #2a1f24;
+    --emu-t0: #152015; --emu-t1: #142514; --emu-box: #172217;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .3);
+  }
+}
+
+/* ---- Diagram ---- */
+svg.dg { display: block; font-family: var(--font-sans); }
+.dg text { fill: var(--text); }
+.dg .band.sh-0.t-app { fill: var(--app-t0); } .dg .band.sh-1.t-app { fill: var(--app-t1); }
+.dg .band.sh-0.t-lib { fill: var(--lib-t0); } .dg .band.sh-1.t-lib { fill: var(--lib-t1); }
+.dg .band.sh-0.t-os { fill: var(--os-t0); } .dg .band.sh-1.t-os { fill: var(--os-t1); }
+.dg .band.sh-0.t-kernel { fill: var(--kernel-t0); } .dg .band.sh-1.t-kernel { fill: var(--kernel-t1); }
+.dg .band.sh-0.t-emu { fill: var(--emu-t0); } .dg .band.sh-1.t-emu { fill: var(--emu-t1); }
+.dg .s-app { fill: var(--l-app); } .dg .s-lib { fill: var(--l-lib); } .dg .s-os { fill: var(--l-os); } .dg .s-kernel { fill: var(--l-kernel); } .dg .s-emu { fill: var(--l-emu); }
+.dg .band-line { stroke: var(--border-strong); stroke-width: 1; }
+.dg .band-name { font-size: 14px; font-weight: 650; }
+.dg .band-sub { font-size: 12px; fill: var(--text-2); }
+.dg .band-empty { font-size: 12px; fill: var(--text-3); }
+.dg .region rect, .dg .region path { fill: var(--text); fill-opacity: .045; stroke: var(--text-3); stroke-opacity: .55; stroke-width: 1.1; }
+.dg .region path.neck { fill: none; stroke-opacity: .7; }
+.dg .region text { font-size: 12px; fill: var(--text-2); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.dg .box .body { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.2; }
+.dg .back { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.dg .back.dim { opacity: .45; }
+.dg .box.on .body { stroke: var(--accent); stroke-width: 2.4; }
+.dg .box.dim { opacity: .45; }
+.dg .box .title { font-size: 14px; font-weight: 650; }
+.dg .box .title.code { font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; }
+.dg .box .title.head { font-size: 13px; }
+.dg .box .ns { font-family: var(--font-mono); font-size: 12px; fill: var(--text-2); }
+.dg .box .sub { font-size: 12px; fill: var(--text-2); }
+.dg .box .slot { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.dg .box .slot.hi { fill: var(--accent-soft); }
+.dg .box .slot-t { font-family: var(--font-mono); font-size: 12px; fill: var(--text-2); }
+.dg.thumb .box.t-app .body { fill: var(--app-box); } .dg.thumb .box.t-lib .body { fill: var(--lib-box); }
+.dg.thumb .box.t-os .body { fill: var(--os-box); } .dg.thumb .box.t-kernel .body { fill: var(--kernel-box); } .dg.thumb .box.t-emu .body { fill: var(--emu-box); }
+.dg .edge .line { fill: none; stroke: var(--text-2); stroke-width: 1.7; stroke-linejoin: round; }
+.dg .edge .hit { fill: none; stroke: transparent; stroke-width: 14; }
+.dg .edge.k-syscall .line { stroke-width: 3.2; }
+.dg .edge.k-return .line { stroke-dasharray: 7 4; }
+.dg .edge.k-signal .line { stroke-dasharray: 0.5 5.5; stroke-linecap: round; stroke-width: 2.8; }
+.dg .edge.k-msg .line { stroke-dasharray: 11 4 2 4; }
+.dg .edge.alt .line { stroke: var(--text-3); }
+.dg .edge.on .line { stroke: var(--accent); stroke-width: 2.8; }
+.dg .edge.on.k-syscall .line { stroke-width: 4; }
+.dg .edge.dim { opacity: .28; }
+.dg .mk-fill, .mk-fill { fill: var(--text-2); }
+.mk-sel { fill: var(--accent); }
+.mk-open { fill: none; stroke: var(--text-2); stroke-width: 1.7; }
+.mk-open-sel { fill: none; stroke: var(--accent); stroke-width: 2.2; }
+.mk-gate { fill: var(--surface); stroke: var(--text-2); stroke-width: 1.8; }
+.mk-gate-sel { fill: var(--surface); stroke: var(--accent); stroke-width: 2.2; }
+.dg .pill .pbg { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1; }
+.dg .pill .leader { fill: none; stroke: var(--text-3); stroke-width: 1.3; stroke-dasharray: 1.5 2.5; stroke-linecap: round; }
+.dg .pill.on .leader { stroke: var(--accent); stroke-width: 1.8; }
+.dg .pill .num { fill: var(--text); }
+.dg .pill .num-t { fill: var(--surface); font-size: 12px; font-weight: 700; }
+.dg .pill.alt .num { fill: var(--text-3); }
+.dg .pill .verb { font-size: 12px; }
+.dg .pill .chip rect { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
+.dg .pill .chip path { fill: none; stroke: var(--text-2); stroke-width: 1.1; }
+.dg .pill .chip text { font-family: var(--font-mono); font-size: 12px; fill: var(--text-2); }
+.dg .pill.on .pbg { stroke: var(--accent); stroke-width: 2; fill: var(--accent-soft); }
+.dg .pill.on .num { fill: var(--accent); }
+.dg .pill.on .num-t { fill: var(--accent-text); }
+.dg .pill.dim { opacity: .35; }
+.dg.thumb .pill .pbg { fill: var(--surface); stroke: var(--text-3); stroke-width: 1; opacity: .9; }
+/* small pictures: lines and outlines keep a screen width, so routes stay visible at a quarter of the size */
+.dg.thumb .edge .line { vector-effect: non-scaling-stroke; stroke-width: 1.15px; stroke-dasharray: none; stroke: var(--text-2); }
+.dg.thumb .edge.k-syscall .line { stroke-width: 2px; }
+.dg.thumb .edge.alt .line { stroke: var(--text-3); }
+.dg.thumb .edge.on .line { stroke: var(--accent); stroke-width: 2.2px; }
+.dg.thumb .box .body, .dg.thumb .back { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+.dg.thumb .region rect, .dg.thumb .region path { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+.dg.thumb .pill .pbg { vector-effect: non-scaling-stroke; stroke-width: .8px; }
+.dg.thumb .pill .leader { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+.dg.thumb .band-line { vector-effect: non-scaling-stroke; stroke-width: .8px; }
+.dg.thumb .lifeline { vector-effect: non-scaling-stroke; stroke-width: 1px; stroke-dasharray: none; opacity: .7; }
+.dg.thumb .bracket, .dg.thumb .alt-frame { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+.dg .tnum { fill: var(--text); }
+.dg .tnum-t { fill: var(--surface); font-weight: 700; }
+.dg .pill.alt .tnum { fill: var(--text-3); }
+.dg .pill.on .tnum { fill: var(--accent); }
+.dg .lifeline { stroke: var(--border-strong); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.dg .lifeline.on { stroke: var(--accent); }
+.dg .bracket { fill: none; stroke: var(--text-3); stroke-width: 1.2; }
+.dg .bracket-label { font-size: 12px; fill: var(--text-2); }
+.dg .alt-frame { fill: none; stroke: var(--text-3); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.dg .alt-label { font-size: 12px; fill: var(--text-2); }
+.dg .defects { pointer-events: none; }
+.dg .df-x { fill: none; stroke: var(--bad); }
+.dg .df-run { stroke: var(--bad); opacity: .35; stroke-linecap: round; }
+.dg .df-box { fill: none; stroke: var(--bad); stroke-dasharray: 4 3; }
+.dg .df-line { fill: none; stroke: var(--bad); opacity: .8; }
+.dg .df-label { fill: none; stroke: var(--bad); }
+.dg .df-frame { fill: none; stroke: var(--bad); stroke-dasharray: 2 3; }
+.dg .df-detached { fill: none; stroke: var(--bad); stroke-dasharray: 5 3; }
+.dg .df-detour { fill: none; stroke: var(--bad); opacity: .22; stroke-linecap: round; stroke-linejoin: round; }
+.dg .df-dot { fill: var(--bad); stroke: var(--surface); stroke-width: 1; }
+@media (prefers-color-scheme: dark) {
+  /* small pictures in the dark: lighter lines and box edges, so the routes read at a quarter of the size */
+  .dg.thumb .edge .line { stroke: #d2d0ca; }
+  .dg.thumb .edge.alt .line { stroke: #8f8d87; }
+  .dg.thumb .edge.on .line { stroke: var(--accent); }
+  .dg.thumb .box .body { stroke: #77756f; }
+}

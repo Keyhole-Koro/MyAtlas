@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自動配置の比較 — MyAtlas lab</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>自動配置の比較</h1>
+    <p class="lead">同じ図を置き方だけ変えて 6 通りに並べ、線の交差・札の重なり・大きさなどを数えて、今の地図（1）と比べます。</p>
+  </header>
+  <nav class="pick" aria-label="図を選ぶ">
+    <div class="pick-group"><span class="pick-label">流れ</span><div class="seg" id="pick-flow"></div></div>
+    <div class="pick-group"><span class="pick-label">中の紙</span><div class="seg" id="pick-paper"></div></div>
+    <p class="dtitle" id="dtitle"></p>
+  </nav>
+  <section class="compare">
+    <div class="multiples" id="multiples" aria-label="置き方の一覧"></div>
+    <aside class="board" id="board" aria-label="採点表"></aside>
+  </section>
+
+  <figure class="stage" id="stage">
+    <div class="stage-head">
+      <div class="stage-name"><span class="no" id="stage-no"></span><div><h2 id="stage-title"></h2><p id="stage-desc"></p></div></div>
+      <div class="stage-tools">
+        <div class="seg small" role="group" aria-label="置き方" id="stage-pick"></div>
+        <label class="toggle"><input type="checkbox" id="show-defects" checked> <span>問題の場所を赤で</span></label>
+      </div>
+    </div>
+    <div class="player">
+      <button type="button" class="nav" id="prev" aria-label="前の手順">◀</button>
+      <button type="button" class="nav" id="next" aria-label="次の手順">▶</button>
+      <p class="caption" id="caption"></p>
+    </div>
+    <div class="canvas" id="canvas" aria-label="選んだ置き方の図"></div>
+    <div class="legend" id="legend" aria-label="線の種類"></div>
+    <figcaption class="stage-foot" id="stage-foot"></figcaption>
+  </figure>
+
+  <section class="overall" id="overall"></section>
+</div>
+<div id="markers"></div>
+<script src="../data/atlas.js"></script>
+<script src="vendor/elk.bundled.js"></script>
+<script src="vendor/dagre.min.js"></script>
+<script src="vendor/d3-dispatch.min.js"></script>
+<script src="vendor/d3-quadtree.min.js"></script>
+<script src="vendor/d3-timer.min.js"></script>
+<script src="vendor/d3-force.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

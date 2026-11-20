@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>関係の行列と弦 — MyComputer 文書マップ</title>
+<link rel="stylesheet" href="style.css">
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="vendor/d3.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <main class="matrix-pane" id="pane" aria-label="関係の行列">
+    <div class="mx-grid" id="mx-grid">
+      <div class="mx-corner" id="mx-corner">
+        <p class="read-h"><b>行</b>の節 → <b>列</b>の節</p>
+        <p class="read" id="read"></p>
+        <ul class="legend" id="legend" aria-label="手順の種類（押すと出す・隠す）"></ul>
+      </div>
+      <svg class="mx-cols" id="mx-cols" aria-hidden="true"></svg>
+      <svg class="mx-rows" id="mx-rows" aria-hidden="true"></svg>
+      <svg class="mx-body" id="mx-body" role="img" aria-label="節と節の関係の行列"></svg>
+    </div>
+  </main>
+  <div class="under" id="under">
+    <ul class="legend" id="legend-2" aria-label="手順の種類（押すと出す・隠す）"></ul>
+    <p class="swipe-hint">行列は縦にも横にもずらして見られます。名前を押すと、その節を指しているものが下に出ます。</p>
+  </div>
+
+  <aside class="panel" id="panel">
+    <section class="card head" aria-label="表示">
+      <header class="p-head">
+        <div class="p-title"><h1>関係の行列と弦</h1><p class="kicker">MyComputer 文書マップ</p></div>
+        <input class="search" id="search" type="search" placeholder="節を探す /" autocomplete="off" aria-label="節を探す">
+      </header>
+      <div class="pick">
+        <div class="pick-h">
+          <span class="pick-l">流れをたどる</span>
+          <span class="nav" id="nav">
+            <button class="tool nb" id="prev" type="button" aria-label="前の手順">←</button>
+            <span class="pos" id="pos"></span>
+            <button class="tool nb" id="next" type="button" aria-label="次の手順">→</button>
+          </span>
+        </div>
+        <div class="flows" id="flows"></div>
+        <div class="papers-l">中の紙（節の中に描かれた手順）</div>
+        <div class="papers" id="papers"></div>
+      </div>
+      <div class="ctl">
+        <span class="ctl-l">並び</span>
+        <div class="seg" id="order">
+          <button type="button" data-order="layer" aria-pressed="true">層の順</button>
+          <button type="button" data-order="cluster" aria-pressed="false">まとまり順</button>
+        </div>
+        <button class="tool" id="fold-all" type="button" title="中の紙にだけ出る節と、1 つの節にだけ載る図を、持ち主の行の下に開く">中の紙を開く</button>
+      </div>
+      <div class="ctl">
+        <span class="ctl-l">重ねる</span>
+        <div class="more" id="more" aria-label="手順のほかに行列に重ねる関係"></div>
+      </div>
+    </section>
+
+    <section class="card detail" aria-label="詳しく">
+      <div class="tabs" role="tablist">
+        <button role="tab" type="button" id="tab-walk" aria-selected="true">手順</button>
+        <button role="tab" type="button" id="tab-node" aria-selected="false">節</button>
+        <button role="tab" type="button" id="tab-chord" aria-selected="false">層から層へ</button>
+      </div>
+      <div class="tab-body" id="tab-body"></div>
+      <div class="chord-body" id="chord-body" hidden>
+        <div class="chord-h">
+          <p class="chord-lead" id="chord-lead"></p>
+          <div class="seg" id="chord-mode">
+            <button type="button" data-mode="step" aria-pressed="true">弦</button>
+            <button type="button" data-mode="table" aria-pressed="false">層×層の表</button>
+          </div>
+        </div>
+        <div class="chord-wrap"><svg id="chord" aria-label="層のあいだの手順の数"></svg></div>
+        <div class="ltab-wrap" id="ltab" hidden></div>
+        <p class="chord-note" id="chord-note"></p>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="code-dlg" id="code-dlg" hidden>
+  <div class="code-box" role="dialog" aria-modal="true" aria-label="コード">
+    <div class="code-h"><b id="code-title"></b><code id="code-path"></code><button class="tool" id="code-close" type="button">閉じる <kbd>Esc</kbd></button></div>
+    <pre class="code-pre" id="code-pre"></pre>
+  </div>
+</div>
+<script src="model.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

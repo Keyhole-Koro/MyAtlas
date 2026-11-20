@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>dev: all engines</title>
+<link rel="stylesheet" href="../app.css">
+<style>body{margin:16px;background:var(--bg);color:var(--text);font-family:var(--font-sans)} h2{font-size:16px;margin:24px 0 8px} .m{font-size:12px;color:var(--text-2);margin:4px 0 8px;word-break:break-all}</style>
+</head><body>
+<div id="out"></div>
+<!-- ?d=diagram &e=engine (hand, hand0 = 札を削らない, elk, dagre, force, seq, rows, lanes) &v=variant (wide, extra, far, order, long) &df=1 marks &s=step -->
+<script src="../../data/atlas.js"></script>
+<script src="../vendor/elk.bundled.js"></script>
+<script src="../vendor/dagre.min.js"></script>
+<script src="../vendor/d3-dispatch.min.js"></script><script src="../vendor/d3-quadtree.min.js"></script><script src="../vendor/d3-timer.min.js"></script><script src="../vendor/d3-force.min.js"></script>
+<script type="module">
+import { buildDiagram } from '../js/model.js';
+import { makeVariant } from '../js/variants.js';
+import { layoutHand } from '../js/engines/hand.js';
+import { layoutElk } from '../js/engines/elk.js';
+import { layoutDagre } from '../js/engines/dagre.js';
+import { layoutForce } from '../js/engines/force.js';
+import { layoutSeq } from '../js/engines/seq.js';
+import { layoutRows } from '../js/engines/rows.js';
+import { layoutLanes } from '../js/engines/lanes.js';
+import { measureLayout, scoreOne } from '../js/metrics.js';
+import { renderSvg, MARKERS_SVG } from '../js/render.js';
+const q = new URLSearchParams(location.search);
+const id = q.get('d') || 'ui', only = q.get('e');
+let D = buildDiagram(window.ATLAS, id);
+if (q.get('v')) D = makeVariant(D, q.get('v'));
+const eng = { hand: (D) => layoutHand(D), hand0: (D) => layoutHand(D, { trim: false }), elk: (D) => layoutElk(D, window.ELK), dagre: (D) => layoutDagre(D, window.dagre), force: (D) => layoutForce(D, window.d3), seq: (D) => layoutSeq(D), rows: (D) => layoutRows(D, window.ELK), lanes: (D) => layoutLanes(D) };
+let html = MARKERS_SVG;
+for (const [k, fn] of Object.entries(eng)) {
+  if (only && k !== only) continue;
+  const G = await fn(D), M = measureLayout(D, G);
+  html += `<h2>${k} — ${D.tab}（${scoreOne(M)} 点）</h2><div class="m">${JSON.stringify(M.values, (kk, v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v))}</div>` + renderSvg(D, G, { defects: q.get('df') ? M.defects : null, sel: q.get('s') != null ? Number(q.get('s')) : null });
+}
+document.getElementById('out').innerHTML = html;
+document.body.dataset.ready = '1';
+</script></body></html>

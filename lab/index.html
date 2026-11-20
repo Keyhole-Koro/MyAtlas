@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>MyAtlas ラボ：文書マップの見せ方 14 案</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect y='0' width='20' height='4' fill='%23eb6834'/%3E%3Crect y='4' width='20' height='4' fill='%231baf7a'/%3E%3Crect y='8' width='20' height='4' fill='%23eda100'/%3E%3Crect y='12' width='20' height='4' fill='%23e87ba4'/%3E%3Crect y='16' width='20' height='4' fill='%23008300'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --ink: #1b1e23;
+  --muted: #535a66;
+  --faint: #676d78;
+  --line: #dfe2e7;
+  --soft: #eef0f4;
+  --accent: #2f5bd3;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8eefc;
+  --good: #16794d;
+  --issue: #a35604;
+  --pip: #d3d7de;
+  --app: #eb6834; --lib: #1baf7a; --os: #eda100; --kernel: #e87ba4; --emu: #008300;
+  --shadow: 0 1px 2px rgb(15 23 42 / .05), 0 3px 10px rgb(15 23 42 / .05);
+  --sans: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101216;
+    --card: #191c22;
+    --ink: #e6e8ed;
+    --muted: #a9afba;
+    --faint: #8f96a2;
+    --line: #2b3039;
+    --soft: #222630;
+    --accent: #7c9dff;
+    --accent-ink: #0c142e;
+    --accent-soft: #1d2645;
+    --good: #54c590;
+    --issue: #eea153;
+    --pip: #373d48;
+    --app: #d95926; --lib: #199e70; --os: #c98500; --kernel: #d55181; --emu: #008300;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.7 var(--sans); }
+a { color: var(--accent); text-underline-offset: .18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code { font: .88em var(--mono); background: var(--soft); border-radius: 4px; padding: .08em .35em; overflow-wrap: anywhere; }
+code.nw { white-space: nowrap; }
+h1, h2, h3, h4 { word-break: auto-phrase; text-wrap: balance; }
+p, li { text-wrap: pretty; word-break: auto-phrase; }
+
+.stripe { display: grid; grid-template-columns: repeat(5, 1fr); height: 5px; }
+.stripe i:nth-child(1) { background: var(--app); }
+.stripe i:nth-child(2) { background: var(--lib); }
+.stripe i:nth-child(3) { background: var(--os); }
+.stripe i:nth-child(4) { background: var(--kernel); }
+.stripe i:nth-child(5) { background: var(--emu); }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+.notice { margin: 16px 0 0; padding: 10px 14px; border: 1px solid var(--issue); border-radius: 10px; color: var(--ink); background: var(--card); }
+.notice b { color: var(--issue); }
+
+header.top { padding: 26px 0 6px; }
+.titlebar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+h1 { margin: 0; font-size: 30px; line-height: 1.3; letter-spacing: .01em; }
+.titlebar .sub { color: var(--muted); font-size: 16px; }
+.toplinks { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-self: center; }
+.intro { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 16px 32px; margin-top: 14px; align-items: start; }
+.intro p { margin: 0 0 8px; max-width: 46em; }
+.intro .facts { color: var(--muted); font-size: 14px; }
+.howto { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 14px; box-shadow: var(--shadow); }
+.howto h2 { font-size: 15px; margin: 0 0 4px; }
+.howto ol { margin: 0; padding-left: 1.3em; }
+.howto li { margin: 2px 0; }
+.howto pre { margin: 4px 0 6px; font: 13px/1.5 var(--mono); background: var(--soft); padding: 6px 10px; border-radius: 8px; overflow-x: auto; }
+.howto .small { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1 var(--sans); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+
+section { margin: 30px 0 34px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 14px; }
+.sec-head h2 { font-size: 22px; margin: 0; }
+.sec-head p { margin: 0; color: var(--muted); font-size: 14px; }
+
+.shot { display: block; aspect-ratio: 16 / 10; background: var(--soft); border-bottom: 1px solid var(--line); overflow: hidden; }
+.shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; transition: transform .25s ease; }
+.shot:hover img { transform: scale(1.015); }
+@media (prefers-reduced-motion: reduce) { .shot img { transition: none; } .shot:hover img { transform: none; } }
+
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13px; color: var(--muted); }
+.kind { border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; background: var(--soft); }
+.rank { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pid { font: 12px var(--mono); color: var(--faint); }
+
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.pick { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+.pick .body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.pick .num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 15px; }
+.pick h3 { margin: 0; font-size: 21px; line-height: 1.35; }
+.pick h3 a, .card h3 a { color: inherit; text-decoration: none; }
+.pick h3 a:hover, .card h3 a:hover { color: var(--accent); }
+.pick p { margin: 0; }
+.label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+.try { font-size: 14px; }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+.card .body { padding: 13px 16px 16px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.card h3 { margin: 0; font-size: 18px; line-height: 1.4; }
+.card .line { margin: 0; }
+.scores { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 18px; font-size: 13px; color: var(--muted); padding: 7px 10px; background: var(--soft); border-radius: 8px; }
+.scores div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.scores dt { white-space: nowrap; }
+.scores dd { margin: 0; display: inline-flex; align-items: center; gap: 7px; }
+.scores dd b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: .7em; text-align: right; }
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 9px; height: 9px; border-radius: 2px; background: var(--pip); }
+.pips i.on { background: var(--accent); }
+.points h4 { display: flex; align-items: center; gap: 6px; font-size: 13px; margin: 0 0 1px; color: var(--muted); }
+.points h4::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.points.good h4 { color: var(--good); }
+.points.issue h4 { color: var(--issue); }
+.points ul { margin: 0; padding-left: 1.15em; font-size: 14px; }
+.points li { margin: 2px 0; }
+.card .try { margin: 0; font-size: 13px; color: var(--muted); }
+.card .try b { color: var(--ink); font-weight: 600; }
+.card .run { margin: 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px; }
+.actions { margin-top: auto; padding-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.scorenote { font-size: 13px; color: var(--muted); }
+
+footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 18px 0 40px; color: var(--muted); font-size: 14px; }
+footer h2 { font-size: 15px; color: var(--ink); margin: 0 0 4px; }
+footer ul { margin: 0 0 10px; padding-left: 1.2em; }
+footer p { margin: 0 0 6px; }
+
+@media (max-width: 1180px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 980px) {
+  .intro { grid-template-columns: 1fr; }
+  .picks { grid-template-columns: 1fr; }
+  .pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pick .shot { aspect-ratio: auto; height: 100%; min-height: 220px; border-bottom: 0; border-right: 1px solid var(--line); }
+}
+@media (max-width: 700px) {
+  .wrap { padding: 0 16px; }
+  h1 { font-size: 25px; }
+  .toplinks { margin-left: 0; }
+  .cards { grid-template-columns: 1fr; }
+  .pick { display: flex; }
+  .pick .shot { aspect-ratio: 16 / 10; height: auto; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .scores { grid-template-columns: 1fr 1fr; gap: 3px 12px; }
+}
+@media (max-width: 380px) {
+  .scores { grid-template-columns: 1fr; }
+}
+
+/* the reader: NOTES.md, README.md and the screenshots */
+dialog { width: min(1040px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); box-shadow: 0 24px 70px rgb(0 0 0 / .35); }
+dialog[open] { display: flex; flex-direction: column; }
+dialog::backdrop { background: rgb(8 10 14 / .58); }
+.dhead { display: flex; align-items: center; gap: 10px; padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--line); }
+.dhead h2 { margin: 0; font-size: 17px; line-height: 1.4; flex: 1; min-width: 0; }
+.dhead .close { font-size: 20px; line-height: 1; padding: 6px 11px; }
+.dbody { overflow: auto; padding: 6px 24px 26px; overscroll-behavior: contain; }
+.loading { color: var(--muted); }
+
+.md { max-width: 50em; font-size: 15px; }
+.md h2 { font-size: 22px; margin: 18px 0 8px; }
+.md h3 { font-size: 18px; margin: 24px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.md h4, .md h5, .md h6 { font-size: 15px; margin: 18px 0 4px; }
+.md p { margin: 8px 0; }
+.md ul, .md ol { margin: 6px 0; padding-left: 1.4em; }
+.md li { margin: 3px 0; }
+.md li > ul, .md li > ol { margin: 2px 0; }
+.md pre { background: var(--soft); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font: 13px/1.55 var(--mono); }
+.md pre code { background: none; padding: 0; font: inherit; }
+.md blockquote { margin: 8px 0; padding: 2px 14px; border-left: 3px solid var(--line); color: var(--muted); }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+.md .tbl { overflow-x: auto; margin: 10px 0; border: 1px solid var(--line); border-radius: 8px; }
+.md table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.55; }
+.md th, .md td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.md th { background: var(--soft); font-weight: 600; white-space: nowrap; }
+.md tr:last-child td { border-bottom: 0; }
+
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-top: 14px; align-items: start; }
+.shots figure { margin: 0; }
+.shots a { display: block; background: var(--soft); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.shots img { display: block; width: 100%; height: auto; max-height: 470px; object-fit: contain; }
+.shots figcaption { margin-top: 5px; font-size: 13px; color: var(--muted); }
+.shots figcaption b { font: 600 12px var(--mono); color: var(--ink); margin-right: 6px; }
+@media (max-width: 700px) {
+  .shots { grid-template-columns: 1fr; }
+  .dbody { padding: 4px 16px 20px; }
+  .dhead { padding: 10px 10px 10px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="stripe" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+<div class="wrap">
+  <p class="notice" id="file-notice" hidden><b>ファイルとして開いています。</b>試作の多くはこのままではデータを読めません。<code>lab</code> で <code>./serve.sh</code> を動かし、<a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a> を開いてください。</p>
+
+  <header class="top">
+    <div class="titlebar">
+      <h1>MyAtlas ラボ</h1>
+      <span class="sub">文書マップの見せ方を、一晩で 14 通り試した</span>
+      <nav class="toplinks" aria-label="まとめと比べるもの">
+        <a class="btn" href="README.md" data-readme>README（順位と提案）</a>
+        <a class="btn" href="reference/index.html">今のビューア</a>
+      </nav>
+    </div>
+    <div class="intro">
+      <div>
+        <p>MyComputer の文書マップ（MyAtlas）を、今のビューアより読みやすく見せる方法を探した試作の置き場です。今のビューアは 1 枚のページに全部を詰めていて、層の帯・小さな札・番号の札・点線の枠・交差する矢印が多く、密です。ここではその制約を外し、路線図、マンガ、コードと並べる形、データを追う表など、14 通りの見せ方を作りました。</p>
+        <p>どの試作も同じデータ（<code>lab/data</code>）を読み、地図とソースに無いことは描きません。どれも独立したレビューを受けて、指摘を直してあります。</p>
+        <p class="facts">地図の中身：70 の節、5 つの層と横断する 3 つ、2 つの流れ（UI の要求 11 手順＋もし 2、CPU 時間 12 手順）、4 枚の中の紙、記録 1 回（Editor で「x」を打った 1 回）。</p>
+      </div>
+      <div class="howto">
+        <h2>開き方</h2>
+        <ol>
+          <li>端末で lab に入って配る：<pre>cd ~/Workspaces/MyAtlas-lab/lab
+./serve.sh</pre></li>
+          <li>ブラウザで <a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a> を開く。カードの画面か「開く」で試作が開く。</li>
+        </ol>
+        <p class="small">データを MyComputer から取り直す時は <code>python3 lab/export.py</code>。くわしくは README。</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="picks-h">
+      <div class="sec-head">
+        <h2 id="picks-h">まずはこの 3 つ</h2>
+        <p>違う役目の 3 つ：コードを読む、全体を見る、初めての人に見せる。</p>
+      </div>
+      <div class="picks" id="picks"></div>
+    </section>
+
+    <section aria-labelledby="all-h">
+      <div class="sec-head">
+        <h2 id="all-h">14 の試作（おすすめ順）</h2>
+        <p>順位の理由と、本体のビューアに取り入れることは <a href="README.md" data-readme>README</a> に。</p>
+      </div>
+      <p class="scorenote">点（5 点満点）は、最後の手直しの前に受けた独立レビューのもの。読みやすさ・正しさ（データとソースへの忠実さ）・仕上がり・新しさ。指摘の多くはその後に直っています。「ここが課題」は手直しの後も残っていること。</p>
+      <div class="cards" id="cards"></div>
+    </section>
+  </main>
+
+  <footer>
+    <h2>確かめたこと（2026-11-20）</h2>
+    <ul>
+      <li>14 の試作をすべて <code>lab/tools/shot.mjs</code>（1440×900）で開いた。読み込みの失敗も、コンソールのエラーも 0 件。撮った画面は <a href="shots/load/">shots/load/</a>。</li>
+      <li>路線図はマウスと指で駅・線・札を押す試験（<code>metro/tools/check.mjs clicks</code>）がすべて通った。マンガはスマホ幅（390×844）の大きく読む画面で、コマが画面に収まる。端末版は <code>python3 lab/terminal/atlas_tui.py --render ui</code> で図を出す。</li>
+    </ul>
+    <p>ラボは MyAtlas の <code>lab</code> ブランチにあります（main には入れていません）。どのページも同梱したライブラリだけで開けます。<code>node_modules/</code> と <code>.venv/</code> は入れていません（要るのは検査の道具だけで、入れ方は各 NOTES.md）。</p>
+  </footer>
+</div>
+
+<dialog id="viewer" aria-labelledby="viewer-title">
+  <div class="dhead">
+    <h2 id="viewer-title"></h2>
+    <a class="btn" id="viewer-raw" href="#" target="_blank" rel="noopener">原文</a>
+    <button class="btn close" type="button" id="viewer-close" aria-label="閉じる">×</button>
+  </div>
+  <div class="dbody" id="viewer-body"></div>
+</dialog>
+
+<script>
+"use strict";
+// Every prototype, in the order recommended (README.md says why).
+// scores: readability, faithfulness, polish, novelty, from the independent review before the last refinement.
+const LAB = [
+  {
+    id: "code-tour", title: "コードと歩く", kind: "手順 × コード",
+    line: "左に流れの手順、右に本物のソース。手順を選ぶと、その手順が起きる行の真下に吹き出しが出る。",
+    scores: [4, 4, 4, 4],
+    good: [
+      "49 手順のうち 42 で行まで読める。記録された行、推した行（点線の「たぶんここ」と手がかり）、箱全体を見た目で分ける。",
+      "「最初から歩く」で手順 1 から自動で進み、中の紙にも入る。",
+    ],
+    issues: [
+      "系全体の形は見せない。地図と組んで使う形。",
+      "「たぶんここ」は字句の手がかりから推した行で、ソースが変われば外れうる。",
+    ],
+    try: "「最初から歩く」を押す。← → で手順、Enter で中の紙。",
+    run: "「エディタで開く」は `python3 lab/code-tour/server.py` で配った時だけ出る。",
+    shots: [["main", "手順 5「並べる」。gateway の 215 行の真下に吹き出し"], ["step-line", "起きる行に吹き出し（ui_protocol.handle）"], ["paper", "中の紙：request_channel.submit の中"], ["data", "渡すデータ Request の定義"], ["dark", "暗い画面（CPU 時間）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "metro", title: "路線図", kind: "全体図",
+    line: "流れを路線、節を駅、層を地区にした地下鉄の路線図。2 本以上の線が通る節は乗り換え駅になる。",
+    scores: [4, 4, 3, 4],
+    good: [
+      "1 枚で系全体が読める。流れと中の紙が同じ節を通る所（2 つの流れは tick()、UI と submit の紙は要求の列など）が、乗り換え駅として一目で分かる。",
+      "時刻表と走る電車で順を追える。駅・線・札はマウスでも指でも押せる（今回も試験で確認）。",
+    ],
+    issues: [
+      "配置は焼きなましの結果を保存したもの。地図を直したら `tools/precompute.mjs --warm` で並べ直す。",
+      "serve() と fill(out) は名前空間の行を省き、中の紙の支線は親の駅のそばにまとまっていない。",
+    ],
+    try: "「始発」の札を押して ▶ 乗る（Space）。駅を押すと説明。",
+    shots: [["main", "路線図の全体"], ["line", "UI の要求の路線と時刻表"], ["station", "駅の説明（request(pid, req)）"], ["replay", "運行記録：記録を地図に重ねる"], ["dark", "暗い画面（submit の紙の支線）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "comic", title: "マンガで読む", kind: "初めての人に",
+    line: "1 手順を 1 コマに。2 つの箱がキャラクター、verb がふきだし、渡すデータが手渡す物、層が床。",
+    scores: [4, 4, 3, 5],
+    good: [
+      "読み始めがはっきりしていて、ふきだしだけで UI の流れを 1 分ほどで追える。",
+      "層をまたぐ手順は床の段で、話全体の上り下りは表紙の「道のり」で分かる。",
+    ],
+    issues: [
+      "箱どうしのつながり（全体の形）は見えない。",
+      "実録の判子は第 1 話だけで、記録は Editor のもの。",
+    ],
+    try: "表紙の「道のり」を見てから「1 コマ目から読む」。コマを押すと大きく読める。",
+    shots: [["main", "第 1 話の表紙：登場人物と道のり"], ["zoom", "虫めがね：request_gateway.request の中"], ["reader", "大きく読む画面"], ["trace", "おまけ「実録」"], ["dark", "暗い画面（コマ 6〜11）"], ["phone", "スマホ（大きく読む）"]],
+  },
+  {
+    id: "seq-plus", title: "やりとり図をやり直す", kind: "やりとり図",
+    line: "文脈の枠・層の色・矢印の種類で描き分けたシーケンス図。手順の文・矢印・記録の命令数が同じ行に並ぶ。",
+    scores: [4, 4, 4, 3],
+    good: [
+      "中の紙をその場で開くと、紙が描く外の手順を「＝紙の 8」と畳むので、同じことが 2 回出ない。",
+      "今のやりとり図をそのまま置き換えられる近さまで整っている。",
+    ],
+    issues: [
+      "紙を全部開くと生存線が UI で 29 本になり、1 画面では読めない（全体の地図で補う）。",
+      "活性化の棒は手順の種類から推したもので、実際に戻った時とは限らない。",
+    ],
+    try: "↑↓ で 1 手ずつ。Enter で中の紙を開く。r で記録の速さで流す。",
+    shots: [["main", "UI の要求：文・矢印・記録の 3 列"], ["paper", "中の紙を開く（外の手順は畳む）"], ["cpu", "CPU 時間（1920 幅）"], ["all", "中の紙をすべて開く"], ["record", "記録で流す（暗い画面）"], ["phone", "スマホ（凡例のシート）"]],
+  },
+  {
+    id: "trace-timeline", title: "記録を時間で見る", kind: "記録",
+    line: "「Editor で x を打った 1 回」を、スレッドごとのフレームグラフとして命令数の軸に描く。",
+    scores: [3, 3, 4, 4],
+    good: [
+      "本当の長さ・入れ子・待ちが見える。キーから DOM の書き換えまでの 85% が列で待っていたことまで分かる。",
+      "記録の対応の誤り（WAIT_NOTIFICATION の syscall も OS_CALL にしていた）を見つけ、ページの側で直した。",
+    ],
+    issues: [
+      "長さを描くには exit・iret が要る。今は MyComputer の記録ファイルの写し（`data/trace-full.js`）に頼る。",
+      "記録している関数は 44 だけで、時間の 82% は記録の外。",
+    ],
+    try: "上の場面 1〜6 を押す。段の中の番号の札でその要所へ寄る。",
+    shots: [["main", "要所だけの表示と 6 つの場面"], ["path", "キー → DOM の道筋"], ["phase3", "場面 3：Editor.edited"], ["flow", "流れの手順と照らし合わせる"], ["dark", "暗い画面（WAIT_NOTIFICATION の syscall）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "data-journey", title: "データの旅", kind: "データ",
+    line: "関数ではなくデータを追う表。行は Request の 10 フィールド、列は中の紙を開いた 22 手順、線の色が値のあるメモリ。",
+    scores: [3, 4, 3, 4],
+    good: [
+      "境界を越える所、OS 側の値だけになる所、owner が pid で上書きされる所（アプリは名乗れない）が、色と印で分かる。",
+      "地図の古い数（Request は 13 語、実際は 15 語）を見つけた。",
+    ],
+    issues: [
+      "印や置き場の帯は、手順ごとに手で書いた対応表（`js/journeys.js`）から作る。新しい流れには表を足す必要がある。",
+      "追うのは SET_TEXT の 1 回だけ。",
+    ],
+    try: "「再生」を押す。列や印を押すと、地図の文とコードの行が出る。",
+    shots: [["main", "表：手順 6 owner = pid（アプリは名乗れない）"], ["table-step11", "手順 11「差し替え」と出どころ"], ["packet-owner", "パケット：owner の上書き"], ["packet-words-dark", "パケット：words[24] に詰める（暗い画面）"], ["cpu-table", "CPU 時間の表"], ["phone", "スマホの絵コンテ"]],
+  },
+  {
+    id: "graph-notebook", title: "リンクでつながるノート", kind: "読む",
+    line: "節 1 つをノート 1 枚にし、流れを「手順ごとにその節のノートが開く道」として歩く。",
+    scores: [3, 4, 3, 4],
+    good: [
+      "ノートの中は今のビューアよりずっと読みやすい。逆リンクは文ごとに出る。",
+      "帯に「文脈が変わる A → B」と、確かめたコードの 1 行が出る。",
+    ],
+    issues: [
+      "「まわり」「全体」のグラフは、指される節の多い所でまだ込み合う。",
+      "グラフの点はキーボードで辿れない。",
+    ],
+    try: "→ で手順を進む。i で中の紙に入る。/ で探す。",
+    shots: [["main", "歩く帯（UI の要求 手順 3）とノート"], ["home", "目次"], ["note", "中の紙を歩く（request_gateway.request）"], ["flow", "流れの手順の一覧（CPU 時間）"], ["dark-trace", "記録（暗い画面）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "zoom-atlas", title: "ズームする地図", kind: "全体図",
+    line: "1 枚の地図を、寄るほど「層 → 箱の名前 → 中身 → 本物のコード」と細かくする。",
+    scores: [3, 4, 3, 4],
+    good: [
+      "全体から手順、中の紙、コードの行まで、場所を見失わずに入っていける。",
+      "名前は地図のピン（点と引き出し線）で 1 つの箱だけを指し、取り違えない。",
+    ],
+    issues: [
+      "全体図で名前が出るのは 70 個の半分ほど。層をまたぐ線が間の箱の上を通ることがある。",
+      "キャンバスなので、中身はスクリーンリーダーに渡らない。",
+    ],
+    try: "下の「UI の要求」を押し、← → でたどる。ホイールで寄る。",
+    shots: [["main", "全体図：層の大陸と名前のピン"], ["flow", "流れ：UI の要求の手順 5"], ["paper", "中の紙：request_gateway.request"], ["code", "コードの段：gateway.unsafe.mln"], ["trace-dark", "記録の再生（暗い画面）"], ["phone", "スマホ（中の紙）"]],
+  },
+  {
+    id: "layout-lab", title: "自動配置の比較", kind: "置き方の物差し",
+    line: "流れ 2 枚と中の紙 4 枚を 6 通りの置き方で描き、交差・札の重なり・段差などを数えて、今の地図と比べるベンチ。",
+    scores: [4, 4, 3, 4],
+    good: [
+      "今の地図の弱い所を数で言える（削った札 12、段差 7、枠の誤り 11）。提案の置き方ではどれも 0。",
+      "提案の規則（札の場所を先に取る、24px 以内の段差を消す、枠は段ごと）は、今の地図にそのまま使える。",
+    ],
+    issues: [
+      "物差しの重みと提案の規則は作り手の判断で、同じ 6 枚で調整した。",
+      "調整に使っていない試しの 30 枚では、13 枚で交差か札の問題が残る。",
+    ],
+    try: "上で図を選ぶ。P で問題の場所に赤い印。",
+    shots: [["main", "6 通りの置き方と採点表"], ["stage", "提案の配置（UI の要求、原寸）"], ["hand", "今の地図（CPU 時間、原寸）"], ["overall", "6 枚のまとめと 30 枚の試し"], ["dark", "暗い画面（提案、CPU 時間）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "story", title: "読み物で追う", kind: "読む",
+    line: "文書マップを、スクロールで進む長い記事にした。図は今の手順の 2 箱へ寄る。",
+    scores: [3, 4, 3, 4],
+    good: [
+      "章の始めの「1 行 1 手順の表」と層の線で、流れ全体の上り下りが一目で分かる。",
+      "中の紙はたたんだ寄り道で、本筋が短いまま読める。",
+    ],
+    issues: [
+      "まだ長い（約 41,000px）。地図を探し回る用途には向かない。",
+      "長い矢印の手順は、名前だけの遠い描き方になる。",
+    ],
+    try: "スクロールするだけ。J / K で段落を移る。",
+    shots: [["main", "序：層を下りて、また上る"], ["board", "章の道のり：1 行 1 手順"], ["step", "手順 3：図が 2 箱へ寄る"], ["paper", "中の紙：submit の中"], ["dark", "記録（暗い画面）"], ["mobile", "スマホ（道のりの表）"]],
+  },
+  {
+    id: "isometric", title: "アイソメトリックの建物", kind: "絵で説明",
+    line: "MyComputer を 1 棟の建物に。階が層、点線の部屋が実行の文脈、色の付いた人がスレッド、OS_CALL はエレベーター。",
+    scores: [3, 3, 3, 5],
+    good: [
+      "だれが走っているか、ユーザ空間と OS の境目、OS への入口が 1 つしかないことが、文を読まずに分かる。",
+      "▶ で流すと、動く看板で手順を追える。説明や発表に強い。",
+    ],
+    issues: [
+      "止めた全体図としては今の地図より弱い。1024×768 ではラベルが一部重なる。",
+      "機械の配置は手で決めた表で、新しい箱はきれいに並ばない。",
+    ],
+    try: "「▶ 順に流す」を押す。「追う」でカメラが追う。",
+    shots: [["main", "UI の要求（手順 6）"], ["follow", "追う：カメラが荷物を追う"], ["paper", "中の紙：request_gateway.request"], ["trace", "記録を建物の上で再生"], ["dark", "暗い画面（CPU 時間）"], ["phone", "スマホ"]],
+  },
+  {
+    id: "stack3d", title: "積み木の 3D", kind: "3D",
+    line: "5 つの層を半透明の板として WebGL で積み、箱を積み木、手順を板を貫く管にした。",
+    scores: [3, 5, 3, 4],
+    good: [
+      "要求が層を下りてまた上がる筋が、静止画 1 枚でも読める。データへの忠実さはレビューで満点。",
+      "ラベルを 2 回に分けて置き、全場面を数える検査（`tools/check-labels.mjs`）がある。",
+    ],
+    issues: [
+      "斜めから見るので奥の板が隠れ、平面の地図より 1 枚で分かることが少ない。",
+      "three.js（約 770 KB）を読むので、最初の表示が重い。",
+    ],
+    try: "▶ で 11 手順が約 20 秒で流れる。積み木を押すと説明。",
+    shots: [["main", "UI の要求（手順 5）"], ["paper", "中の紙：request_gateway.request"], ["trace", "記録の再生"], ["dark", "暗い画面（CPU 時間）"], ["phone", "スマホ"], ["nogl", "WebGL が無い時の平面の図"]],
+  },
+  {
+    id: "terminal", title: "ターミナルで見る", kind: "端末",
+    line: "Python 標準ライブラリだけの端末アプリ（curses）で地図を読む。ページは同じ描画の再生。",
+    scores: [3, 4, 3, 4],
+    good: [
+      "今の手順だけ太く、通った手順は青、これからは灰の 3 段で、SSH 越しでも読める。",
+      "幅に合わせて詳しさを 6 段で落とし、最後は縦の一本道になる。",
+    ],
+    issues: [
+      "配置は自動で、手で整えた今の地図ほど締まらない（回り道が残る）。",
+      "曖昧幅を全角にした端末では罫線が崩れる（`--ascii` で避けられる）。",
+    ],
+    try: "端末で `python3 lab/terminal/atlas_tui.py`。← → で手順、Enter で中の紙。",
+    run: "本体は端末アプリ。ページはその画面を 3 つの大きさで再生する。",
+    shots: [["main", "160×44 の端末（UI の要求）"], ["cpu", "112×34・明るい配色（CPU 時間）"], ["paper", "中の紙：request_gateway.request"], ["trace", "記録：だれが走っているか"], ["code", "コード（c）"], ["phone", "46 桁：縦の一本道"]],
+  },
+  {
+    id: "matrix", title: "関係の行列と弦", kind: "関係の索引",
+    line: "70 の節を層の順に並べた節×節の行列。流れの手順を、対角線で折り返す線としてたどる。",
+    scores: [3, 3, 4, 4],
+    good: [
+      "被参照のパネル（だれが・なぜ指しているか）と関係の索引 `model.js` は、本体にそのまま使える。",
+      "層×層の表で、どの層とどの層を何度行き来するかが分かる。",
+    ],
+    issues: [
+      "行列は密で、升目の大半は空。初めての人には読みにくい。",
+      "中の紙を開くと、1440×900 でも縦にスクロールする。",
+    ],
+    try: "← → で 1 手順ずつ。升目を押すと、その関係が右に出る。",
+    shots: [["main", "行列と UI の要求の手順 1"], ["cell", "升目を押す：要求の列"], ["cluster", "まとまり順に並べ替え"], ["layers", "層×層の表"], ["dark", "暗い画面（CPU 時間）"], ["phone", "スマホ"]],
+  },
+];
+
+const PICKS = [
+  { id: "code-tour",
+    why: "手順を選ぶと、それが起きる本物の行が開く。地図の文がどのコードのことか迷わない。レビューの点がいちばん高く、開発にそのまま使える。",
+    try: "「最初から歩く」を押すと手順 1 から進み、gateway の中の紙にも入る。← → で手順、Enter で中の紙。" },
+  { id: "metro",
+    why: "1 枚で系全体が読める、ラボでいちばんの全体図。乗り換え駅を見れば、流れと中の紙がどこで同じコードを通るかが分かる（2 つの流れは tick() で出会う）。",
+    try: "「始発」の札を押して ▶ 乗る（Space）。駅を押すと説明、上の「運行記録」で記録を重ねる。" },
+  { id: "comic",
+    why: "初めての人にいちばんやさしい。ふきだしを追うだけで UI の要求が 1 分ほどで分かり、層をまたぐ所は床の段で見える。",
+    try: "表紙の「道のり」を見てから「1 コマ目から読む」。コマを押すと大きく読め、虫めがねで中の紙が開く。" },
+];
+
+const SCORE_LABELS = ["読みやすさ", "正しさ", "仕上がり", "新しさ"];
+const byId = Object.fromEntries(LAB.map((p) => [p.id, p]));
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+// Plain text with `code` spans.
+function fmt(s) {
+  // Short code stays on one line (a flag such as --warm would otherwise break after its hyphens).
+  return esc(s).replace(/`([^`]+)`/g, (_, c) => `<code${c.length <= 32 ? ' class="nw"' : ""}>${c}</code>`);
+}
+function scoresHTML(scores) {
+  return `<dl class="scores" aria-label="レビューの点（5 点満点）">${scores.map((v, i) =>
+    `<div><dt>${SCORE_LABELS[i]}</dt><dd><span class="pips" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i${k <= v ? ' class="on"' : ""}></i>`).join("")}</span><b>${v}</b></dd></div>`).join("")}</dl>`;
+}
+function shotLink(p) {
+  return `<a class="shot" href="${p.id}/index.html" tabindex="-1" aria-hidden="true"><img src="${p.id}/shots/main.png" alt="" width="1440" height="900"></a>`;
+}
+function actions(p, primary) {
+  return `<div class="actions"><a class="btn${primary ? " primary" : ""}" href="${p.id}/index.html">開く</a><a class="btn" href="${p.id}/NOTES.md" data-notes="${p.id}">NOTES.md</a><button class="btn" type="button" data-shots="${p.id}">画面 ${p.shots.length} 枚</button></div>`;
+}
+
+document.getElementById("picks").innerHTML = PICKS.map((k, i) => {
+  const p = byId[k.id];
+  return `<article class="pick">${shotLink(p)}<div class="body">
+    <div class="meta"><span class="num" aria-hidden="true">${i + 1}</span><span class="vh">${i + 1} 位</span><span class="kind">${esc(p.kind)}</span><span class="pid">${p.id}</span></div>
+    <h3><a href="${p.id}/index.html">${esc(p.title)}</a></h3>
+    <p>${fmt(p.line)}</p>
+    <p><span class="label">なぜ最初に</span>${fmt(k.why)}</p>
+    <p class="try"><span class="label">試すこと</span>${fmt(k.try)}</p>
+    ${actions(p, true)}
+  </div></article>`;
+}).join("");
+
+document.getElementById("cards").innerHTML = LAB.map((p, i) => `<article class="card" id="p-${p.id}">${shotLink(p)}<div class="body">
+    <div class="meta"><span class="rank">${i + 1} 位</span><span class="kind">${esc(p.kind)}</span><span class="pid">${p.id}</span></div>
+    <h3><a href="${p.id}/index.html">${esc(p.title)}</a></h3>
+    <p class="line">${fmt(p.line)}</p>
+    ${scoresHTML(p.scores)}
+    <div class="points good"><h4>ここが良い</h4><ul>${p.good.map((s) => `<li>${fmt(s)}</li>`).join("")}</ul></div>
+    <div class="points issue"><h4>ここが課題</h4><ul>${p.issues.map((s) => `<li>${fmt(s)}</li>`).join("")}</ul></div>
+    <p class="try"><b>最初に</b>　${fmt(p.try)}</p>
+    ${p.run ? `<p class="run">${fmt(p.run)}</p>` : ""}
+    ${actions(p, false)}
+  </div></article>`).join("");
+
+if (location.protocol === "file:") document.getElementById("file-notice").hidden = false;
+
+// ---- A small Markdown reader for NOTES.md and README.md (the server sends .md without a charset,
+// so a plain link can show broken Japanese; fetch() always reads UTF-8).
+const CJK = /[　-ヿ㐀-鿿豈-﫿＀-￯]/;
+function joinLines(a, b) {
+  if (!a) return b;
+  return CJK.test(a.slice(-1)) && CJK.test(b[0]) ? a + b : a + " " + b;
+}
+function inline(s) {
+  const codes = [];
+  s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
+  s = esc(s);
+  s = s.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => /^(https?:\/\/|#|[\w.\/-]+$)/.test(u) ? `<a href="${u}">${t}</a>` : t);
+  return s.replace(/\u0000(\d+)\u0000/g, (_, k) => `<code>${esc(codes[k])}</code>`);
+}
+const ITEM = /^(\s*)([-*+]|\d+\.)\s+(.*)$/;
+const BLOCK_START = /^(#{1,6}\s|\s*```|\s*([-*+]|\d+\.)\s+|>|\s*\|)/;
+function cells(row) {
+  return row.trim().replace(/\\\|/g, "\u0001").replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim().replace(/\u0001/g, "|"));
+}
+function list(lines, start) {
+  const first = lines[start].match(ITEM);
+  const base = first[1].length;
+  const ordered = /\d/.test(first[2]);
+  const items = [];
+  let i = start;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) {
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim()) j++;
+      const m = j < lines.length && lines[j].match(ITEM);
+      if (m && m[1].length >= base && (m[1].length > base || /\d/.test(m[2]) === ordered)) { i = j; continue; }
+      break;
+    }
+    const m = line.match(ITEM);
+    const indent = line.match(/^\s*/)[0].length;
+    if (m && indent === base && /\d/.test(m[2]) === ordered) { items.push({ text: m[3].trim(), sub: [] }); i++; continue; }
+    if (m && indent > base && items.length) { const r = list(lines, i); items[items.length - 1].sub.push(r.html); i = r.next; continue; }
+    if (!m && indent > base && items.length) { const it = items[items.length - 1]; it.text = joinLines(it.text, line.trim()); i++; continue; }
+    break;
+  }
+  const tag = ordered ? "ol" : "ul";
+  const from = ordered ? parseInt(first[2], 10) : 1;
+  return { html: `<${tag}${from !== 1 ? ` start="${from}"` : ""}>${items.map((it) => `<li>${inline(it.text)}${it.sub.join("")}</li>`).join("")}</${tag}>`, next: i };
+}
+function md(src) {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    let m;
+    if (!line.trim()) { i++; continue; }
+    if (/^\s*```/.test(line)) {
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^\s*```/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      out.push(`<pre><code>${esc(buf.join("\n"))}</code></pre>`);
+      continue;
+    }
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
+      const n = Math.min(6, m[1].length + 1);
+      out.push(`<h${n}>${inline(m[2])}</h${n}>`);
+      i++;
+      continue;
+    }
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { out.push("<hr>"); i++; continue; }
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+      const head = cells(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(cells(lines[i++]));
+      out.push(`<div class="tbl"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
+      continue;
+    }
+    if (/^>\s?/.test(line)) {
+      const buf = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ""));
+      out.push(`<blockquote>${md(buf.join("\n"))}</blockquote>`);
+      continue;
+    }
+    if (ITEM.test(line)) { const r = list(lines, i); out.push(r.html); i = r.next; continue; }
+    let text = line.trim();
+    i++;
+    while (i < lines.length && lines[i].trim() && !BLOCK_START.test(lines[i])) text = joinLines(text, lines[i++].trim());
+    out.push(`<p>${inline(text)}</p>`);
+  }
+  return out.join("\n");
+}
+
+const dlg = document.getElementById("viewer");
+const dTitle = document.getElementById("viewer-title");
+const dRaw = document.getElementById("viewer-raw");
+const dBody = document.getElementById("viewer-body");
+let loadToken = 0;
+
+function openDialog(hash) {
+  if (!dlg.open) dlg.showModal();
+  dBody.scrollTop = 0;
+  history.replaceState(null, "", hash);
+}
+function openText(url, title, hash) {
+  const token = ++loadToken;
+  dTitle.textContent = title;
+  dRaw.href = url;
+  dRaw.hidden = false;
+  dBody.innerHTML = `<p class="loading">読み込み中…</p>`;
+  openDialog(hash);
+  fetch(url).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.text(); })
+    .then((text) => { if (token === loadToken) { dBody.innerHTML = `<div class="md">${md(text)}</div>`; dBody.scrollTop = 0; } })
+    .catch(() => { if (token === loadToken) dBody.innerHTML = `<p>読み込めませんでした。<a href="${esc(url)}">${esc(url)}</a> を直接開いてください（serve.sh で配っていない時は読み込めません）。</p>`; });
+}
+function openNotes(id) {
+  openText(`${id}/NOTES.md`, `${byId[id].title}（${id}）の NOTES.md`, `#notes/${id}`);
+}
+function openReadme() {
+  openText("README.md", "README：順位と、本体に取り入れること", "#readme");
+}
+function openShots(id) {
+  const p = byId[id];
+  ++loadToken;
+  dTitle.textContent = `${p.title}（${id}）の画面 ${p.shots.length} 枚`;
+  dRaw.hidden = true;
+  dBody.innerHTML = `<div class="shots">${p.shots.map(([f, c]) =>
+    `<figure><a href="${id}/shots/${f}.png" target="_blank" rel="noopener"><img src="${id}/shots/${f}.png" alt="${esc(c)}" loading="lazy" decoding="async"></a><figcaption><b>${f}</b>${esc(c)}</figcaption></figure>`).join("")}</div>`;
+  openDialog(`#shots/${id}`);
+}
+dlg.addEventListener("close", () => { ++loadToken; history.replaceState(null, "", location.pathname + location.search); });
+dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+document.getElementById("viewer-close").addEventListener("click", () => dlg.close());
+document.addEventListener("click", (e) => {
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  const notes = e.target.closest("[data-notes]");
+  if (notes) { e.preventDefault(); openNotes(notes.dataset.notes); return; }
+  const readme = e.target.closest("[data-readme]");
+  if (readme) { e.preventDefault(); openReadme(); return; }
+  const shots = e.target.closest("[data-shots]");
+  if (shots) { e.preventDefault(); openShots(shots.dataset.shots); }
+});
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  let m;
+  if (h === "readme") openReadme();
+  else if ((m = h.match(/^notes\/(.+)$/)) && byId[m[1]]) openNotes(m[1]);
+  else if ((m = h.match(/^shots\/(.+)$/)) && byId[m[1]]) openShots(m[1]);
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>

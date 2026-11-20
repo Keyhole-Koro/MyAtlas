@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyComputer 路線図</title>
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="css/metro.css">
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="layout.data.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1><span class="brand-mark" aria-hidden="true"></span>MyComputer 路線図</h1>
+    <p>流れと「中の紙」を路線に、関数と置き場を駅にした地図。帯は層、線の色は流れです。</p>
+  </div>
+  <div class="tools">
+    <label class="search">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg>
+      <input id="search" type="search" placeholder="駅をさがす（関数・置き場）" autocomplete="off" aria-label="駅をさがす">
+      <kbd>/</kbd>
+      <ul id="search-results" role="listbox" hidden></ul>
+    </label>
+    <button id="ridership" class="tool" aria-pressed="false" title="記録した 1 回の実行で、その駅に何回入ったか">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="6" cy="13" r="3"/><circle cx="13" cy="8" r="5"/></svg>乗降回数
+    </button>
+    <button id="replay-btn" class="tool" aria-pressed="false" title="記録した 1 回の実行を、地図の上で再生する">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="5"/><path d="M8.5 7.8v4.4l3.6-2.2z" fill="currentColor" stroke="none"/></svg>運行記録
+    </button>
+    <button id="fit" class="tool" title="全体を見る（0）">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg>全体
+    </button>
+  </div>
+</header>
+<main id="stage">
+  <aside id="legend" aria-label="凡例と路線"></aside>
+  <div id="map-wrap">
+    <svg id="map" role="img" aria-label="路線図"></svg>
+    <div id="zoom">
+      <button data-zoom="in" title="拡大（+）" aria-label="拡大">+</button>
+      <button data-zoom="out" title="縮小（−）" aria-label="縮小">−</button>
+    </div>
+    <aside id="panel" aria-live="polite" hidden></aside>
+  </div>
+  <div id="tip" role="tooltip" hidden></div>
+</main>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "atlas-lab-comic",
+  "private": true,
+  "description": "MyAtlas lab prototype: the flows as a comic. rough.js is copied to vendor/rough.js.",
+  "dependencies": {
+    "roughjs": "^4.6.6"
+  }
+}

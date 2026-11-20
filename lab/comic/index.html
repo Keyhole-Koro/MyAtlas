@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyComputer 文書マップ ・ マンガで読む</title>
+<link rel="stylesheet" href="comic.css">
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brand">
+    <span class="brand-title">MyComputer 文書マップ</span>
+    <span class="brand-sub">マンガで読む</span>
+  </div>
+  <nav class="eps" id="eps" aria-label="話を選ぶ"></nav>
+  <div class="top-tools">
+    <button class="btn" id="btn-reader" type="button" title="1 コマずつ大きく読む（Enter）"><span class="long">1 コマずつ読む</span><span class="short">1 コマずつ</span></button>
+    <button class="btn ghost" id="btn-help" type="button" aria-expanded="false" aria-controls="help">読み方</button>
+  </div>
+</header>
+
+<div class="help" id="help" hidden role="dialog" aria-label="読み方">
+  <div class="help-in">
+    <div class="help-top"><b>読み方</b><button class="btn ghost sm" id="help-close" type="button">閉じる</button></div>
+    <div class="help-grid" id="help-grid"></div>
+  </div>
+</div>
+
+<main id="main">
+  <article class="sheet" id="sheet"></article>
+</main>
+
+<div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-label="1 コマずつ読む">
+  <div class="reader-bar">
+    <nav class="crumbs" id="r-crumbs"></nav>
+    <div class="reader-nav">
+      <button class="btn" id="r-prev" type="button" title="前のコマ（←）">← 前</button>
+      <span class="r-count" id="r-count"></span>
+      <button class="btn" id="r-next" type="button" title="次のコマ（→）">次 →</button>
+      <button class="btn ghost" id="r-close" type="button" title="閉じる（Esc）">閉じる</button>
+    </div>
+  </div>
+  <div class="reader-body">
+    <section class="r-stage" id="r-stage"></section>
+    <aside class="r-notes" id="r-notes"></aside>
+  </div>
+  <div class="r-strip" id="r-strip"></div>
+</div>
+
+<div class="pop" id="pop" hidden></div>
+
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="vendor/rough.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

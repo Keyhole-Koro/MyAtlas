@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データの旅 — MyComputer 文書マップ</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>データの旅</h1>
+    <p class="tag">関数ではなく、データを追う</p>
+  </div>
+  <nav class="controls" aria-label="表示の切り替え">
+    <div class="seg" id="journeySeg" role="tablist" aria-label="流れ">
+      <button role="tab" data-j="ui">UI の要求<small>Request</small></button>
+      <button role="tab" data-j="cpu">CPU 時間<small>時計 → %</small></button>
+    </div>
+    <div class="seg" id="viewSeg" role="tablist" aria-label="見せ方">
+      <button role="tab" data-v="table">表</button>
+      <button role="tab" data-v="packet">パケット</button>
+    </div>
+    <button class="play" id="play" aria-label="再生"><span class="ico">▶</span><span class="lbl">再生</span></button>
+  </nav>
+</header>
+
+<main>
+  <section id="tableView" class="view">
+    <div class="intro">
+      <p id="lead"></p>
+      <div class="legend" id="legend"></div>
+      <label class="alt-toggle" id="altToggle"><input type="checkbox" id="alt"> もし列が満杯なら</label>
+    </div>
+    <div class="caption" id="caption"></div>
+    <div class="gridwrap" id="gridwrap">
+      <div class="gridrow">
+        <svg id="gridL" class="gridsvg" role="img" aria-label="表の行の名前"></svg>
+        <svg id="grid" class="gridsvg" role="img" aria-label="データの旅の表"></svg>
+      </div>
+    </div>
+    <div class="list" id="list" hidden></div>
+    <p class="hint" id="hint">列（手順）・行（フィールド）・印・下の帯の棒をクリックすると、下に地図の文とコードが出ます。← → で手順を動かせます。</p>
+    <section id="detail" class="detail" aria-live="polite"></section>
+  </section>
+
+  <section id="packetView" class="view" hidden>
+    <div class="pk-caption" id="pkCaption"></div>
+    <div class="stage-wrap" id="stageWrap"><div class="stage" id="stage"></div></div>
+    <div class="pk-note" id="pkNote" hidden></div>
+    <div class="pk-controls" id="pkControls"></div>
+    <div class="pk-trace" id="pkTrace"></div>
+  </section>
+</main>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

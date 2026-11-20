@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><title>frame</title>
+<style>html,body{margin:0;background:#1c1c1c}body{padding:12px}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script src="../web/term.js"></script><script src="frame.js"></script>
+<script>
+const theme = (matchMedia('(prefers-color-scheme: light)').matches && FRAME_THEME_AUTO) ? 'light' : (window.FRAME_THEME || 'dark');
+document.body.style.background = PALETTES[theme].bg;
+const size = Term.fit(FRAME.w, FRAME.h, innerWidth - 24, innerHeight - 24);
+Term.draw(document.getElementById('c'), FRAME, PALETTES[theme], size);
+</script></body></html>

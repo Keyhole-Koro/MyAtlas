@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>コードと歩く — MyComputer 文書マップ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="tour" aria-label="流れの手順">
+    <header class="tour-head">
+      <div class="eyebrow" id="eyebrow">MyComputer 文書マップ</div>
+      <h1>コードと歩く</h1>
+      <p class="lede">手順を進めると、右にその手順が起きるコードが開く。<mark class="echo-key">黄色</mark>は手順の文に出てくる名前。</p>
+      <div class="head-row"><div class="flows" role="tablist" id="flows"></div>
+        <div class="play-group"><button type="button" class="play" id="play" aria-pressed="false"></button><button type="button" class="replay" id="replay" hidden title="手順 1 から歩き直す" aria-label="最初から歩く"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 1 0 1.5-3.5"/><path d="M3 2.6v3h3"/></svg></button></div></div>
+      <p class="flow-title" id="flowTitle"></p>
+      <p class="hint" id="hint"></p>
+      <p class="where" id="where"></p>
+    </header>
+    <section class="chart" id="chart" aria-label="層の行き来"></section>
+    <div class="m-only m-strip" id="mStrip"></div>
+    <div class="m-only m-card" id="mCard"></div>
+    <nav class="track" id="track" aria-label="手順"></nav>
+    <footer class="keys">
+      <span><kbd>←</kbd><kbd>→</kbd> 進む</span>
+      <span><kbd>Enter</kbd> 中の紙へ</span>
+      <span><kbd>Esc</kbd> 戻る</span>
+      <span><kbd>Space</kbd> 歩く</span>
+      <span><kbd>Home</kbd><kbd>End</kbd> 最初・最後</span>
+    </footer>
+  </aside>
+  <main class="viewer" aria-label="コード">
+    <div class="route" id="route"></div>
+    <div class="play-bar" aria-hidden="true"><i id="playBar"></i></div>
+    <div class="file-head" id="fileHead"></div>
+    <div class="node-info" id="nodeInfo"></div>
+    <div class="code-wrap">
+      <div class="code-scroll" id="codeScroll" tabindex="0" aria-label="ソース">
+        <div class="code" id="code"><div class="loading">ソースを読んでいます…</div></div>
+      </div>
+      <div class="ruler" id="ruler" title="ファイル全体の中の位置"></div>
+    </div>
+  </main>
+  <div class="m-only m-nav" id="mNav">
+    <button type="button" data-act="prev">← 前へ</button>
+    <button type="button" data-act="dive" id="mDive">中の紙へ</button>
+    <button type="button" data-act="next" class="primary">次へ →</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="highlight.js"></script>
+<script src="lines.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

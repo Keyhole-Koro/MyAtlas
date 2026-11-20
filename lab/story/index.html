@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>層を下りて、また上る — MyComputer 文書マップを読む</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#text">本文へ</a>
+<header class="mast" id="mast">
+  <a class="mast-home" href="#top" data-go="top"><b>MyComputer 文書マップ</b><span>読み物</span></a>
+  <nav class="mast-nav" id="mast-nav" aria-label="章"></nav>
+  <div class="mast-progress" aria-hidden="true"><i id="progress"></i></div>
+</header>
+
+<main id="top">
+  <div class="story" id="story">
+    <div class="col-text" id="text"></div>
+    <div class="col-graphic" id="graphic" aria-hidden="false">
+      <div class="g-frame">
+        <div class="g-head" id="g-head"></div>
+        <div class="g-stage" id="g-stage">
+          <svg id="map" class="map" role="img" aria-label="地図"></svg>
+          <svg id="timeline" class="timeline" role="img" aria-label="記録"></svg>
+          <div class="g-lanes" id="g-lanes" aria-hidden="true"></div>
+          <div class="g-board" id="g-board"></div>
+          <div class="g-from" id="g-from" aria-hidden="true"></div>
+          <div class="g-mini" id="g-mini" hidden aria-hidden="true"><svg id="mini"></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <section class="index" id="index" aria-labelledby="index-h"></section>
+  <footer class="foot" id="foot"></footer>
+</main>
+
+<div class="card" id="card" role="tooltip" hidden></div>
+<aside class="source" id="source" aria-label="ソース" hidden>
+  <header class="source-head"><div id="source-title"></div><button type="button" class="source-close" id="source-close" aria-label="閉じる">閉じる <kbd>Esc</kbd></button></header>
+  <pre class="source-body" id="source-body"></pre>
+</aside>
+
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+<script src="js/util.js"></script>
+<script src="js/model.js"></script>
+<script src="js/map.js"></script>
+<script src="js/board.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/text.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

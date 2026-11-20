@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyComputer ビル — アイソメトリックの建物</title>
+<link rel="stylesheet" href="style.css">
+<script src="../data/atlas.js"></script>
+<script src="../data/code.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1><span class="logo" aria-hidden="true"></span>MyComputer ビル</h1>
+    <p class="lede">層を階に、実行の文脈を部屋に置いた建物。要求は荷物になって運ばれます。</p>
+  </div>
+  <nav class="tours" role="tablist" aria-label="流れ" id="tours"></nav>
+  <div class="tools">
+    <button class="tool" id="btn-dir" aria-haspopup="dialog"><span class="i i-dir" aria-hidden="true"></span>館内案内</button>
+    <button class="tool" id="btn-rec" aria-pressed="false"><span class="i i-rec" aria-hidden="true"></span>記録を見る</button>
+    <button class="tool icon-only" id="btn-help" aria-label="使い方"><span aria-hidden="true">?</span></button>
+  </div>
+</header>
+<main class="wrap">
+  <section class="stage" id="stage" aria-label="建物">
+    <div class="crumbs" id="crumbs"></div>
+    <svg id="scene" role="img" aria-label="MyComputer の建物" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" class="arrowhead"/></marker>
+      </defs>
+      <g id="cam"><g id="world"></g><g id="overlay"></g></g>
+    </svg>
+    <div class="zoom" id="zoom">
+      <button id="z-fit" title="全体を見る" aria-label="全体を見る">全体</button>
+      <button id="z-follow" title="荷物を追いかける" aria-pressed="false">追う</button>
+    </div>
+    <div class="floorchip" id="floorchip" hidden aria-live="polite"></div>
+    <div class="dock" id="dock"></div>
+    <details class="legend" id="legend" open>
+      <summary>見方</summary>
+      <ul>
+        <li><svg viewBox="-12 -30 24 34" aria-hidden="true"><path class="lg-b th-app" d="M-6,-2 C-6.5,-14 -4.5,-19 0,-19 C4.5,-19 6.5,-14 6,-2 Z"/><circle class="lg-b th-app" cx="0" cy="-24" r="4.6"/></svg><span>人＝走っているもの</span></li>
+        <li class="cols"><span></span><span><span class="nw"><i class="c th-app"></i>アプリのスレッド</span><span class="nw"><i class="c th-svc"></i>service task</span><span class="nw"><i class="c th-irq"></i>割り込み</span></span></li>
+        <li><svg viewBox="-12 -14 24 20" aria-hidden="true"><path class="lg-p1" d="M-8,-6 L0,-10 L8,-6 L0,-2 Z"/><path class="lg-p2" d="M-8,-6 L0,-2 L0,6 L-8,2 Z"/><path class="lg-p3" d="M8,-6 L0,-2 L0,6 L8,2 Z"/></svg><span>箱＝渡すデータ（白はアドレスだけ）</span></li>
+        <li><svg viewBox="-12 -16 24 24" aria-hidden="true"><rect class="lg-t" x="-7" y="-15" width="14" height="22" rx="7"/></svg><span>エレベーター＝OS_CALL（syscall）</span></li>
+        <li><svg viewBox="-12 -16 24 24" aria-hidden="true"><path class="lg-l" d="M-4,-15 V7 M4,-15 V7 M-4,-9 H4 M-4,-3 H4 M-4,3 H4"/></svg><span>はしご＝同じスレッドで別の階へ</span></li>
+        <li><svg viewBox="-12 -12 24 20" aria-hidden="true"><path class="lg-s" d="M-11,2 Q0,-12 11,2"/><circle class="lg-sp" cx="0" cy="-5" r="3.6"/></svg><span>光＝通知　<svg class="inl" viewBox="-12 -10 24 14" aria-hidden="true"><path class="lg-d" d="M-11,2 Q0,-10 11,2"/></svg>破線＝読み書き</span></li>
+        <li><svg viewBox="-12 -12 24 20" aria-hidden="true"><rect class="lg-r" x="-10" y="-8" width="20" height="14" rx="2"/></svg><span>点線の部屋＝実行の文脈</span></li>
+      </ul>
+    </details>
+  </section>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</main>
+<div class="sheet-dir" id="dir" role="dialog" aria-modal="false" aria-label="館内案内" hidden></div>
+<div class="help" id="help" role="dialog" aria-label="使い方" hidden></div>
+<div class="figbox" id="figbox" role="dialog" aria-label="図" hidden></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

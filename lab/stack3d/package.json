@@ -1,0 +1,15 @@
+{
+  "name": "atlas-lab-stack3d",
+  "private": true,
+  "description": "MyAtlas lab prototype: stacked layers in WebGL (three.js)",
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "type": "module",
+  "scripts": {
+    "vendor": "esbuild tools/vendor-entry.js --bundle --format=esm --minify --legal-comments=eof --outfile=vendor/three-bundle.js"
+  }
+}
