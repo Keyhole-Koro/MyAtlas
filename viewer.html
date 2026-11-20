@@ -625,7 +625,7 @@ const FLOWS = DATA.flows;
 
 // ---- Papers inside boxes: a node can hold its own map. Every box that points at the node opens the same paper. ----
 const PAPERS = DATA.papers;
-// Recorded runs (the map's traces/): function entries in the order they happened, tied to nodes.
+// Recorded runs (the map's traces/): entries, returns, interrupts and switches in the order they happened, tied to nodes.
 const TRACES = DATA.traces || [];
 const allPapers = () => [...FLOWS, ...Object.values(PAPERS)];
 for (const f of allPapers()) { let n = 0; for (const st of f.steps) if (st.alt) st.alt.no = 'ABCDEFGH'[n++]; }
@@ -1600,7 +1600,7 @@ function traceVisits(f, tr) {
     if (e.ev === 'irq') { via.push(`割り込み（${(e.cause || []).join('・') || '?'}）`); continue; }
     if (e.ev !== 'enter') continue;
     const b = e.n && f.boxes.find((x) => x.node === e.n);
-    if (b) { visits.push({ b, e, via }); via = []; } else if (e.fn) via.push(e.fn);
+    if (b) { visits.push({ b, e, via }); via = []; } else if (e.fn) via.push(e.syscall ? `${e.fn}（${e.syscall}）` : e.fn);
   }
   return visits;
 }
@@ -1648,7 +1648,7 @@ function traceCompareHtml(f) {
   const rows = f.steps.map((st, i) => {
     const A = boxById(f, st.from), B = boxById(f, st.to);
     if (!fnOf(A) || !fnOf(B)) return [i, 'na', '記録の対象外（置き場・1 文の節・関数でない端）'];
-    if (st.kind === 'return') return [i, 'na', '戻りは記録しない（関数に入ったところだけ）'];
+    if (st.kind === 'return') return [i, 'na', '戻りは比べない（比べるのは関数に入った順だけ）'];
     for (let k = 1; k < visits.length; k++) if (visits[k - 1].b === A && visits[k].b === B) {
       const way = squeeze(visits[k].via);
       return [i, 'ok', way.length ? `起きた。あいだに ${way.join(' → ')}` : '起きた（すぐ次）'];

@@ -237,8 +237,26 @@ class AtlasTest(unittest.TestCase):
         self.fx.write(self.fx.docs / 'traces' / 'run.json', json.dumps({'title': '1 回', 'events': events}))
         rep, (_, _, nodes, _, _) = self.fx.check()
         traces = load_traces(Project(self.fx.root), nodes, rep)
-        self.assertEqual([e.get('n') for e in traces[0]['events']], ['os.push', 'os.drain'])
+        self.assertEqual([(e['ev'], e.get('n')) for e in traces[0]['events']],
+                         [('enter', 'os.push'), ('exit', 'os.push'), ('enter', 'os.drain')])
         self.assertEqual(nodes['os.push']['fn'], 'queue.push')   # the node with the paper, not app.main
+
+    def test_a_syscall_node_is_its_dispatch_only_under_that_syscall(self):
+        self.fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain\n',
+                     '関数・src/queue.mln の drain\n型：syscall DRAIN(borrow Queue q)\n')
+        trap = lambda seq, call: {'seq': seq, 'ev': 'irq', 'fn': 'irq.entry', 'thread': 1, 'cause': ['syscall'],
+                                  'trap': 'syscall', 'syscall': call, 'instr': seq}
+        drain = lambda seq, ev, thread=1: {'seq': seq, 'ev': ev, 'fn': 'Queue.drain', 'thread': thread, 'instr': seq}
+        events = [trap(0, 'DRAIN'), drain(1, 'enter'), trap(2, 'WAIT'), drain(3, 'enter', 2), drain(4, 'exit'),
+                  drain(5, 'enter'), drain(6, 'exit'), drain(7, 'exit', 2)]
+        self.fx.write(self.fx.docs / 'traces' / 'run.json', json.dumps({'title': '1 回', 'events': events}))
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        traces = load_traces(Project(self.fx.root), nodes, rep)
+        # Thread 1 trapped with DRAIN, then WAIT; thread 2 never trapped. A return lands where its call did.
+        self.assertEqual([(e['seq'], e.get('n'), e.get('syscall')) for e in traces[0]['events']],
+                         [(0, None, 'DRAIN'), (1, 'os.drain', 'DRAIN'), (2, None, 'WAIT'), (3, None, None),
+                          (4, 'os.drain', None), (5, None, 'WAIT'), (6, None, None), (7, None, None)])
 
     def test_the_page_carries_the_map(self):
         out = self.fx.root / 'build' / 'atlas' / 'index.html'

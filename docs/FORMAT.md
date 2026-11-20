@@ -181,11 +181,16 @@ move added to the code shows up as soon as the map is checked. `はじめ` is wh
 
 ## Traces
 
-A trace is a recorded run: the functions that were entered, the interrupts and the thread switches,
-in order. MyProfiler's `trace` command writes them (its docs/formats.md describes the file). The
-viewer plays a trace over the map and compares it with the steps. An event's `fn` is the function
-as the source names it, `namespace.function` or `Type.method`, and lands on the node whose code is
-that function.
+A trace is a recorded run: the functions that were entered and returned from, the interrupts and
+their returns, and the thread switches, in order. MyProfiler's `trace` command writes them (its
+docs/formats.md describes the file). The viewer plays a trace over the map and compares it with the
+steps. An event's `fn` is the function as the source names it, `namespace.function` or
+`Type.method`, and lands on the node whose code is that function; a return lands where its call did.
+
+A node whose `型` is `syscall NAME(…)` stands for the kernel's dispatch function only while that
+syscall runs: an entry lands on it when the interrupt that entered the kernel on that thread was
+NAME. The dispatch runs every syscall, so an entry under another one lands on no node and names its
+syscall.
 
 ## What the check reports
 
