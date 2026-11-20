@@ -1,0 +1,161 @@
+namespace irq_dispatch;
+
+import mem from "@kernel/mm/mem.mln";
+import scheduler from "scheduler.mln";
+import serial from "@kernel/io/serial.mln";
+import mouse from "@kernel/io/mouse.mln";
+import keyboard from "@kernel/io/keyboard.mln";
+import debug from "@kernel/debug/debug.mln";
+import process from "process.mln";
+import thread from "thread.mln";
+import { KernelSignal } from "thread.mln";
+import syscall from "syscall.mln";
+import irq from "@kernel/arch/irq.mln";
+import irq_frame from "@kernel/arch/irq_frame.mln";
+import mmu from "@kernel/mm/mmu.mln";
+import { irq_trampoline, irq_resume } from "@kernel/arch/irq_trampoline.masm";
+import { Result } from "@std/core/result.mln";
+import { Option } from "@std/core/option.mln";
+import { Pid, ProcessExitStatus } from "@contracts/process/control.contract.mln";
+
+/** Memory-mapped hardware register containing pending interrupt-cause bits. */
+i32 IRQ_CAUSE_ADDR = 0x24000084;
+/** Bit mask for timer interrupts in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_TIMER  = 1;
+/** Bit mask for mouse interrupts in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_MOUSE  = 2;
+/** Bit mask for serial input interrupts in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_SERIAL = 4;
+/** Bit mask for storage-device interrupts in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_SSD    = 8;
+/** Bit mask for software system-call traps in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_SYSCALL = 16;
+/** Bit mask for page-fault traps in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_PAGE_FAULT = 32;
+/** Bit mask for user-mode privilege-violation traps in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_PRIVILEGE_VIOLATION = 64;
+/** Bit mask for keyboard interrupts in IRQ_CAUSE_ADDR. */
+i32 IRQ_CAUSE_KEYBOARD = 128;
+/** Bit mask for illegal-instruction traps raised from user mode. */
+i32 IRQ_CAUSE_ILLEGAL_INSTRUCTION = 256;
+/** Bit mask for a request the host posted on the automation bridge. */
+i32 IRQ_CAUSE_AUTOMATION = 512;
+
+/**
+ * Top-level hardware interrupt entry point called from the vector table.
+ *
+ * Preserves CPU state via trampoline, dispatches to interrupt handlers, and never returns directly.
+ * The saved frame depends on this function's prologue; see irq_frame.unsafe.mln.
+ */
+export void entry() {
+    dispatch(irq_frame.complete(irq_trampoline()));
+    debug.panic("irq dispatcher returned unexpectedly");
+}
+
+/**
+ * Dispatches interrupt causes (serial, mouse, keyboard, faults, syscall, timer).
+ *
+ * Handles pending hardware events, traps, system calls, and timer ticks before resuming execution.
+ * @param sp Stack pointer of the saved interrupt frame.
+ */
+export void dispatch(i32 sp) {
+    bool was_enabled = irq.enter_handler();
+    i32 cause = mem.read_word(IRQ_CAUSE_ADDR);
+    
+    // Ack the handled interrupts to hardware
+    mem.write_word(IRQ_CAUSE_ADDR, cause);
+
+    if (cause & IRQ_CAUSE_SERIAL) {
+        // Drain the hardware RX register into the software input queue.
+        while (serial.rx_ready()) {
+            i32 c = serial.read_rx();
+            serial.input_push(c);
+        }
+        thread.notify_all(KernelSignal::SERIAL);
+    }
+
+    if (cause & IRQ_CAUSE_MOUSE) {
+        mouse.drain_hw();
+    }
+
+    if (cause & IRQ_CAUSE_KEYBOARD) {
+        keyboard.drain_hw();
+    }
+
+    if (cause & (IRQ_CAUSE_MOUSE | IRQ_CAUSE_KEYBOARD)) {
+        thread.notify_all(KernelSignal::INPUT);
+    }
+
+    if (cause & IRQ_CAUSE_AUTOMATION) {
+        thread.notify_all(KernelSignal::AUTOMATION);
+    }
+
+    // Handle synchronous traps first
+    if (cause & IRQ_CAUSE_PRIVILEGE_VIOLATION) {
+        debug.println("irq: privilege violation in user process");
+        debug.printf("irq: fault addr: 0x%x status: %i\n", mmu.get_fault_address(), mmu.get_fault_status());
+        Option<Pid> current = thread.current_pid();
+        case current of {
+            Some(_) -> ({
+                ProcessExitStatus status = ProcessExitStatus::PrivilegeViolation;
+                syscall.sys_exit_status(status);
+                sp = scheduler.reschedule(sp);
+                irq.leave_handler(was_enabled);
+                irq_resume(sp);
+                return; // unreachable: irq_resume restores a frame and executes iret
+            });
+            None -> _;
+        };
+    }
+
+    if (cause & IRQ_CAUSE_PAGE_FAULT) {
+        debug.println("irq: unhandled page fault in user process");
+        Option<Pid> current = thread.current_pid();
+        case current of {
+            Some(_) -> ({
+                ProcessExitStatus status = ProcessExitStatus::PageFault;
+                syscall.sys_exit_status(status);
+                sp = scheduler.reschedule(sp);
+                irq.leave_handler(was_enabled);
+                irq_resume(sp);
+                return; // unreachable: irq_resume restores a frame and executes iret
+            });
+            None -> _;
+        };
+    }
+
+    if (cause & IRQ_CAUSE_ILLEGAL_INSTRUCTION) {
+        debug.println("irq: illegal instruction in user process");
+        Option<Pid> current = thread.current_pid();
+        case current of {
+            Some(_) -> ({
+                ProcessExitStatus status = ProcessExitStatus::IllegalInstruction;
+                syscall.sys_exit_status(status);
+                sp = scheduler.reschedule(sp);
+                irq.leave_handler(was_enabled);
+                irq_resume(sp);
+                return;
+            });
+            None -> _;
+        };
+    }
+
+    if (cause & IRQ_CAUSE_SYSCALL) {
+        case syscall.dispatch(sp) of {
+            Ok(outcome) -> ({
+                if (!outcome.parked) { irq_frame.set_syscall_return(sp, outcome.status, outcome.value); }
+                sp = outcome.next_sp;
+            });
+            Err(error) -> ({ irq_frame.set_syscall_return(sp, syscall.error_status(error), 0); });
+        };
+    }
+
+    if (cause & IRQ_CAUSE_TIMER) {
+        sp = scheduler.tick(sp);
+    } else {
+        sp = scheduler.resume_after_interrupt(sp);
+    }
+
+    irq.leave_handler(was_enabled);
+    irq_resume(sp);
+}

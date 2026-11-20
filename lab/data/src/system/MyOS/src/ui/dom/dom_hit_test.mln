@@ -1,0 +1,69 @@
+namespace dom_hit_test;
+
+import dom from "dom.mln";
+import dom_menu from "dom_menu.mln";
+import { NodeRow } from "dom_model.mln";
+import { Blob } from "@std/memory/blob.mln";
+import { NodeState, Children } from "dom.mln";
+import { Option } from "@std/core/option.mln";
+import { NodeId } from "@contracts/ui/widget.contract.mln";
+
+// Read-only pointer-to-node lookup. The DOM owns the tree and its state;
+// this module owns the traversal policy used by input dispatch and automation.
+
+// Whether a point is inside a row's rectangle; an empty one holds nothing.
+bool row_contains(borrow NodeRow n, i32 px, i32 py) {
+    if (n.w == 0 || n.h == 0) { return false; }
+    return px >= n.x && py >= n.y && px < n.x + n.w && py < n.y + n.h;
+}
+
+// The topmost visible, hit-testable node within a row's subtree. Children are
+// walked as rows, so a subtree costs one lookup per node.
+Option<NodeId> hit_row(borrow NodeRow n, i32 px, i32 py) {
+    if (!(n.state & NodeState::VISIBLE)) { return None; }
+
+    bool inside = row_contains(&n, px, py);
+    Option<NodeId> found = None;
+    if (inside) {
+        if (n.state & NodeState::HIT_TESTABLE) { found = Some(n.id); }
+    }
+
+    // Children of a clipping container cannot be hit outside its bounds.
+    if (!inside) {
+        if (dom.clips_children(&n)) { return None; }
+    }
+
+    for (NodeId child_id in dom.children(n.id)) {
+        Option<NodeId> hit = hit_row(&dom.row_of(child_id), px, py);
+        if (hit.is_some()) { found = hit; }
+    }
+    return found;
+}
+
+// The topmost visible, hit-testable node within an optional node's subtree.
+Option<NodeId> hit_test(Option<NodeId> node, i32 px, i32 py) {
+    return case dom.row_in(node) of {
+        Some(n) -> hit_row(&n, px, py);
+        None -> None;
+    };
+}
+
+/** Finds the topmost interactive UI node at a display position. */
+export Option<NodeId> find_at(i32 x, i32 y) {
+    Option<NodeId> menu = dom_menu.menu_id();
+    Option<NodeId> menu_hit = hit_test(menu, x, y);
+    if (menu_hit.is_some()) { return menu_hit; }
+
+    Option<NodeId> taskbar = dom.taskbar_id();
+    Option<NodeId> taskbar_hit = hit_test(taskbar, x, y);
+    if (taskbar_hit.is_some()) { return taskbar_hit; }
+
+    Option<NodeId> found = None;
+    for (NodeId child_id in dom.children(dom.desktop_id())) {
+        if (!dom.holds(taskbar, child_id) && !dom.holds(menu, child_id)) {
+            Option<NodeId> hit = hit_row(&dom.row_of(child_id), x, y);
+            if (hit.is_some()) { found = hit; }
+        }
+    }
+    return found;
+}

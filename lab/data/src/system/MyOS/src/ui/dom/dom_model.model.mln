@@ -1,0 +1,54 @@
+namespace dom_model;
+
+import { Blob } from "@std/memory/blob.mln";
+import { NodeId } from "@contracts/ui/widget.contract.mln";
+import { Pid } from "@contracts/process/control.contract.mln";
+
+// The DOM's nodes. One tree holds the OS object model and the UI; the
+// children relation is the tree, and sibling order is paint order. The model
+// keeps ids as words; dom.mln turns them into NodeId. A stale one reaches no row.
+entity Node max 512 {
+    NodeId id;
+    i32 serial;      // when it was created: ids are reused, so order goes by this
+    u16 kind;
+    u16 role;        // ROLE_* ; 0 = none
+    u16 x;           // bounds in display pixels (UI nodes only, else 0)
+    u16 y;
+    u16 w;
+    u16 h;
+    u16 state;       // STATE_* bitmask
+    u16 style;       // STYLE_* bitmask
+    u16 padding;     // NODE_COLUMN/ROW inset, in display pixels
+    u16 gap;         // NODE_COLUMN/ROW gap between children, in display pixels
+    u16 cap;         // TextInput: buffer capacity in bytes
+    u16 len;         // TextInput: current text length
+    u16 cursor;      // TextInput: caret position (0..len)
+    u16 radius;      // Panel corner radius, display pixels
+    u16 scroll;      // TextArea/List: first visible row; Terminal: rows back from the end;
+                     // TextInput: display pixels its text is shifted left
+    Option<i32> sel; // List: selected row; Menu: hovered row; TextInput, TextArea and
+                     // Terminal: where a selection starts, the other end being
+                     // `cursor` (Terminal: `sel_end`); None = nothing selected
+    u16 sx;          // Window: bounds saved by maximize_window
+    u16 sy;
+    u16 sw;
+    u16 sh;
+    u16 sel_end;     // Terminal: where a selection made with the mouse ends
+    u16 edit;        // Terminal: the caret in the typed line, in bytes from its start
+    u16 icon;        // Window: its app's icon (Icon), for the taskbar
+    Blob name;
+    Blob text;       // display text / accessible name / edit buffer
+    Blob test_id;    // stable automation identity
+    fn(Option<Pid> owner, NodeId id, i32 arg) -> void on_click;
+    i32 background_color; // NODE_BOX fill colour (0 is valid black)
+    i32 border_color;     // NODE_BOX border colour
+    Option<i32> color;    // foreground/text colour; None = theme default
+    fn(Option<Pid> owner, NodeId id, i32 arg) -> void on_change;
+    fn(Option<Pid> owner, NodeId id, i32 arg) -> void on_tick;
+    i32 interval;         // Timer period in scheduler ticks
+    i32 next_due;         // Timer: tick at which it next fires
+    Option<Pid> owner;    // app process this node belongs to; None = system
+    fn(Option<Pid> owner, NodeId id, i32 arg) -> void on_close;
+}
+
+Node has many Node as children / parent, ordered;

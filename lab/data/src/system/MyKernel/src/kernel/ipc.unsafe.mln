@@ -1,0 +1,139 @@
+namespace ipc;
+
+/**
+ * Fixed-capacity message channels shared by kernel tasks and user processes.
+ * Channel IDs are 1-based. Each ring reserves one slot to distinguish full
+ * from empty, so a channel can hold at most SLOTS - 1 messages. Operations
+ * are serialized by the syscall/interrupt path on this single-core kernel.
+ * Message words containing pointers are only meaningful in a shared address
+ * space; user-facing callers must copy pointed-to data across the boundary.
+ */
+//
+// A channel is a ring of MSG_WORDS-word slots. The application request channel
+// has multiple producers, but syscall handlers run with interrupts disabled on
+// this single-core kernel, so send operations are serialized. send() copies a
+// message in and fails when the ring is full; recv() copies the oldest out; wait() sleeps
+// until one arrives. Messages are words: pointers in them are only
+// meaningful while both ends share an address space -- when one end is a
+// user process, the syscall layer copies what a pointer names before the
+// message crosses (MYOS-022).
+//
+// The application protocol runs on these (MyOS/src/ipc/channel.mln):
+// requests to the UI server, replies back, and events to the apps.
+
+import scheduler from "scheduler.mln";
+import { Option } from "@std/core/option.mln";
+import { Result } from "@std/core/result.mln";
+
+/** Opaque 1-based handle for a kernel message channel. Zero is invalid. */
+export newtype ChannelId = i32;
+
+/** Failure while querying a message channel. */
+export enum ChannelError {
+    InvalidId(i32),
+}
+
+// 24 words leave 64 inline bytes after an Event's five scalar words. Keeping
+// event text in the ring slot avoids queuing a pointer to reused server memory.
+/** Number of 32-bit words in each message slot. */
+export const i32 MSG_WORDS = 24;
+i32 CHANNELS_MAX = 40;   // the UI protocol takes two per process plus one
+i32 SLOTS = 32;
+
+struct Channel {
+    bool used;
+    i32 head;       // next slot to read
+    i32 tail;       // next slot to write
+};
+Channel g_channels[40];
+i32 g_ring[30720];  // CHANNELS_MAX * SLOTS * MSG_WORDS
+
+/**
+ * Allocates the next unused message channel.
+ * @return Some(channel_id) with a 1-based ID, or None when all channels are used.
+ */
+export Option<ChannelId> create() {
+    i32 c = 0;
+    while (c < CHANNELS_MAX) {
+        if (!g_channels[c].used) {
+            g_channels[c] = Channel { used: true, head: 0, tail: 0 };
+            return Some(ChannelId(c + 1));
+        }
+        c++;
+    }
+    return None;
+}
+
+/**
+ * Calculates the first word index of a slot in the flattened ring buffer.
+ * @param c Zero-based channel table index.
+ * @param slot Zero-based slot index within that channel.
+ * @return Word offset of the slot in g_ring.
+ */
+i32 slot_base(i32 c, i32 slot) {
+    return (c * SLOTS + slot) * MSG_WORDS;
+}
+
+/**
+ * Copies one message into a channel's queue.
+ * @param ch 1-based channel ID returned by create().
+ * @param words Pointer to at least MSG_WORDS message words.
+ * @return True if queued; false if the ID is invalid or the queue is full.
+ */
+export bool send(ChannelId ch, i32 *words) {
+    i32 raw = (i32)ch;
+    if (raw <= 0 || raw > CHANNELS_MAX) { return false; }
+    i32 c = raw - 1;
+    i32 next = g_channels[c].tail + 1;
+    if (next >= SLOTS) { next = 0; }
+    if (next == g_channels[c].head) { return false; }
+    i32 at = slot_base(c, g_channels[c].tail);
+    i32 i = 0;
+    while (i < MSG_WORDS) { g_ring[at + i] = words[i]; i++; }
+    g_channels[c].tail = next;
+    return true;
+}
+
+/**
+ * Checks whether a queued message matches two key words.
+ * Compares w1 and w2 with message words 1 and 2 respectively; callers use
+ * this to coalesce duplicate notifications such as an already-queued tick.
+ * @param ch 1-based channel ID.
+ * @param w1 Value expected in message word 1.
+ * @param w2 Value expected in message word 2.
+ * @return True if a matching message is queued; false for no match or invalid ID.
+ */
+export bool has(ChannelId ch, i32 w1, i32 w2) {
+    i32 raw = (i32)ch;
+    if (raw <= 0 || raw > CHANNELS_MAX) { return false; }
+    i32 c = raw - 1;
+    i32 i = g_channels[c].head;
+    while (i != g_channels[c].tail) {
+        i32 at = slot_base(c, i);
+        if (g_ring[at + 1] == w1 && g_ring[at + 2] == w2) { return true; }
+        i = i + 1;
+        if (i >= SLOTS) { i = 0; }
+    }
+    return false;
+}
+
+/**
+ * Removes the oldest queued message and copies it to the caller's buffer.
+ * @param ch 1-based channel ID.
+ * @param out Destination for at least MSG_WORDS message words.
+ * @return True if a message was copied; false if the ID is invalid or the queue is empty.
+ */
+export bool recv(ChannelId ch, i32 *out) {
+    i32 raw = (i32)ch;
+    if (raw <= 0 || raw > CHANNELS_MAX) { return false; }
+    i32 c = raw - 1;
+    if (g_channels[c].head == g_channels[c].tail) { return false; }
+    i32 at = slot_base(c, g_channels[c].head);
+    i32 i = 0;
+    while (i < MSG_WORDS) { out[i] = g_ring[at + i]; i++; }
+    i32 next = g_channels[c].head + 1;
+    if (next >= SLOTS) { next = 0; }
+    g_channels[c].head = next;
+    return true;
+}
+

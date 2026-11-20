@@ -1,0 +1,203 @@
+/**
+ * The UI server's request-side handler of the UI protocol.
+ *
+ * Executes application UI requests against the desktop DOM.
+ * Automatically sets the DOM current owner to the requesting process so that
+ * any newly created nodes, windows, or dialogs belong to that application.
+ */
+namespace ui_protocol;
+
+import str from "@std/text/str.mln";
+import { Option } from "@std/core/option.mln";
+import { Pid } from "@contracts/process/control.contract.mln";
+import { Result } from "@std/core/result.mln";
+import { NodeId, UiError } from "@contracts/ui/widget.contract.mln";
+import dom from "dom/dom.mln";
+import { NodeKind, NodeStyle } from "dom/dom.mln";
+import dom_widgets from "dom/dom_widgets.mln";
+import dom_focus from "dom/dom_focus.mln";
+import dom_list from "dom/dom_list.mln";
+import dom_graph from "dom/dom_graph.mln";
+import dom_text_edit from "dom/dom_text_edit.mln";
+import dom_terminal from "dom/dom_terminal.mln";
+import irq from "@kernel/arch/irq.mln";
+import protocol_elements from "protocol_elements.mln";
+import { NodeRow } from "dom/dom_model.mln";
+import { Blob } from "@std/memory/blob.mln";
+import { Request, RequestStatus } from "@contracts/myapp/message.contract.mln";
+import { UiOp } from "@contracts/myapp/ui.contract.mln";
+
+bool writes_typed_result(i32 op) {
+    if (op == UiOp::TEXT_COPY) { return true; }
+    return op >= UiOp::CREATE_WINDOW && op <= UiOp::APPEND_CHILD;
+}
+
+// The operations return their results; this is where one leaves for the
+// result the gateway staged, since the request crosses as words.
+RequestStatus answer<T>(Request *m, T value) {
+    T *out = (T*)m->result_out;
+    *out = value;
+    return RequestStatus::OK;
+}
+
+// Copies a view into a staged NUL-terminated buffer; a longer view is cut.
+// The buffer is the wire's: the view is what the operations return.
+Result<i32, UiError> staged(Result<str, UiError> view, char *out, i32 cap) {
+    str text = view?;
+    if (cap <= 0) { return Err(UiError::InvalidCapacity(cap)); }
+    i32 n = text.length;
+    if (n > cap - 1) { n = cap - 1; }
+    i32 i = 0;
+    while (i < n) { out[i] = text.data[i]; i++; }
+    out[n] = (char)0;
+    return Ok(n);
+}
+
+/**
+ * Executes a single UI protocol request within the caller's owner scope.
+ *
+ * Temporarily switches the active DOM owner to `m->owner` during execution,
+ * ensuring proper resource ownership for windows and child elements.
+ *
+ * @param m Pointer to Request structure.
+ * @return Request dispatch status. Typed operation results use Request.result_out.
+ */
+export RequestStatus handle(Request *m) {
+    Option<Pid> outer = dom.current_owner();
+    dom.set_current_owner(Some(Pid(m->owner)));
+    defer dom.set_current_owner(outer);
+    return run_request(m);
+}
+
+/**
+ * Dispatches an unpacked UI request to the corresponding internal handler.
+ *
+ * @param m Pointer to Request structure.
+ * @return Request dispatch status.
+ */
+RequestStatus run_request(Request *m) {
+    i32 op = m->op;
+    NodeId id = NodeId(m->a0);   // what a0 means to the operations that take a node
+    if (writes_typed_result(op) && m->result_out == 0) {
+        return RequestStatus::MISSING_RESULT;
+    }
+    if (op == UiOp::SET_TEXT)       { set_text(id, m->s0); return RequestStatus::OK; }
+    if (op == UiOp::TEXT_COPY) {
+        return answer<Result<i32, UiError>>(m, staged(text_of(id), (char*)m->a1, m->a2));
+    }
+    if (op == UiOp::SET_CHECKED)    { set_checked(id, m->a1); return RequestStatus::OK; }
+    if (op == UiOp::INPUT_SET)      { input_set(id, m->s0); return RequestStatus::OK; }
+    if (op == UiOp::AREA_APPEND)    { area_append(id, m->s0); return RequestStatus::OK; }
+    if (op == UiOp::LIST_SET_ITEMS) { list_set_items(id, m->s0); return RequestStatus::OK; }
+    if (op == UiOp::LIST_SELECT)    { dom_list.list_select(id, m->a1); return RequestStatus::OK; }
+    if (op == UiOp::GRAPH_SET)      { dom_graph.graph_set(id, m->a1, str.from_c(m->s0)); return RequestStatus::OK; }
+    if (op == UiOp::ADD_STYLE)      { add_style(id, m->a1); return RequestStatus::OK; }
+    if (op == UiOp::TEXT_EDIT)      { dom_widgets.text_edit(id, m->a1); return RequestStatus::OK; }
+    if (op == UiOp::FOCUS)          { focus(id); return RequestStatus::OK; }
+    if (op == UiOp::SEND_KEY)       { send_key(m->a0, m->a1, m->a2); return RequestStatus::OK; }
+    if (op >= UiOp::CREATE_WINDOW && op <= UiOp::APPEND_CHILD) {
+        return answer<Result<NodeId, UiError>>(m, protocol_elements.create(m));
+    }
+    return RequestStatus::INVALID_OPERATION;
+}
+
+// --- text -------------------------------------------------------------------------------------
+
+/**
+ * Sets the displayed text of a node.
+ *
+ * @param id UI node ID.
+ * @param s Text string to set.
+ */
+void set_text(NodeId id, char *s) { dom.set_text(id, str.from_c(s)); }
+
+/**
+ * Reads a node's text.
+ *
+ * @param id UI node ID.
+ * @return Ok(a view of the text), or Err for an invalid node.
+ */
+Result<str, UiError> text_of(NodeId id) {
+    borrow NodeRow n = dom.require_row(id)?;
+    return Ok(n.text.as_str());
+}
+
+// --- widgets --------------------------------------------------------------------------------
+
+/**
+ * Sets the checked state of a checkbox node.
+ *
+ * @param id UI node ID.
+ * @param on 1 to check, 0 to uncheck.
+ */
+void set_checked(NodeId id, i32 on) { dom.set_checked(id, on); }
+
+/**
+ * Sets the value of a text input or a text area.
+ *
+ * @param id UI node ID.
+ * @param s Input text.
+ */
+void input_set(NodeId id, char *s) { dom_text_edit.set_input_text(id, str.from_c(s)); }
+
+/**
+ * Appends text to a multi-line text area with IRQ protection.
+ *
+ * Temporarily disables interrupts to prevent race conditions with user-process
+ * stdout syscall writes into the same text area buffer.
+ *
+ * @param id UI node ID.
+ * @param s Text to append.
+ */
+void area_append(NodeId id, char *s) {
+    i32 was = irq.save_disable();
+    defer irq.restore(was);
+    bool terminal = case dom.kind_of(id) of { Some(kind) -> kind == NodeKind::TERMINAL; None -> false; };
+    if (terminal) { dom_terminal.write(id, str.from_c(s)); }
+    else { dom_text_edit.append_text(id, str.from_c(s)); }
+}
+
+/**
+ * Replaces the items of a List or a MenuButton with newline-separated strings.
+ *
+ * @param id UI node ID.
+ * @param items Newline-separated item string.
+ */
+void list_set_items(NodeId id, char *items) {
+    bool menu = case dom.kind_of(id) of { Some(kind) -> kind == NodeKind::MENU_BUTTON; None -> false; };
+    if (menu) { dom.set_text(id, str.from_c(items)); }
+    else { dom_list.list_set_items(id, str.from_c(items)); }
+}
+
+/**
+ * Adds NodeStyle bits an app may set: how a node follows its window's size,
+ * a TextArea's wrapping, and whether it reports its caret.
+ *
+ * @param id UI node ID.
+ * @param bits NodeStyle bits; any others are ignored.
+ */
+void add_style(NodeId id, i32 bits) {
+    i32 allowed = NodeStyle::GROW_W | NodeStyle::GROW_H | NodeStyle::PIN_BOTTOM
+        | NodeStyle::WRAP | NodeStyle::REPORT_CARET;
+    dom.add_style(id, bits & allowed);
+}
+
+// --- focus and windows ------------------------------------------------------------------------
+
+/**
+ * Sets input focus to a specific control node.
+ *
+ * @param id UI node ID.
+ */
+void focus(NodeId id) { dom_focus.set_focus(id); }
+
+// --- keys ---------------------------------------------------------------------------------------
+
+/**
+ * Dispatches a simulated key event to the focused widget.
+ *
+ * @param type Event type (1 = key down, 3 = character input).
+ * @param code Key code or character code.
+ * @param mods Active modifier keys (shift, ctrl, alt).
+ */
+void send_key(i32 type, i32 code, i32 mods) { dom_widgets.dispatch_key_event(type, code, mods); }

@@ -1,0 +1,141 @@
+namespace process;
+
+// Generic process control for hosted MyLang programs. UI-specific stdout
+// binding remains in MyAppFramework's terminal integration.
+
+import myos_service from "@std/platform/myos/service.mln";
+import { OsService } from "@contracts/myos/services.contract.mln";
+import { Result } from "@std/core/result.mln";
+import { SpawnError } from "@contracts/process/spawn.contract.mln";
+import { SyscallFailure, ProcessSignal } from "@contracts/myos/syscall.contract.mln";
+import { sys_wait_notification } from "@std/platform/myos/syscall.masm";
+import { Pid, ProcessControlError, ProcessControlStatus, ProcessExitStatus } from "@contracts/process/control.contract.mln";
+import { ProcSpawnArgs, ProcExitedArgs, ProcReapArgs, ProcFeedArgs, ProcStatsArgs, ProcStats, ProcInfo, CpuTimes, ProcActivity, ProcArgsArgs } from "@contracts/myos/process-args.contract.mln";
+import myos_process_args from "@contracts/myos/process-args.contract.mln";
+import { Text } from "@std/text/text.mln";
+
+/** Reads a service that answers in its status word, as PROC_FEED does.
+ * @param pid Process the request named.
+ * @param reply What the service call returned.
+ * @return Ok(_), or Err(InvalidPid) when the OS refused or never answered.
+ */
+export Result<_, ProcessControlError> control_result(Pid pid, Result<i32, SyscallFailure> reply) {
+    bool accepted = case reply of {
+        Ok(word) -> word == (i32)ProcessControlStatus::Accepted;
+        Err(_) -> false;
+    };
+    if (accepted) { return Ok(_); }
+    return Err(ProcessControlError::InvalidPid(pid));
+}
+
+/** Start an executable process, as a child of this one. It writes where this
+ * process writes, and on a terminal it takes the lines typed there until it ends.
+ * @param path Executable path, or a name looked up in /bin then /apps.
+ * @return New process ID, or the detailed spawn error.
+ */
+@safe
+export Result<Pid, SpawnError> spawn(str path) { return spawn_with(path, ""); }
+
+/** Start an executable process with arguments, as spawn does.
+ * @param path Executable path, or a name looked up in /bin then /apps.
+ * @param arguments What it reads with args(): the rest of a command line.
+ * @return New process ID, or the detailed spawn error.
+ */
+@safe
+export Result<Pid, SpawnError> spawn_with(str path, str arguments) {
+    Result<Pid, SpawnError> result;
+    ProcSpawnArgs<Result<Pid, SpawnError>> args = ProcSpawnArgs<Result<Pid, SpawnError>> {
+        path: path.data, path_length: path.length, args: arguments.data, args_length: arguments.length,
+        stdout_node: 0, result_out: &result
+    };
+    myos_service.call(OsService::PROC_SPAWN, (i32)(&args));
+    return result;
+}
+
+/** What this process was started with after its name, e.g. "hello" for
+ * `echo hello` typed in sh; empty for nothing.
+ * @return The arguments, at most ARGS_MAX bytes.
+ */
+@safe
+export Text<128> args() {
+    Text<128> text = Text<128> {};
+    char buffer[128];
+    ProcArgsArgs request = ProcArgsArgs { out: &buffer[0], capacity: myos_process_args.ARGS_MAX };
+    i32 length = case myos_service.call(OsService::PROC_ARGS, (i32)(&request)) of {
+        Ok(value) -> value;
+        Err(_) -> 0;
+    };
+    i32 i = 0;
+    while (i < length) {
+        text.push((u8)buffer[i]);
+        i++;
+    }
+    return text;
+}
+
+/** Check whether a process has exited.
+ * @param pid Process ID to query.
+ * @return True if exited, false if still running, or a process-control error.
+ */
+@safe
+export Result<bool, ProcessControlError> has_exited(Pid pid) {
+    Result<bool, ProcessControlError> result;
+    ProcExitedArgs<Result<bool, ProcessControlError>> args = ProcExitedArgs<Result<bool, ProcessControlError>> {
+        pid: (i32)pid, result_out: &result
+    };
+    myos_service.call(OsService::PROC_EXITED, (i32)(&args));
+    return result;
+}
+
+/** Reap an exited process and retrieve its typed termination status.
+ * @param pid Process ID to reap.
+ * @return Application exit code or kernel termination reason, or a process-control error.
+ */
+@safe
+export Result<ProcessExitStatus, ProcessControlError> reap(Pid pid) {
+    Result<ProcessExitStatus, ProcessControlError> result;
+    ProcReapArgs<Result<ProcessExitStatus, ProcessControlError>> args = ProcReapArgs<Result<ProcessExitStatus, ProcessControlError>> {
+        pid: (i32)pid, result_out: &result
+    };
+    myos_service.call(OsService::PROC_REAP, (i32)(&args));
+    return result;
+}
+
+/** Waits for a child to end, then reaps it. The thread sleeps meanwhile: an
+ * unfinished has_exited arms ProcessSignal::CHILD, and the child's end raises it.
+ * @param pid The child.
+ * @return Its exit status, or Err(InvalidPid) when pid names no child of this process.
+ */
+@safe
+export Result<ProcessExitStatus, ProcessControlError> wait(Pid pid) {
+    while (!has_exited(pid)?) {
+        i32 woken = 0;
+        sys_wait_notification(ProcessSignal::CHILD, &woken);
+    }
+    return reap(pid);
+}
+
+/** Send an input line to a process.
+ * @param pid Recipient process ID.
+ * @param line Line to deliver.
+ * @return Ok(_), or Err(InvalidPid) when pid names no child of this process.
+ */
+@safe
+export Result<_, ProcessControlError> feed_line(Pid pid, str line) {
+    ProcFeedArgs args = ProcFeedArgs { pid: (i32)pid, line: line.data, line_length: line.length };
+    return control_result(pid, myos_service.call(OsService::PROC_FEED, (i32)(&args)));
+}
+
+/** Read every process, what it is doing and what it costs, and where the
+ * CPU's time went. Any process may ask, about every process: it changes nothing.
+ * @return The numbers. Times are in timer clock units (256 a tick) since boot
+ *         and wrap; compare two readings to see what share of the time
+ *         between them each one took.
+ */
+@safe
+export ProcStats stats() {
+    ProcStats result = ProcStats {};
+    ProcStatsArgs args = ProcStatsArgs { result_out: &result };
+    myos_service.call(OsService::PROC_STATS, (i32)(&args));
+    return result;
+}

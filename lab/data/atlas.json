@@ -1,0 +1,5686 @@
+{
+ "title": "MyComputer 文書マップ",
+ "docs": "docs/atlas",
+ "how": {
+  "check": "make atlas-check",
+  "trace": "make atlas-trace"
+ },
+ "layers": [
+  {
+   "id": "app",
+   "name": "アプリ",
+   "sub": "/apps の .mbin",
+   "cross": false
+  },
+  {
+   "id": "lib",
+   "name": "ライブラリ",
+   "sub": "SDK・MyStdLib",
+   "cross": false
+  },
+  {
+   "id": "os",
+   "name": "OS サービス",
+   "sub": "MyOS",
+   "cross": false
+  },
+  {
+   "id": "kernel",
+   "name": "カーネル",
+   "sub": "MyKernel",
+   "cross": false
+  },
+  {
+   "id": "emu",
+   "name": "エミュレータ",
+   "sub": "MyEmulator",
+   "cross": false
+  },
+  {
+   "id": "contract",
+   "name": "契約",
+   "sub": "データの形）（contracts/ の .contract.mln",
+   "cross": true
+  },
+  {
+   "id": "context",
+   "name": "実行の文脈",
+   "sub": "地図の点線の枠",
+   "cross": true
+  },
+  {
+   "id": "policy",
+   "name": "方針",
+   "sub": "層をまたぐ決まり",
+   "cross": true
+  }
+ ],
+ "nodes": {
+  "app.tasks": {
+   "layer": "app",
+   "title": "Tasks.tick",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "tick"
+   ],
+   "kind": "func",
+   "paper": "app.tasks",
+   "api": {
+    "params": [
+     [
+      "t",
+      "タスクマネージャの状態（読み書きする）"
+     ]
+    ],
+    "sig": "@timer(1000)\nvoid (borrow Tasks t) tick()"
+   },
+   "src": "## app.tasks  Tasks.tick\n関数・system/MyOS/src/apps/tasks.dom.mln の tick\n中の紙：app.tasks\n型：@timer(1000)\n型：void (borrow Tasks t) tick()\n引数 t：タスクマネージャの状態（読み書きする）\n\n1 秒ごとの TIMER イベントで [[lib.next]] から呼ばれる。[[lib.process-stats]] で読み、前回との差の比を % にして、状態とグラフの値を変える。変えた値は [[app.tasks-view]] の属性が読む。\n",
+   "text": "1 秒ごとの TIMER イベントで [[lib.next]] から呼ばれる。[[lib.process-stats]] で読み、前回との差の比を % にして、状態とグラフの値を変える。変えた値は [[app.tasks-view]] の属性が読む。",
+   "fn": "Tasks.tick"
+  },
+  "app.tasks-view": {
+   "layer": "app",
+   "title": "Tasks.view",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "view"
+   ],
+   "kind": "func",
+   "api": {
+    "ret": "画面の宣言（Window・Label・Graph など）",
+    "sig": "View (Self t) view()"
+   },
+   "src": "## app.tasks-view  Tasks.view\n関数・system/MyOS/src/apps/tasks.dom.mln の view\n返す：画面の宣言（Window・Label・Graph など）\n\n画面を .dom.mln に宣言する。属性に書いた値（{t.chosen} など）は束ねられ、イベントのたびに、変わった属性だけを [[lib.send-text]] などが送る。アプリは MyOS を知らない（[[policy.sdk-no-myos]]）。\n",
+   "text": "画面を .dom.mln に宣言する。属性に書いた値（{t.chosen} など）は束ねられ、イベントのたびに、変わった属性だけを [[lib.send-text]] などが送る。アプリは MyOS を知らない（[[policy.sdk-no-myos]]）。",
+   "fn": "Tasks.view"
+  },
+  "mem.user-request": {
+   "layer": "app",
+   "title": "アプリのメモリの Request",
+   "code": [
+    "system/MyAppFramework/src/runtime/runtime.unsafe.mln",
+    "send"
+   ],
+   "kind": "store",
+   "src": "## mem.user-request  アプリのメモリの Request\n置き場・system/MyAppFramework/src/runtime/runtime.unsafe.mln の send\n\nアプリが詰めた [[schema.request]]。OS_CALL で渡るのはこのアドレスだけで、中身は [[gateway.read]] が読みに来る。\n",
+   "text": "アプリが詰めた [[schema.request]]。OS_CALL で渡るのはこのアドレスだけで、中身は [[gateway.read]] が読みに来る。"
+  },
+  "mem.user-strings": {
+   "layer": "app",
+   "title": "アプリのメモリの文字列",
+   "code": null,
+   "kind": "store",
+   "src": "## mem.user-strings  アプリのメモリの文字列\n置き場\n\ns0・s1 が指す文字。NUL で終わらず、長さは s0_len・s1_len で渡る。[[gateway.copy]] が OS 側に写す。\n",
+   "text": "s0・s1 が指す文字。NUL で終わらず、長さは s0_len・s1_len で渡る。[[gateway.copy]] が OS 側に写す。"
+  },
+  "app.tasks-share": {
+   "layer": "app",
+   "title": "share",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "share"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "part",
+      "その間に使った時間"
+     ],
+     [
+      "span",
+      "その間の全部の時間"
+     ]
+    ],
+    "ret": "0〜100 の %",
+    "sig": "i32 share(i32 part, i32 span)"
+   },
+   "src": "## app.tasks-share  share\n関数・system/MyOS/src/apps/tasks.dom.mln の share\n引数 part：その間に使った時間\n引数 span：その間の全部の時間\n返す：0〜100 の %\n\n1 秒は 256,000 単位。part × 100 が i32 に収まるよう、両方を半分ずつにしてから割る。\n",
+   "text": "1 秒は 256,000 単位。part × 100 が i32 に収まるよう、両方を半分ずつにしてから割る。",
+   "fn": "tasks.share"
+  },
+  "app.tasks-last": {
+   "layer": "app",
+   "title": "t.last",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "tick"
+   ],
+   "kind": "store",
+   "src": "## app.tasks-last  t.last\n置き場・system/MyOS/src/apps/tasks.dom.mln の tick\nフィールド last（ProcStats）：前回の読み\n\n次の tick で差を取るために、今回の読みを覚えておく。\n",
+   "text": "次の tick で差を取るために、今回の読みを覚えておく。",
+   "fields": [
+    [
+     "ProcStats",
+     "last",
+     "前回の読み"
+    ]
+   ]
+  },
+  "app.tasks-series": {
+   "layer": "app",
+   "title": "グラフの系列",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "record"
+   ],
+   "kind": "store",
+   "src": "## app.tasks-series  グラフの系列\n置き場・system/MyOS/src/apps/tasks.dom.mln の record\n\nCPU 全体、OS、選んだ行の割合。1 秒に 1 つずつ、1 分ぶんを持つ。\n",
+   "text": "CPU 全体、OS、選んだ行の割合。1 秒に 1 つずつ、1 分ぶんを持つ。"
+  },
+  "app.tasks-show": {
+   "layer": "app",
+   "title": "t.show",
+   "code": [
+    "system/MyOS/src/apps/tasks.dom.mln",
+    "show"
+   ],
+   "kind": "func",
+   "src": "## app.tasks-show  t.show\n関数・system/MyOS/src/apps/tasks.dom.mln の show\n\n系列と表を、[[app.tasks-view]] の属性が読む値に移す。値が変わった属性だけが送られる（[[lib.send-text]]）。\n",
+   "text": "系列と表を、[[app.tasks-view]] の属性が読む値に移す。値が変わった属性だけが送られる（[[lib.send-text]]）。",
+   "api": {
+    "sig": "void (borrow Tasks t) show()"
+   },
+   "fn": "t.show"
+  },
+  "lib.send-text": {
+   "layer": "lib",
+   "title": "elements.send_text",
+   "code": [
+    "system/MyAppFramework/src/elements.mln",
+    "send_text"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "id",
+      "変えるノード"
+     ],
+     [
+      "value",
+      "新しい文字"
+     ]
+    ],
+    "sig": "void send_text(NodeId id, str value)"
+   },
+   "src": "## lib.send-text  elements.send_text\n関数・system/MyAppFramework/src/elements.mln の send_text\n引数 id：変えるノード\n引数 value：新しい文字\n\nLabel_text などの属性のフックが、値が変わった時だけ呼ぶ。[[schema.request]] を UI・SET_TEXT で作り、a0 にノード、s0 に文字を入れて、runtime.send から [[lib.transport]] へ渡す。\n",
+   "text": "Label_text などの属性のフックが、値が変わった時だけ呼ぶ。[[schema.request]] を UI・SET_TEXT で作り、a0 にノード、s0 に文字を入れて、runtime.send から [[lib.transport]] へ渡す。",
+   "fn": "elements.send_text"
+  },
+  "lib.transport": {
+   "layer": "lib",
+   "title": "app_transport.request",
+   "code": [
+    "system/MyAppFramework/src/runtime/transport.unsafe.mln",
+    "request"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "m",
+      "送る要求"
+     ]
+    ],
+    "ret": "返事の 1 語。runtime.send が RequestStatus に直す",
+    "sig": "i32 request(borrow Request m)"
+   },
+   "src": "## lib.transport  app_transport.request\n関数・system/MyAppFramework/src/runtime/transport.unsafe.mln の request\n引数 m：送る要求\n返す：返事の 1 語。runtime.send が RequestStatus に直す\n\n[[kernel.os-call]] の REQUEST で列に入れ、REPLY で返事を待つ。列が満杯なら REQUEST_SPACE の通知を待ってやり直す。\n",
+   "text": "[[kernel.os-call]] の REQUEST で列に入れ、REPLY で返事を待つ。列が満杯なら REQUEST_SPACE の通知を待ってやり直す。",
+   "fn": "app_transport.request"
+  },
+  "lib.next": {
+   "layer": "lib",
+   "title": "runtime.next",
+   "code": [
+    "system/MyAppFramework/src/runtime/runtime.unsafe.mln",
+    "next"
+   ],
+   "kind": "func",
+   "api": {
+    "ret": "Idle・Handled・Open・Close のどれか",
+    "sig": "Step next()"
+   },
+   "src": "## lib.next  runtime.next\n関数・system/MyAppFramework/src/runtime/runtime.unsafe.mln の next\n返す：Idle・Handled・Open・Close のどれか\n\nOS_CALL の POLL で [[schema.event]] を 1 つ受け取り、ノードと種類から登録されたハンドラを探して呼ぶ。\n",
+   "text": "OS_CALL の POLL で [[schema.event]] を 1 つ受け取り、ノードと種類から登録されたハンドラを探して呼ぶ。",
+   "fn": "runtime.next"
+  },
+  "lib.process-stats": {
+   "layer": "lib",
+   "title": "process.stats",
+   "code": [
+    "toolchain/MyStdLib/hosted/process.unsafe.mln",
+    "stats"
+   ],
+   "kind": "func",
+   "api": {
+    "ret": "全部のプロセスと CPU の時間",
+    "sig": "ProcStats stats()"
+   },
+   "src": "## lib.process-stats  process.stats\n関数・toolchain/MyStdLib/hosted/process.unsafe.mln の stats\n返す：全部のプロセスと CPU の時間\n\nOS_CALL の PROC_STATS で OS に聞く。何も変えないので、どのプロセスからでも、全部のプロセスについて答える。\n",
+   "text": "OS_CALL の PROC_STATS で OS に聞く。何も変えないので、どのプロセスからでも、全部のプロセスについて答える。",
+   "fn": "process.stats"
+  },
+  "os.router": {
+   "layer": "os",
+   "title": "os_call_router.handle",
+   "code": [
+    "system/MyOS/src/syscall/router.unsafe.mln",
+    "handle"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "pid",
+      "呼んだプロセス（カーネルが付ける）"
+     ],
+     [
+      "service",
+      "OsService の 1 つ"
+     ],
+     [
+      "args",
+      "ユーザメモリの引数"
+     ]
+    ],
+    "sig": "Result<i32, OsServiceError> handle(\n    Pid pid, i32 service, UserAddress args)"
+   },
+   "src": "## os.router  os_call_router.handle\n関数・system/MyOS/src/syscall/router.unsafe.mln の handle\n型：Result<i32, OsServiceError> handle(\n型：    Pid pid, i32 service, UserAddress args)\n引数 pid：呼んだプロセス（カーネルが付ける）\n引数 service：OsService の 1 つ\n引数 args：ユーザメモリの引数\n\nMyOS がカーネルに登録した、OS_CALL の受け口。service で振り分ける。REQUEST・REPLY・POLL は [[os.gateway]]、PROC_* はプロセスの処理（[[os.proc-stats]] など）、FS_* はファイルの処理へ。\n",
+   "text": "MyOS がカーネルに登録した、OS_CALL の受け口。service で振り分ける。REQUEST・REPLY・POLL は [[os.gateway]]、PROC_* はプロセスの処理（[[os.proc-stats]] など）、FS_* はファイルの処理へ。",
+   "fn": "os_call_router.handle"
+  },
+  "os.gateway": {
+   "layer": "os",
+   "title": "request_gateway.request",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "request"
+   ],
+   "kind": "func",
+   "paper": "os.gateway",
+   "api": {
+    "params": [
+     [
+      "pid",
+      "呼んだプロセス"
+     ],
+     [
+      "user_request",
+      "ユーザメモリの要求"
+     ]
+    ],
+    "ret": "列に入ったら true。満杯なら false（アプリがやり直す）",
+    "sig": "bool request(Pid pid, UserAddress user_request)"
+   },
+   "src": "## os.gateway  request_gateway.request\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の request\n中の紙：os.gateway\n引数 pid：呼んだプロセス\n引数 user_request：ユーザメモリの要求\n返す：列に入ったら true。満杯なら false（アプリがやり直す）\n\nowner を呼んだプロセスの pid で上書きし、文字列と出力先をプロセスごとの buffer にコピーしてから [[os.request-ring]] に並べる。service task が見るのは、OS 側にコピーした値だけ。返事は reply が、イベントは poll が、同じようにコピーして返す。\n",
+   "text": "owner を呼んだプロセスの pid で上書きし、文字列と出力先をプロセスごとの buffer にコピーしてから [[os.request-ring]] に並べる。service task が見るのは、OS 側にコピーした値だけ。返事は reply が、イベントは poll が、同じようにコピーして返す。",
+   "fn": "request_gateway.request"
+  },
+  "os.request-ring": {
+   "layer": "os",
+   "title": "要求の列",
+   "code": [
+    "system/MyOS/src/ipc/channel.unsafe.mln",
+    "g_requests"
+   ],
+   "kind": "store",
+   "src": "## os.request-ring  要求の列\n置き場・system/MyOS/src/ipc/channel.unsafe.mln の g_requests\n形：[[kernel.channel]]\n\n全部のアプリの要求が並ぶ 1 本の列（IPC の channel）。1 通は 24 語。[[os.submit]] が入れ、[[os.serve]] が取り出す。\n",
+   "text": "全部のアプリの要求が並ぶ 1 本の列（IPC の channel）。1 通は 24 語。[[os.submit]] が入れ、[[os.serve]] が取り出す。",
+   "shape": {
+    "of": "kernel.channel"
+   }
+  },
+  "os.serve": {
+   "layer": "os",
+   "title": "request_channel.serve",
+   "code": [
+    "system/MyOS/src/ipc/channel.unsafe.mln",
+    "serve"
+   ],
+   "kind": "func",
+   "api": {
+    "ret": "1 つ以上答えたら true",
+    "sig": "bool serve()"
+   },
+   "src": "## os.serve  request_channel.serve\n関数・system/MyOS/src/ipc/channel.unsafe.mln の serve\n返す：1 つ以上答えたら true\n\n[[ctx.service]] の中で、列から要求を取り出し、domain で [[os.ui-protocol]] か shell に振り分ける。結果を返事の channel に入れ、owner のプロセスに REPLY を通知する。\n",
+   "text": "[[ctx.service]] の中で、列から要求を取り出し、domain で [[os.ui-protocol]] か shell に振り分ける。結果を返事の channel に入れ、owner のプロセスに REPLY を通知する。",
+   "fn": "request_channel.serve"
+  },
+  "os.ui-protocol": {
+   "layer": "os",
+   "title": "ui_protocol.handle",
+   "code": [
+    "system/MyOS/src/ui/protocol.unsafe.mln",
+    "handle"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "m",
+      "OS 側の要求"
+     ]
+    ],
+    "sig": "RequestStatus handle(Request *m)"
+   },
+   "src": "## os.ui-protocol  ui_protocol.handle\n関数・system/MyOS/src/ui/protocol.unsafe.mln の handle\n引数 m：OS 側の要求\n\nop（[[schema.uiop]]）を見て [[os.dom]] を変える。作ったノードは owner のプロセスのものになる。\n",
+   "text": "op（[[schema.uiop]]）を見て [[os.dom]] を変える。作ったノードは owner のプロセスのものになる。",
+   "fn": "ui_protocol.handle"
+  },
+  "os.dom": {
+   "layer": "os",
+   "title": "DOM",
+   "code": [
+    "system/MyOS/src/ui/dom/dom_model.model.mln",
+    null
+   ],
+   "kind": "store",
+   "ops": [
+    {
+     "name": "[[os.dom-render]]",
+     "text": "親を描いてから、子を兄弟の順に描く。後の兄弟ほど上に重なる",
+     "kind": "深さ優先",
+     "cost": "O(節の数)",
+     "node": "os.dom-render"
+    },
+    {
+     "name": "[[os.dom-hit]]",
+     "text": "子を兄弟の順に全部たどり、点を含むもののうち最後に当たったもの（いちばん上に描いたもの）を残す",
+     "kind": "最後に当たったもの",
+     "cost": "O(節の数)",
+     "node": "os.dom-hit"
+    }
+   ],
+   "src": "## os.dom  DOM\n置き場・system/MyOS/src/ui/dom/dom_model.model.mln\n形：木（子 children、親 parent、節 Node、兄弟の順 描く順）\n操作 [[os.dom-render]] 深さ優先：親を描いてから、子を兄弟の順に描く。後の兄弟ほど上に重なる｜O(節の数)\n操作 [[os.dom-hit]] 最後に当たったもの：子を兄弟の順に全部たどり、点を含むもののうち最後に当たったもの（いちばん上に描いたもの）を残す｜O(節の数)\n\nブラウザと同じ形の DOM が、OS 側に 1 つだけある。触るのは [[ctx.service]] だけ。タイマーのノードは、時間が来ると [[os.events]] で TIMER を送る。\n",
+   "text": "ブラウザと同じ形の DOM が、OS 側に 1 つだけある。触るのは [[ctx.service]] だけ。タイマーのノードは、時間が来ると [[os.events]] で TIMER を送る。",
+   "shape": {
+    "kind": "tree",
+    "roles": {
+     "children": {
+      "name": "children"
+     },
+     "parent": {
+      "name": "parent"
+     },
+     "n": {
+      "name": "Node",
+      "num": 512
+     },
+     "order": {
+      "text": "描く順"
+     }
+    }
+   }
+  },
+  "os.events": {
+   "layer": "os",
+   "title": "app_events.push",
+   "code": [
+    "system/MyOS/src/ipc/events.unsafe.mln",
+    "push"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "owner",
+      "受け取るプロセス"
+     ],
+     [
+      "kind",
+      "EventKind の 1 つ"
+     ]
+    ],
+    "sig": "void push(Pid owner, i32 id, i32 kind,\n          i32 arg, i32 token, str text)"
+   },
+   "src": "## os.events  app_events.push\n関数・system/MyOS/src/ipc/events.unsafe.mln の push\n型：void push(Pid owner, i32 id, i32 kind,\n型：          i32 arg, i32 token, str text)\n引数 owner：受け取るプロセス\n引数 kind：EventKind の 1 つ\n\n[[schema.event]] を owner のプロセスの列に入れる。まだ取り出されていない TIMER があれば、重ねて入れない。アプリは OS_CALL の POLL で受け取る。\n",
+   "text": "[[schema.event]] を owner のプロセスの列に入れる。まだ取り出されていない TIMER があれば、重ねて入れない。アプリは OS_CALL の POLL で受け取る。",
+   "fn": "app_events.push"
+  },
+  "os.proc-stats": {
+   "layer": "os",
+   "title": "proc_stats.fill",
+   "code": [
+    "system/MyOS/src/proc/stats.unsafe.mln",
+    "fill"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "out",
+      "書き込む先"
+     ]
+    ],
+    "sig": "void fill(borrow ProcStats out)"
+   },
+   "src": "## os.proc-stats  proc_stats.fill\n関数・system/MyOS/src/proc/stats.unsafe.mln の fill\n引数 out：書き込む先\n\n集める前に [[kernel.cpu-time]] で今までの分を足すので、合計と内訳が合う。PROC_STATS の処理が、できた ProcStats をユーザメモリへ書き戻す。\n",
+   "text": "集める前に [[kernel.cpu-time]] で今までの分を足すので、合計と内訳が合う。PROC_STATS の処理が、できた ProcStats をユーザメモリへ書き戻す。",
+   "fn": "proc_stats.fill"
+  },
+  "os.submit": {
+   "layer": "os",
+   "title": "request_channel.submit",
+   "code": [
+    "system/MyOS/src/ipc/channel.unsafe.mln",
+    "submit"
+   ],
+   "kind": "func",
+   "paper": "os.submit",
+   "api": {
+    "params": [
+     [
+      "request",
+      "OS 側の値だけになった要求"
+     ],
+     [
+      "reply_channel",
+      "返事を入れる、プロセスごとの channel"
+     ]
+    ],
+    "ret": "列に入ったら true。満杯なら false",
+    "sig": "bool submit(Request *request, ChannelId reply_channel)"
+   },
+   "src": "## os.submit  request_channel.submit\n関数・system/MyOS/src/ipc/channel.unsafe.mln の submit\n中の紙：os.submit\n引数 request：OS 側の値だけになった要求\n引数 reply_channel：返事を入れる、プロセスごとの channel\n返す：列に入ったら true。満杯なら false\n\n[[schema.request]] を返事の channel と合わせて 24 語に詰め、[[os.request-ring]] に入れる。入ったら SERVICE を通知して [[ctx.service]] を起こす。\n",
+   "text": "[[schema.request]] を返事の channel と合わせて 24 語に詰め、[[os.request-ring]] に入れる。入ったら SERVICE を通知して [[ctx.service]] を起こす。",
+   "fn": "request_channel.submit"
+  },
+  "gateway.read": {
+   "layer": "os",
+   "title": "read_user_request",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "read_user_request"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "user_request",
+      "アプリのメモリの Request"
+     ],
+     [
+      "request",
+      "書き込む、OS 側の Request"
+     ]
+    ],
+    "sig": "void read_user_request(UserAddress user_request, Request *request)"
+   },
+   "src": "## gateway.read  read_user_request\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の read_user_request\n引数 user_request：アプリのメモリの Request\n引数 request：書き込む、OS 側の Request\n\nユーザメモリから 13 語を 1 語ずつ読み、[[schema.request]] に戻す。\n",
+   "text": "ユーザメモリから 13 語を 1 語ずつ読み、[[schema.request]] に戻す。",
+   "fn": "request_gateway.read_user_request"
+  },
+  "gateway.owner": {
+   "layer": "os",
+   "title": "owner = pid",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "request"
+   ],
+   "kind": "func",
+   "src": "## gateway.owner  owner = pid\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の request\n型：request.owner = (i32)pid;\n\nアプリが owner に何を書いていても、OS_CALL を呼んだプロセスの pid で上書きする。ほかのプロセスは名乗れない。\n",
+   "text": "アプリが owner に何を書いていても、OS_CALL を呼んだプロセスの pid で上書きする。ほかのプロセスは名乗れない。",
+   "api": {
+    "sig": "request.owner = (i32)pid;"
+   }
+  },
+  "gateway.copy": {
+   "layer": "os",
+   "title": "copy_request_strings",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "copy_request_strings"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "slot_index",
+      "呼んだプロセスの枠"
+     ],
+     [
+      "request",
+      "s0・s1 がまだアプリのアドレスの Request"
+     ]
+    ],
+    "sig": "void copy_request_strings(i32 slot_index, Request *request)"
+   },
+   "src": "## gateway.copy  copy_request_strings\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の copy_request_strings\n引数 slot_index：呼んだプロセスの枠\n引数 request：s0・s1 がまだアプリのアドレスの Request\n\ns0（1,024 B まで）と s1（128 B まで）を [[gateway.slots]] に写し、Request の s0・s1 をその写しに差し替える。\n",
+   "text": "s0（1,024 B まで）と s1（128 B まで）を [[gateway.slots]] に写し、Request の s0・s1 をその写しに差し替える。",
+   "fn": "request_gateway.copy_request_strings"
+  },
+  "gateway.stage": {
+   "layer": "os",
+   "title": "stage_request_outputs",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "stage_request_outputs"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "slot_index",
+      "呼んだプロセスの枠"
+     ],
+     [
+      "request",
+      "書き込み先を差し替える Request"
+     ]
+    ],
+    "sig": "void stage_request_outputs(i32 slot_index, Request *request)"
+   },
+   "src": "## gateway.stage  stage_request_outputs\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の stage_request_outputs\n引数 slot_index：呼んだプロセスの枠\n引数 request：書き込み先を差し替える Request\n\n結果の書き込み先（result_out と、TEXT_COPY の出力先）を [[gateway.slots]] の受け皿に差し替え、アプリ側の元の場所を覚えておく。返事の時に、そこへ書き戻す。\n",
+   "text": "結果の書き込み先（result_out と、TEXT_COPY の出力先）を [[gateway.slots]] の受け皿に差し替え、アプリ側の元の場所を覚えておく。返事の時に、そこへ書き戻す。",
+   "fn": "request_gateway.stage_request_outputs"
+  },
+  "gateway.slots": {
+   "layer": "os",
+   "title": "gateway_slots[i]",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "GatewaySlot"
+   ],
+   "kind": "store",
+   "src": "## gateway.slots  gateway_slots[i]\n置き場・system/MyOS/src/ipc/gateway.unsafe.mln の GatewaySlot\n形：表（枠 gateway_slots、鍵 slot_index）\nフィールド reply_ch：返事を入れる channel\nフィールド event_ch：イベントを入れる channel\nフィールド events_bound：イベントの channel を結んだか\nフィールド s0：1 つ目の文字列の写し（1,024 B）\nフィールド s1：2 つ目の文字列の写し（128 B）\nフィールド out：TEXT_COPY の出力の受け皿（4,096 B）\nフィールド out_user：出力を書き戻す、アプリ側の場所\nフィールド out_cap：出力の上限\nフィールド result：result_out の代わりの受け皿（64 B）\nフィールド result_user：結果を書き戻す、アプリ側の場所\nフィールド result_size：書き戻す長さ\n\nプロセスごとに 1 つ（16 個まで）ある、OS 側の受け皿。service task は、アプリのメモリではなくここだけを見る。\n",
+   "text": "プロセスごとに 1 つ（16 個まで）ある、OS 側の受け皿。service task は、アプリのメモリではなくここだけを見る。",
+   "fields": [
+    [
+     "ChannelId",
+     "reply_ch",
+     "返事を入れる channel"
+    ],
+    [
+     "ChannelId",
+     "event_ch",
+     "イベントを入れる channel"
+    ],
+    [
+     "bool",
+     "events_bound",
+     "イベントの channel を結んだか"
+    ],
+    [
+     "i32",
+     "s0",
+     "1 つ目の文字列の写し（1,024 B）"
+    ],
+    [
+     "i32",
+     "s1",
+     "2 つ目の文字列の写し（128 B）"
+    ],
+    [
+     "i32",
+     "out",
+     "TEXT_COPY の出力の受け皿（4,096 B）"
+    ],
+    [
+     "UserAddress",
+     "out_user",
+     "出力を書き戻す、アプリ側の場所"
+    ],
+    [
+     "i32",
+     "out_cap",
+     "出力の上限"
+    ],
+    [
+     "i32",
+     "result",
+     "result_out の代わりの受け皿（64 B）"
+    ],
+    [
+     "UserAddress",
+     "result_user",
+     "結果を書き戻す、アプリ側の場所"
+    ],
+    [
+     "i32",
+     "result_size",
+     "書き戻す長さ"
+    ]
+   ],
+   "shape": {
+    "kind": "table",
+    "roles": {
+     "n": {
+      "name": "gateway_slots",
+      "num": 16
+     },
+     "key": {
+      "name": "slot_index"
+     }
+    }
+   }
+  },
+  "gateway.full": {
+   "layer": "os",
+   "title": "満杯なら印を付けて false",
+   "code": [
+    "system/MyOS/src/ipc/gateway.unsafe.mln",
+    "request"
+   ],
+   "kind": "func",
+   "src": "## gateway.full  満杯なら印を付けて false\n関数・system/MyOS/src/ipc/gateway.unsafe.mln の request\n\n[[os.submit]] が false を返したら（要求の列が満杯）、scheduler.arm_notification(REQUEST_SPACE) で印を付けて false を返す。OS_CALL は 0 を返し、アプリの [[lib.transport]] は REQUEST_SPACE を待って出し直す。[[os.serve]] は列から 1 つ取り出すたびに REQUEST_SPACE を通知する。\n",
+   "text": "[[os.submit]] が false を返したら（要求の列が満杯）、scheduler.arm_notification(REQUEST_SPACE) で印を付けて false を返す。OS_CALL は 0 を返し、アプリの [[lib.transport]] は REQUEST_SPACE を待って出し直す。[[os.serve]] は列から 1 つ取り出すたびに REQUEST_SPACE を通知する。",
+   "api": {
+    "sig": "bool request(Pid pid, UserAddress user_request)"
+   },
+   "fn": "request_gateway.request"
+  },
+  "channel.encode": {
+   "layer": "os",
+   "title": "encode_request_words",
+   "code": [
+    "system/MyOS/src/ipc/channel.unsafe.mln",
+    "encode_request_words"
+   ],
+   "kind": "func",
+   "src": "## channel.encode  encode_request_words\n関数・system/MyOS/src/ipc/channel.unsafe.mln の encode_request_words\n\n[[schema.request]] を 0〜12 語目に、返事の channel を 13 語目に書く。\n",
+   "text": "[[schema.request]] を 0〜12 語目に、返事の channel を 13 語目に書く。",
+   "api": {
+    "sig": "void encode_request_words(Request *request, ChannelId reply_channel, i32 *words)"
+   },
+   "fn": "request_channel.encode_request_words"
+  },
+  "channel.words": {
+   "layer": "os",
+   "title": "words[24]",
+   "code": [
+    "system/MyOS/src/ipc/channel.unsafe.mln",
+    "submit"
+   ],
+   "kind": "store",
+   "src": "## channel.words  words[24]\n置き場・system/MyOS/src/ipc/channel.unsafe.mln の submit\nフィールド words[0..12]（i32）：Request の 13 語\nフィールド words[13]（i32）：返事を入れる channel\nフィールド words[14..23]（i32）：使わない\n\nIPC の 1 通は 24 語。submit の中だけで使う、その場の配列。\n",
+   "text": "IPC の 1 通は 24 語。submit の中だけで使う、その場の配列。",
+   "fields": [
+    [
+     "i32",
+     "words[0..12]",
+     "Request の 13 語"
+    ],
+    [
+     "i32",
+     "words[13]",
+     "返事を入れる channel"
+    ],
+    [
+     "i32",
+     "words[14..23]",
+     "使わない"
+    ]
+   ]
+  },
+  "os.dom-render": {
+   "layer": "os",
+   "title": "dom_render.render",
+   "code": [
+    "system/MyOS/src/ui/dom/dom_render.mln",
+    "render"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "n",
+      "描く節"
+     ]
+    ],
+    "sig": "void render(borrow NodeRow n)"
+   },
+   "src": "## os.dom-render  dom_render.render\n関数・system/MyOS/src/ui/dom/dom_render.mln の render\n引数 n：描く節\n\n見えない節はその下ごと飛ばす。描き直す範囲（damage）に入る節だけ描き、子は範囲の外でも訪ねる。子を切り抜く節は、外ならそこで止める。\n",
+   "text": "見えない節はその下ごと飛ばす。描き直す範囲（damage）に入る節だけ描き、子は範囲の外でも訪ねる。子を切り抜く節は、外ならそこで止める。",
+   "fn": "dom_render.render"
+  },
+  "os.dom-hit": {
+   "layer": "os",
+   "title": "dom_hit_test.hit_row",
+   "code": [
+    "system/MyOS/src/ui/dom/dom_hit_test.mln",
+    "hit_row"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "n",
+      "調べる節"
+     ],
+     [
+      "px",
+      "点の x"
+     ],
+     [
+      "py",
+      "点の y"
+     ]
+    ],
+    "ret": "いちばん上の、当たる節。無ければ None",
+    "sig": "Option<NodeId> hit_row(borrow NodeRow n, i32 px, i32 py)"
+   },
+   "src": "## os.dom-hit  dom_hit_test.hit_row\n関数・system/MyOS/src/ui/dom/dom_hit_test.mln の hit_row\n引数 n：調べる節\n引数 px：点の x\n引数 py：点の y\n返す：いちばん上の、当たる節。無ければ None\n\n入力をどの節に届けるかを決める。見えない節と、子を切り抜く節の外は飛ばす。\n",
+   "text": "入力をどの節に届けるかを決める。見えない節と、子を切り抜く節の外は飛ばす。",
+   "fn": "dom_hit_test.hit_row"
+  },
+  "kernel.os-call": {
+   "layer": "kernel",
+   "title": "OS_CALL",
+   "code": [
+    "system/MyKernel/src/kernel/syscall.unsafe.mln",
+    "dispatch"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "service",
+      "[[schema.os-service]] の 1 つ"
+     ],
+     [
+      "args",
+      "ユーザメモリの引数のアドレス"
+     ]
+    ],
+    "ret": "service ごとの 1 語",
+    "sig": "syscall OS_CALL(i32 service, i32 args)"
+   },
+   "src": "## kernel.os-call  OS_CALL\n関数・system/MyKernel/src/kernel/syscall.unsafe.mln の dispatch\n型：syscall OS_CALL(i32 service, i32 args)\n引数 service：[[schema.os-service]] の 1 つ\n引数 args：ユーザメモリの引数のアドレス\n返す：service ごとの 1 語\n\nアプリから OS への入口は、この syscall 1 つだけ。カーネルは呼んだプロセスの pid を付けて、MyOS が登録した [[os.router]] に渡す。\n",
+   "text": "アプリから OS への入口は、この syscall 1 つだけ。カーネルは呼んだプロセスの pid を付けて、MyOS が登録した [[os.router]] に渡す。",
+   "fn": "syscall.dispatch"
+  },
+  "kernel.irq-dispatch": {
+   "layer": "kernel",
+   "title": "irq_dispatch.dispatch",
+   "code": [
+    "system/MyKernel/src/kernel/irq_dispatch.unsafe.mln",
+    "dispatch"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "sp",
+      "割り込まれた文脈を保存した所"
+     ]
+    ],
+    "sig": "void dispatch(i32 sp)"
+   },
+   "src": "## kernel.irq-dispatch  irq_dispatch.dispatch\n関数・system/MyKernel/src/kernel/irq_dispatch.unsafe.mln の dispatch\n引数 sp：割り込まれた文脈を保存した所\n\n割り込みの原因を読んで、タイマーなら [[kernel.tick]] を呼ぶ。入力などがスレッドを起こした時は、次の tick を待たずに切り替える。\n",
+   "text": "割り込みの原因を読んで、タイマーなら [[kernel.tick]] を呼ぶ。入力などがスレッドを起こした時は、次の tick を待たずに切り替える。",
+   "fn": "irq_dispatch.dispatch"
+  },
+  "kernel.tick": {
+   "layer": "kernel",
+   "title": "scheduler.tick",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "tick"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "sp",
+      "割り込まれた文脈"
+     ]
+    ],
+    "ret": "次に走らせる文脈の sp",
+    "sig": "i32 tick(i32 sp)"
+   },
+   "src": "## kernel.tick  scheduler.tick\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の tick\n引数 sp：割り込まれた文脈\n返す：次に走らせる文脈の sp\n\ntick 数を時計に追いつかせる。時計の tick は 2^24 で一周するので、前回からの差で数える。止めていたタイマーを毎 tick に戻して、[[kernel.reschedule]] へ進む。\n",
+   "text": "tick 数を時計に追いつかせる。時計の tick は 2^24 で一周するので、前回からの差で数える。止めていたタイマーを毎 tick に戻して、[[kernel.reschedule]] へ進む。",
+   "fn": "scheduler.tick"
+  },
+  "kernel.reschedule": {
+   "layer": "kernel",
+   "title": "scheduler.reschedule",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "reschedule"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "sp",
+      "離れる文脈"
+     ]
+    ],
+    "ret": "次に走らせる文脈の sp",
+    "sig": "i32 reschedule(i32 sp)"
+   },
+   "src": "## kernel.reschedule  scheduler.reschedule\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の reschedule\n引数 sp：離れる文脈\n返す：次に走らせる文脈の sp\n\n最初に [[kernel.cpu-time]] で区切る。離れるスレッドを保存し、期限の来たスレッドを起こして、次に走らせるものを選ぶ。\n",
+   "text": "最初に [[kernel.cpu-time]] で区切る。離れるスレッドを保存し、期限の来たスレッドを起こして、次に走らせるものを選ぶ。",
+   "fn": "scheduler.reschedule"
+  },
+  "kernel.cpu-time": {
+   "layer": "kernel",
+   "title": "CPU 時間の数え方",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "charge_elapsed"
+   ],
+   "kind": "func",
+   "paper": "kernel.cpu-time",
+   "api": {
+    "params": [
+     [
+      "spent",
+      "足す時間（時計の 1/256 tick 単位）"
+     ]
+    ],
+    "sig": "void charge_elapsed()\nvoid charge(i32 spent)"
+   },
+   "src": "## kernel.cpu-time  CPU 時間の数え方\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の charge_elapsed\n中の紙：kernel.cpu-time\n型：void charge_elapsed()\n型：void charge(i32 spent)\n引数 spent：足す時間（時計の 1/256 tick 単位）\n\n切り替えのたびに時計を読み、前回からの時間を、それまで走っていたものに足す。\n\n![[emulator.timer.clock]]\n\n足し先は [[kernel.cpu-counters]]。WFI で待つカーネルスレッドは [[kernel.wfi-wait]]。\n\n![[fig.charge-before-after]]\n",
+   "text": "切り替えのたびに時計を読み、前回からの時間を、それまで走っていたものに足す。\n![[emulator.timer.clock]]\n足し先は [[kernel.cpu-counters]]。WFI で待つカーネルスレッドは [[kernel.wfi-wait]]。\n![[fig.charge-before-after]]",
+   "fn": "scheduler.charge_elapsed"
+  },
+  "kernel.cpu-counters": {
+   "layer": "kernel",
+   "title": "CPU 時間の置き場",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "g_idle_time"
+   ],
+   "kind": "store",
+   "src": "## kernel.cpu-counters  CPU 時間の置き場\n置き場・system/MyKernel/src/kernel/scheduler.unsafe.mln の g_idle_time\nフィールド Process.cpu_time（i32）：プロセスのスレッドが走った時間\nフィールド g_kernel_time（i32）：OS 自身のスレッドが走った時間\nフィールド g_idle_time（i32）：走るものが無かった時間\n\n単位はどれも時計の 1/256 tick（既定の 1 ms tick で約 4 µs）。数は一周するので、差で読む。[[os.proc-stats]] が [[schema.cputimes]] にまとめる。\n",
+   "text": "単位はどれも時計の 1/256 tick（既定の 1 ms tick で約 4 µs）。数は一周するので、差で読む。[[os.proc-stats]] が [[schema.cputimes]] にまとめる。",
+   "fields": [
+    [
+     "i32",
+     "Process.cpu_time",
+     "プロセスのスレッドが走った時間"
+    ],
+    [
+     "i32",
+     "g_kernel_time",
+     "OS 自身のスレッドが走った時間"
+    ],
+    [
+     "i32",
+     "g_idle_time",
+     "走るものが無かった時間"
+    ]
+   ]
+  },
+  "kernel.wfi-wait": {
+   "layer": "kernel",
+   "title": "WFI で待つカーネルスレッド",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "wait_in_wfi"
+   ],
+   "kind": "func",
+   "src": "## kernel.wfi-wait  WFI で待つカーネルスレッド\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の wait_in_wfi\n型：void charge_wait()\n型：void wait_in_wfi(i32 slot)\n\nsleep と await_notification は、待ちに入るまでを自分の時間にし、待っている間を idle にする。戻ったら、また自分の時間に戻す。\n",
+   "text": "sleep と await_notification は、待ちに入るまでを自分の時間にし、待っている間を idle にする。戻ったら、また自分の時間に戻す。",
+   "api": {
+    "sig": "void charge_wait()\nvoid wait_in_wfi(i32 slot)"
+   },
+   "fn": "scheduler.wait_in_wfi"
+  },
+  "kernel.idle-hold": {
+   "layer": "kernel",
+   "title": "待機中はタイマーを止める",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "hold_until_due"
+   ],
+   "kind": "func",
+   "src": "## kernel.idle-hold  待機中はタイマーを止める\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の hold_until_due\n\n走らせるスレッドが無い間、idle は次の期限まで割り込みを止めて WFI で待つ。期限は sleep、futex、通知待ちのうち一番早いもの。止めていた間は idle の時間になる（[[kernel.cpu-time]]）。\n",
+   "text": "走らせるスレッドが無い間、idle は次の期限まで割り込みを止めて WFI で待つ。期限は sleep、futex、通知待ちのうち一番早いもの。止めていた間は idle の時間になる（[[kernel.cpu-time]]）。",
+   "api": {
+    "sig": "void hold_until_due()"
+   },
+   "fn": "scheduler.hold_until_due"
+  },
+  "kernel.ipc-send": {
+   "layer": "kernel",
+   "title": "ipc.send",
+   "code": [
+    "system/MyKernel/src/kernel/ipc.unsafe.mln",
+    "send"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "ch",
+      "入れる channel"
+     ],
+     [
+      "words",
+      "24 語"
+     ]
+    ],
+    "ret": "空きがあって入れたら true",
+    "sig": "bool send(ChannelId ch, i32 *words)"
+   },
+   "src": "## kernel.ipc-send  ipc.send\n関数・system/MyKernel/src/kernel/ipc.unsafe.mln の send\n引数 ch：入れる channel\n引数 words：24 語\n返す：空きがあって入れたら true\n\nchannel の列に空きがあれば 24 語を写す。満杯なら何もせず false。\n",
+   "text": "channel の列に空きがあれば 24 語を写す。満杯なら何もせず false。",
+   "fn": "ipc.send"
+  },
+  "kernel.notify-armed": {
+   "layer": "kernel",
+   "title": "scheduler.notify_armed",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "notify_armed"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "mask",
+      "知らせる通知（ここでは SERVICE）"
+     ]
+    ],
+    "sig": "void notify_armed(i32 mask)"
+   },
+   "src": "## kernel.notify-armed  scheduler.notify_armed\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の notify_armed\n引数 mask：知らせる通知（ここでは SERVICE）\n\nその通知を待つと予約したスレッドを起こす。service task は SERVICE を待っている。\n",
+   "text": "その通知を待つと予約したスレッドを起こす。service task は SERVICE を待っている。",
+   "fn": "scheduler.notify_armed"
+  },
+  "charge.read": {
+   "layer": "kernel",
+   "title": "now = 時計",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "charge_elapsed"
+   ],
+   "kind": "func",
+   "src": "## charge.read  now = 時計\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の charge_elapsed\n型：i32 now = mem.read_word(TIMER_ADDR);\n\n[[emulator.timer.clock]] を 1 語読む。tick 数 × 256 ＋ 進みが、今の時刻になる。\n",
+   "text": "[[emulator.timer.clock]] を 1 語読む。tick 数 × 256 ＋ 進みが、今の時刻になる。",
+   "api": {
+    "sig": "i32 now = mem.read_word(TIMER_ADDR);"
+   }
+  },
+  "kernel.charge": {
+   "layer": "kernel",
+   "title": "scheduler.charge",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "charge"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "spent",
+      "足す時間（時計の単位）"
+     ]
+    ],
+    "sig": "void charge(i32 spent)"
+   },
+   "src": "## kernel.charge  scheduler.charge\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の charge\n引数 spent：足す時間（時計の単位）\n\n[[kernel.charge-to]] を見て、ユーザスレッドならそのプロセス、カーネルスレッドなら kernel、無ければ idle に足す（[[kernel.cpu-counters]]）。\n",
+   "text": "[[kernel.charge-to]] を見て、ユーザスレッドならそのプロセス、カーネルスレッドなら kernel、無ければ idle に足す（[[kernel.cpu-counters]]）。",
+   "fn": "scheduler.charge"
+  },
+  "charge.set": {
+   "layer": "kernel",
+   "title": "前回 = now",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "charge_elapsed"
+   ],
+   "kind": "func",
+   "src": "## charge.set  前回 = now\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の charge_elapsed\n型：g_clock_charged = now;\n\n足し終えた時刻を [[kernel.clock-charged]] に覚える。次の切り替えでは、ここからの時間を足す。\n",
+   "text": "足し終えた時刻を [[kernel.clock-charged]] に覚える。次の切り替えでは、ここからの時間を足す。",
+   "api": {
+    "sig": "g_clock_charged = now;"
+   }
+  },
+  "kernel.clock-charged": {
+   "layer": "kernel",
+   "title": "g_clock_charged",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "g_clock_charged"
+   ],
+   "kind": "store",
+   "src": "## kernel.clock-charged  g_clock_charged\n置き場・system/MyKernel/src/kernel/scheduler.unsafe.mln の g_clock_charged\nフィールド g_clock_charged（i32）：前に足し終えた時刻\n\n時計は一周するが、差を取るので困らない。\n",
+   "text": "時計は一周するが、差を取るので困らない。",
+   "fields": [
+    [
+     "i32",
+     "g_clock_charged",
+     "前に足し終えた時刻"
+    ]
+   ]
+  },
+  "kernel.charge-to": {
+   "layer": "kernel",
+   "title": "g_charge_to",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "charge_to"
+   ],
+   "kind": "store",
+   "src": "## kernel.charge-to  g_charge_to\n置き場・system/MyKernel/src/kernel/scheduler.unsafe.mln の charge_to\nフィールド g_charge_to（Option<i32>）：今の時間の持ち主：スレッドの枠。None なら idle\n\n切り替えの時にスケジューラが charge_to で決める。WFI で待つカーネルスレッドは、待つ間を idle に渡す（[[kernel.wfi-wait]]）。\n",
+   "text": "切り替えの時にスケジューラが charge_to で決める。WFI で待つカーネルスレッドは、待つ間を idle に渡す（[[kernel.wfi-wait]]）。",
+   "fields": [
+    [
+     "Option<i32>",
+     "g_charge_to",
+     "今の時間の持ち主：スレッドの枠。None なら idle"
+    ]
+   ]
+  },
+  "fig.charge-before-after": {
+   "layer": "kernel",
+   "title": "切り替えごとに足す（前と今）",
+   "code": null,
+   "kind": "figure",
+   "src": "## fig.charge-before-after  切り替えごとに足す（前と今）\n図\n図：figures/fig.charge-before-after.svg\n\n前は、tick の瞬間に走っていたものへ 1 tick を丸ごと足していた。A と B は tick の間だけ動いたので 0 だった。\n\n今は切り替えのたびに 1/256 tick（既定で約 4 µs）単位で足すので、A と B の分も数えられる（[[kernel.cpu-time]]）。\n",
+   "text": "前は、tick の瞬間に走っていたものへ 1 tick を丸ごと足していた。A と B は tick の間だけ動いたので 0 だった。\n今は切り替えのたびに 1/256 tick（既定で約 4 µs）単位で足すので、A と B の分も数えられる（[[kernel.cpu-time]]）。",
+   "figure": "<svg viewBox=\"0 0 640 226\" role=\"img\" aria-label=\"3 ms の間に A と B が少しずつ動いた時、前の数え方では 0、今の数え方では 0.30 ms と 0.20 ms\"><line class=\"z-tick\" x1=\"290\" x2=\"290\" y1=\"14\" y2=\"196\"/><text class=\"z-s\" x=\"290\" y=\"214\" text-anchor=\"middle\">tick（1 ms）</text><line class=\"z-tick\" x1=\"450\" x2=\"450\" y1=\"14\" y2=\"196\"/><text class=\"z-s\" x=\"450\" y=\"214\" text-anchor=\"middle\">tick（2 ms）</text><line class=\"z-tick\" x1=\"610\" x2=\"610\" y1=\"14\" y2=\"196\"/><text class=\"z-s\" x=\"610\" y=\"214\" text-anchor=\"middle\">tick（3 ms）</text><text class=\"z-t\" x=\"10\" y=\"38\">実際</text><rect class=\"z-a\" x=\"130\" y=\"20\" width=\"48\" height=\"26\" rx=\"4\"/><text class=\"z-on\" x=\"154\" y=\"37\" text-anchor=\"middle\">A</text><rect class=\"z-cell\" x=\"178\" y=\"20\" width=\"176\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"266\" y=\"37\" text-anchor=\"middle\">idle（WFI）</text><rect class=\"z-b\" x=\"354\" y=\"20\" width=\"32\" height=\"26\" rx=\"4\"/><text class=\"z-on\" x=\"370\" y=\"37\" text-anchor=\"middle\">B</text><rect class=\"z-cell\" x=\"386\" y=\"20\" width=\"224\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"498\" y=\"37\" text-anchor=\"middle\">idle</text><text class=\"z-t\" x=\"10\" y=\"102\">前の数え方</text><rect class=\"z-cell\" x=\"130\" y=\"84\" width=\"160\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"210\" y=\"101\" text-anchor=\"middle\">idle</text><rect class=\"z-cell\" x=\"290\" y=\"84\" width=\"160\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"370\" y=\"101\" text-anchor=\"middle\">idle</text><rect class=\"z-cell\" x=\"450\" y=\"84\" width=\"160\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"530\" y=\"101\" text-anchor=\"middle\">idle</text><text class=\"z-s\" x=\"130\" y=\"128\">A: 0　B: 0　idle: 3 tick</text><text class=\"z-t\" x=\"10\" y=\"166\">今の数え方</text><rect class=\"z-a\" x=\"130\" y=\"148\" width=\"48\" height=\"26\" rx=\"4\"/><text class=\"z-on\" x=\"154\" y=\"165\" text-anchor=\"middle\">0.30</text><rect class=\"z-cell\" x=\"178\" y=\"148\" width=\"176\" height=\"26\" rx=\"4\"/><rect class=\"z-b\" x=\"354\" y=\"148\" width=\"32\" height=\"26\" rx=\"4\"/><text class=\"z-on\" x=\"370\" y=\"165\" text-anchor=\"middle\">0.20</text><rect class=\"z-cell\" x=\"386\" y=\"148\" width=\"224\" height=\"26\" rx=\"4\"/><text class=\"z-s\" x=\"482\" y=\"165\" text-anchor=\"middle\">idle: 2.50 ms</text></svg>\n"
+  },
+  "kernel.channel": {
+   "layer": "kernel",
+   "title": "Channel",
+   "code": [
+    "system/MyKernel/src/kernel/ipc.unsafe.mln",
+    "Channel"
+   ],
+   "kind": "store",
+   "ops": [
+    {
+     "name": "send",
+     "text": "tail の枠に書いて 1 進める。進めた先が head なら書かずに false（満杯）",
+     "kind": "入れる",
+     "cost": "O(1)"
+    },
+    {
+     "name": "recv",
+     "text": "head の枠から読んで 1 進める。head == tail なら false（空）",
+     "kind": "出す",
+     "cost": "O(1)"
+    }
+   ],
+   "invariants": [
+    "入っているのは tail − head 通（SLOTS で一周）。tail が head の 1 つ手前で止まるので、最大 SLOTS − 1 通"
+   ],
+   "src": "## kernel.channel  Channel\n置き場・system/MyKernel/src/kernel/ipc.unsafe.mln の Channel\n形：リング（枠 SLOTS、読む head、書く tail、1 通 MSG_WORDS 語）\nフィールド used：使っている channel か\nフィールド head：次に読む枠\nフィールド tail：次に書く枠\n操作 send 入れる：tail の枠に書いて 1 進める。進めた先が head なら書かずに false（満杯）｜O(1)\n操作 recv 出す：head の枠から読んで 1 進める。head == tail なら false（空）｜O(1)\n不変：入っているのは tail − head 通（SLOTS で一周）。tail が head の 1 つ手前で止まるので、最大 SLOTS − 1 通\n\nIPC の channel 1 本。channel ごとに SLOTS 枠のリングを持ち、1 枠は MSG_WORDS 語。中身は全部の channel の分を g_ring にまとめて置く。[[os.request-ring]] もこの 1 本。\n",
+   "text": "IPC の channel 1 本。channel ごとに SLOTS 枠のリングを持ち、1 枠は MSG_WORDS 語。中身は全部の channel の分を g_ring にまとめて置く。[[os.request-ring]] もこの 1 本。",
+   "fields": [
+    [
+     "bool",
+     "used",
+     "使っている channel か"
+    ],
+    [
+     "i32",
+     "head",
+     "次に読む枠"
+    ],
+    [
+     "i32",
+     "tail",
+     "次に書く枠"
+    ]
+   ],
+   "shape": {
+    "kind": "ring",
+    "roles": {
+     "n": {
+      "name": "SLOTS",
+      "num": 32
+     },
+     "read": {
+      "name": "head"
+     },
+     "write": {
+      "name": "tail"
+     },
+     "item": {
+      "name": "MSG_WORDS",
+      "unit": "語",
+      "num": 24
+     }
+    }
+   }
+  },
+  "kernel.heap": {
+   "layer": "kernel",
+   "title": "カーネルのヒープ",
+   "code": [
+    "system/MyKernel/src/mm/heap.unsafe.mln",
+    "g_free_head"
+   ],
+   "kind": "store",
+   "ops": [
+    {
+     "name": "alloc_unlocked",
+     "text": "first-fit。空きを先頭からたどり、入る最初のブロックを取る。余りが HDR_SIZE + ALIGN B 以上なら、後ろを空きとして分ける",
+     "kind": "先頭から探す",
+     "cost": "O(空きの数)"
+    },
+    {
+     "name": "free_unlocked",
+     "text": "アドレス順の位置に戻し、すぐ後ろとすぐ前の空きが隣り合っていれば 1 つにまとめる",
+     "kind": "順に差し込む",
+     "cost": "O(空きの数)"
+    }
+   ],
+   "invariants": [
+    "空きはアドレス順に並び、隣り合う空きは残らない（free_unlocked がまとめる）"
+   ],
+   "src": "## kernel.heap  カーネルのヒープ\n置き場・system/MyKernel/src/mm/heap.unsafe.mln の g_free_head\n形：リスト（先頭 g_free_head、次 block_next、頭 HDR_SIZE、順 アドレス）\n操作 alloc_unlocked 先頭から探す：first-fit。空きを先頭からたどり、入る最初のブロックを取る。余りが HDR_SIZE + ALIGN B 以上なら、後ろを空きとして分ける｜O(空きの数)\n操作 free_unlocked 順に差し込む：アドレス順の位置に戻し、すぐ後ろとすぐ前の空きが隣り合っていれば 1 つにまとめる｜O(空きの数)\n不変：空きはアドレス順に並び、隣り合う空きは残らない（free_unlocked がまとめる）\n\nカーネルが使うメモリ。どのブロックも、HDR_SIZE B の頭（中身の大きさと、次の空きの場所）の後ろに中身が続く。割り込みを止めてから、リストをたどって書き換える。\n",
+   "text": "カーネルが使うメモリ。どのブロックも、HDR_SIZE B の頭（中身の大きさと、次の空きの場所）の後ろに中身が続く。割り込みを止めてから、リストをたどって書き換える。",
+   "shape": {
+    "kind": "list",
+    "roles": {
+     "head": {
+      "name": "g_free_head"
+     },
+     "next": {
+      "name": "block_next"
+     },
+     "header": {
+      "name": "HDR_SIZE",
+      "num": 8
+     },
+     "order": {
+      "text": "アドレス"
+     }
+    }
+   }
+  },
+  "kernel.frames": {
+   "layer": "kernel",
+   "title": "ページ枠",
+   "code": [
+    "system/MyKernel/src/mm/frames.unsafe.mln",
+    "g_free"
+   ],
+   "kind": "store",
+   "ops": [
+    {
+     "name": "alloc",
+     "text": "返された枠があれば先頭から 1 つ取る。無ければ g_next の枠を渡して 1 枠進める",
+     "kind": "先頭から取る",
+     "cost": "O(1)"
+    },
+    {
+     "name": "free",
+     "text": "枠の最初の語に今の先頭を書き、その枠を新しい先頭にする",
+     "kind": "先頭に積む",
+     "cost": "O(1)"
+    }
+   ],
+   "invariants": [
+    "g_next より後ろの枠はまだ一度も渡していない。g_next は POOL_END を越えない"
+   ],
+   "src": "## kernel.frames  ページ枠\n置き場・system/MyKernel/src/mm/frames.unsafe.mln の g_free\n形：リスト（先頭 g_free、次 空いた枠の最初の語、繰り上げ g_next）\n操作 alloc 先頭から取る：返された枠があれば先頭から 1 つ取る。無ければ g_next の枠を渡して 1 枠進める｜O(1)\n操作 free 先頭に積む：枠の最初の語に今の先頭を書き、その枠を新しい先頭にする｜O(1)\n不変：g_next より後ろの枠はまだ一度も渡していない。g_next は POOL_END を越えない\n\nページ表と、プロセスが使うページの 4 KiB の枠。返された枠は、その枠の最初の語でつないだリストに積むので、リストのためのメモリは要らない。\n",
+   "text": "ページ表と、プロセスが使うページの 4 KiB の枠。返された枠は、その枠の最初の語でつないだリストに積むので、リストのためのメモリは要らない。",
+   "shape": {
+    "kind": "list",
+    "roles": {
+     "head": {
+      "name": "g_free"
+     },
+     "next": {
+      "text": "空いた枠の最初の語"
+     },
+     "bump": {
+      "name": "g_next"
+     }
+    }
+   }
+  },
+  "kernel.threads": {
+   "layer": "kernel",
+   "title": "スレッドの表",
+   "code": [
+    "system/MyKernel/src/kernel/thread.unsafe.mln",
+    "g_threads"
+   ],
+   "kind": "store",
+   "ops": [
+    {
+     "name": "[[kernel.find-next]]",
+     "text": "今のスレッドの次の枠から 1 つずつ見て、使った枠の数で一周するまでに最初の Runnable を選ぶ（ラウンドロビン）",
+     "kind": "一周して探す",
+     "cost": "O(枠の数)",
+     "node": "kernel.find-next"
+    }
+   ],
+   "invariants": [
+    "使っている枠は g_thread_slot_high_water より手前にある"
+   ],
+   "src": "## kernel.threads  スレッドの表\n置き場・system/MyKernel/src/kernel/thread.unsafe.mln の g_threads\n形：表（枠 g_threads、鍵 tid、空き None）\n操作 [[kernel.find-next]] 一周して探す：今のスレッドの次の枠から 1 つずつ見て、使った枠の数で一周するまでに最初の Runnable を選ぶ（ラウンドロビン）｜O(枠の数)\n不変：使っている枠は g_thread_slot_high_water より手前にある\n\nスレッドの制御ブロック（Thread）を枠ごとに 1 つ持つ。状態は [[kernel.thread-state]]。\n",
+   "text": "スレッドの制御ブロック（Thread）を枠ごとに 1 つ持つ。状態は [[kernel.thread-state]]。",
+   "shape": {
+    "kind": "table",
+    "roles": {
+     "n": {
+      "name": "g_threads",
+      "num": 256
+     },
+     "key": {
+      "name": "tid"
+     },
+     "empty": {
+      "name": "None"
+     }
+    }
+   }
+  },
+  "kernel.find-next": {
+   "layer": "kernel",
+   "title": "find_next_runnable",
+   "code": [
+    "system/MyKernel/src/kernel/scheduler.unsafe.mln",
+    "find_next_runnable"
+   ],
+   "kind": "func",
+   "api": {
+    "params": [
+     [
+      "start",
+      "見始める枠"
+     ],
+     [
+      "count",
+      "見る枠の数"
+     ]
+    ],
+    "ret": "Runnable の枠。無ければ None",
+    "sig": "Option<i32> find_next_runnable(i32 start, i32 count)"
+   },
+   "src": "## kernel.find-next  find_next_runnable\n関数・system/MyKernel/src/kernel/scheduler.unsafe.mln の find_next_runnable\n引数 start：見始める枠\n引数 count：見る枠の数\n返す：Runnable の枠。無ければ None\n\n[[kernel.reschedule]] が、離れるスレッドの次の枠から一周させて呼ぶ。だから、どのスレッドも順番が回ってくる。\n",
+   "text": "[[kernel.reschedule]] が、離れるスレッドの次の枠から一周させて呼ぶ。だから、どのスレッドも順番が回ってくる。",
+   "fn": "scheduler.find_next_runnable"
+  },
+  "kernel.thread-state": {
+   "layer": "kernel",
+   "title": "ThreadState",
+   "code": [
+    "system/MyKernel/src/kernel/thread.unsafe.mln",
+    "ThreadState"
+   ],
+   "kind": "enum",
+   "src": "## kernel.thread-state  ThreadState\n列挙・system/MyKernel/src/kernel/thread.unsafe.mln の ThreadState\n状態の欄：Thread.state\n移る はじめ → Runnable：publish_boot・publish_kernel・publish_user\n移る Runnable → Running：make_running\n移る Running → Runnable：switch_out\n移る Running → Blocked：sleep_until・block_notification・block_notification_until・join_thread・futex_wait\n移る Blocked → Runnable：notify・wake_due・wake_joiner・futex_wake\n移る Running → Exiting：exit_current_thread・exit_process_threads\n移る Runnable → Exiting：exit_process_threads\n移る Blocked → Exiting：exit_process_threads\n移る Exiting → Zombie：finish_deferred_cleanup\n値 Runnable：走れる。[[kernel.find-next]] に選ばれるのを待つ\n値 Running：今 CPU で走っている。1 つだけ\n値 Blocked：待っている。理由（眠り・通知・join・futex）を 1 つ持つ\n値 Exiting：終わる途中。次の切り替えで片付ける\n値 Zombie：終わった。終了コードを受け取られるまで枠に残る\n\n[[kernel.threads]] の各スレッドの一生。切り替えは [[kernel.reschedule]] が、離れるものを Runnable に戻し、選んだものを Running にする。\n",
+   "text": "[[kernel.threads]] の各スレッドの一生。切り替えは [[kernel.reschedule]] が、離れるものを Runnable に戻し、選んだものを Running にする。",
+   "values": [
+    [
+     "Runnable",
+     "走れる。[[kernel.find-next]] に選ばれるのを待つ"
+    ],
+    [
+     "Running",
+     "今 CPU で走っている。1 つだけ"
+    ],
+    [
+     "Blocked",
+     "待っている。理由（眠り・通知・join・futex）を 1 つ持つ"
+    ],
+    [
+     "Exiting",
+     "終わる途中。次の切り替えで片付ける"
+    ],
+    [
+     "Zombie",
+     "終わった。終了コードを受け取られるまで枠に残る"
+    ]
+   ],
+   "states": {
+    "field": "Thread.state",
+    "moves": [
+     {
+      "from": "はじめ",
+      "to": "Runnable",
+      "fns": [
+       "publish_boot",
+       "publish_kernel",
+       "publish_user"
+      ]
+     },
+     {
+      "from": "Runnable",
+      "to": "Running",
+      "fns": [
+       "make_running"
+      ]
+     },
+     {
+      "from": "Running",
+      "to": "Runnable",
+      "fns": [
+       "switch_out"
+      ]
+     },
+     {
+      "from": "Running",
+      "to": "Blocked",
+      "fns": [
+       "sleep_until",
+       "block_notification",
+       "block_notification_until",
+       "join_thread",
+       "futex_wait"
+      ]
+     },
+     {
+      "from": "Blocked",
+      "to": "Runnable",
+      "fns": [
+       "notify",
+       "wake_due",
+       "wake_joiner",
+       "futex_wake"
+      ]
+     },
+     {
+      "from": "Running",
+      "to": "Exiting",
+      "fns": [
+       "exit_current_thread",
+       "exit_process_threads"
+      ]
+     },
+     {
+      "from": "Runnable",
+      "to": "Exiting",
+      "fns": [
+       "exit_process_threads"
+      ]
+     },
+     {
+      "from": "Blocked",
+      "to": "Exiting",
+      "fns": [
+       "exit_process_threads"
+      ]
+     },
+     {
+      "from": "Exiting",
+      "to": "Zombie",
+      "fns": [
+       "finish_deferred_cleanup"
+      ]
+     }
+    ]
+   }
+  },
+  "emulator.timer.clock": {
+   "layer": "emu",
+   "title": "タイマーの時計",
+   "code": [
+    "runtime/MyEmulator/src/machine/timer.rs",
+    "clock"
+   ],
+   "kind": "hw",
+   "reg": "0x24000088",
+   "src": "## emulator.timer.clock  タイマーの時計\nレジスタ・runtime/MyEmulator/src/machine/timer.rs の clock\nレジスタ：0x24000088\nフィールド tick 数（31–8）：それまでの tick。止めていた間の分も数える\nフィールド 進み（7–0）：今の tick の中でどこまで進んだか（256 分の何）\n\n1 tick を 256 に刻んだ時計。時刻を書くと、その時刻の後の最初の tick まで割り込みを止める（[[kernel.idle-hold]]）。0 を書けば毎 tick。\n\n![[fig.clock-word]]\n",
+   "text": "1 tick を 256 に刻んだ時計。時刻を書くと、その時刻の後の最初の tick まで割り込みを止める（[[kernel.idle-hold]]）。0 を書けば毎 tick。\n![[fig.clock-word]]",
+   "fields": [
+    [
+     "31–8",
+     "tick 数",
+     "それまでの tick。止めていた間の分も数える"
+    ],
+    [
+     "7–0",
+     "進み",
+     "今の tick の中でどこまで進んだか（256 分の何）"
+    ]
+   ]
+  },
+  "fig.clock-word": {
+   "layer": "emu",
+   "title": "時計の 1 語の中身",
+   "code": [
+    "runtime/MyEmulator/src/machine/timer.rs",
+    "clock"
+   ],
+   "kind": "figure",
+   "src": "## fig.clock-word  時計の 1 語の中身\n図・runtime/MyEmulator/src/machine/timer.rs の clock\n図：figures/fig.clock-word.svg\n\n上位 24 ビットが tick 数、下位 8 ビットが今の tick の進み。tick は 2^24 で一周する（既定の 1 ms tick で約 4.6 時間）ので、[[kernel.cpu-time]] は前回からの差で数える。\n",
+   "text": "上位 24 ビットが tick 数、下位 8 ビットが今の tick の進み。tick は 2^24 で一周する（既定の 1 ms tick で約 4.6 時間）ので、[[kernel.cpu-time]] は前回からの差で数える。",
+   "figure": "<svg viewBox=\"0 0 640 150\" role=\"img\" aria-label=\"32 ビットの時計。上位 24 ビットが tick 数、下位 8 ビットが今の tick の進み\">\n    <rect class=\"z-acc\" x=\"20\" y=\"20\" width=\"450\" height=\"52\" rx=\"6\"/><rect class=\"z-cell\" x=\"470\" y=\"20\" width=\"150\" height=\"52\" rx=\"6\"/>\n    <text class=\"z-t\" x=\"245\" y=\"52\" text-anchor=\"middle\">tick 数（上位 24 ビット）</text><text class=\"z-t\" x=\"545\" y=\"52\" text-anchor=\"middle\">進み（下位 8 ビット）</text>\n    <text class=\"z-s\" x=\"22\" y=\"92\">31</text><text class=\"z-s\" x=\"466\" y=\"92\" text-anchor=\"end\">8</text><text class=\"z-s\" x=\"474\" y=\"92\">7</text><text class=\"z-s\" x=\"618\" y=\"92\" text-anchor=\"end\">0</text>\n    <text class=\"z-s\" x=\"20\" y=\"130\">例: 1,234 tick と 128/256 → 1,234 × 256 + 128 = 316,032</text></svg>\n"
+  },
+  "schema.request": {
+   "layer": "contract",
+   "title": "Request",
+   "code": [
+    "contracts/myapp/message.contract.mln",
+    "Request"
+   ],
+   "kind": "schema",
+   "src": "## schema.request  Request\n構造体・contracts/myapp/message.contract.mln の Request\nフィールド domain：UI か APP（shell）\nフィールド op：UI なら UiOp の 1 つ\nフィールド owner：gateway が呼んだプロセスの pid で上書きする。アプリは名乗れない\nフィールド a0 … a5：op ごとの引数（6 語）。SET_TEXT は a0 = ノード\nフィールド *s0：文字列。gateway が OS 側にコピーする（1,024 B まで）\nフィールド *s1：2 つ目の文字列。同じくコピーする（128 B まで）\nフィールド result_out：結果の書き込み先。gateway が OS 側の buffer に差し替え、返事で書き戻す\nフィールド result_size：書き戻す長さ\nフィールド s0_len：s0 の長さ。文字列は NUL で終わらない\nフィールド s1_len：s1 の長さ\n\nアプリが OS に出す要求の封筒。データだけで、関数は持たない。SDK と MyOS の両方がこの契約を import する（[[policy.sdk-no-myos]]）。\n",
+   "text": "アプリが OS に出す要求の封筒。データだけで、関数は持たない。SDK と MyOS の両方がこの契約を import する（[[policy.sdk-no-myos]]）。",
+   "fields": [
+    [
+     "RequestDomain",
+     "domain",
+     "UI か APP（shell）"
+    ],
+    [
+     "i32",
+     "op",
+     "UI なら UiOp の 1 つ"
+    ],
+    [
+     "i32",
+     "owner",
+     "gateway が呼んだプロセスの pid で上書きする。アプリは名乗れない"
+    ],
+    [
+     "i32",
+     "a0 … a5",
+     "op ごとの引数（6 語）。SET_TEXT は a0 = ノード"
+    ],
+    [
+     "char",
+     "*s0",
+     "文字列。gateway が OS 側にコピーする（1,024 B まで）"
+    ],
+    [
+     "char",
+     "*s1",
+     "2 つ目の文字列。同じくコピーする（128 B まで）"
+    ],
+    [
+     "i32",
+     "result_out",
+     "結果の書き込み先。gateway が OS 側の buffer に差し替え、返事で書き戻す"
+    ],
+    [
+     "i32",
+     "result_size",
+     "書き戻す長さ"
+    ],
+    [
+     "i32",
+     "s0_len",
+     "s0 の長さ。文字列は NUL で終わらない"
+    ],
+    [
+     "i32",
+     "s1_len",
+     "s1 の長さ"
+    ]
+   ]
+  },
+  "schema.event": {
+   "layer": "contract",
+   "title": "Event",
+   "code": [
+    "contracts/myapp/message.contract.mln",
+    "Event"
+   ],
+   "kind": "schema",
+   "src": "## schema.event  Event\n構造体・contracts/myapp/message.contract.mln の Event\nフィールド owner：受け取るプロセス\nフィールド id：ノード（runtime では NodeId）\nフィールド kind：CLICK・TIMER・KEY など\nフィールド arg：種類ごとの値\nフィールド token：KEY では、登録したキーの番号\nフィールド text[64]：OPEN のパスなど。中に持つので、取り出した後も生きている\n\nOS からアプリに届く知らせ。[[os.events]] が入れ、[[lib.next]] が取り出す。\n",
+   "text": "OS からアプリに届く知らせ。[[os.events]] が入れ、[[lib.next]] が取り出す。",
+   "fields": [
+    [
+     "i32",
+     "owner",
+     "受け取るプロセス"
+    ],
+    [
+     "i32",
+     "id",
+     "ノード（runtime では NodeId）"
+    ],
+    [
+     "EventKind",
+     "kind",
+     "CLICK・TIMER・KEY など"
+    ],
+    [
+     "i32",
+     "arg",
+     "種類ごとの値"
+    ],
+    [
+     "i32",
+     "token",
+     "KEY では、登録したキーの番号"
+    ],
+    [
+     "char",
+     "text[64]",
+     "OPEN のパスなど。中に持つので、取り出した後も生きている"
+    ]
+   ]
+  },
+  "schema.procstats": {
+   "layer": "contract",
+   "title": "ProcStats",
+   "code": [
+    "contracts/myos/process-args.contract.mln",
+    "ProcStats"
+   ],
+   "kind": "schema",
+   "src": "## schema.procstats  ProcStats\n構造体・contracts/myos/process-args.contract.mln の ProcStats\nフィールド cpu：CPU の時間の内訳\nフィールド total_pages：プロセスとページ表に使える 4 KiB ページ\nフィールド free_pages：そのうち空いている数\nフィールド count：procs の使っている数\nフィールド procs[16]：プロセスごと。プロセス表の順\n\nPROC_STATS が返す、全部のプロセスと CPU の時間とメモリ。\n",
+   "text": "PROC_STATS が返す、全部のプロセスと CPU の時間とメモリ。",
+   "fields": [
+    [
+     "CpuTimes",
+     "cpu",
+     "CPU の時間の内訳"
+    ],
+    [
+     "i32",
+     "total_pages",
+     "プロセスとページ表に使える 4 KiB ページ"
+    ],
+    [
+     "i32",
+     "free_pages",
+     "そのうち空いている数"
+    ],
+    [
+     "i32",
+     "count",
+     "procs の使っている数"
+    ],
+    [
+     "ProcInfo",
+     "procs[16]",
+     "プロセスごと。プロセス表の順"
+    ]
+   ]
+  },
+  "schema.cputimes": {
+   "layer": "contract",
+   "title": "CpuTimes",
+   "code": [
+    "contracts/myos/process-args.contract.mln",
+    "CpuTimes"
+   ],
+   "kind": "schema",
+   "src": "## schema.cputimes  CpuTimes\n構造体・contracts/myos/process-args.contract.mln の CpuTimes\nフィールド total：全部の時間\nフィールド idle：走るものが無いか、OS のスレッドが待っているだけの時間\nフィールド kernel：OS 自身のスレッド（デスクトップ、ファイルシステムなど）の時間\nフィールド kernel_threads：OS 自身のスレッドの数\n\n起動からの CPU の時間の行き先。単位は時計の 1/256 tick で、一周するので差で読む。\n",
+   "text": "起動からの CPU の時間の行き先。単位は時計の 1/256 tick で、一周するので差で読む。",
+   "fields": [
+    [
+     "i32",
+     "total",
+     "全部の時間"
+    ],
+    [
+     "i32",
+     "idle",
+     "走るものが無いか、OS のスレッドが待っているだけの時間"
+    ],
+    [
+     "i32",
+     "kernel",
+     "OS 自身のスレッド（デスクトップ、ファイルシステムなど）の時間"
+    ],
+    [
+     "i32",
+     "kernel_threads",
+     "OS 自身のスレッドの数"
+    ]
+   ]
+  },
+  "schema.procinfo": {
+   "layer": "contract",
+   "title": "ProcInfo",
+   "code": [
+    "contracts/myos/process-args.contract.mln",
+    "ProcInfo"
+   ],
+   "kind": "schema",
+   "src": "## schema.procinfo  ProcInfo\n構造体・contracts/myos/process-args.contract.mln の ProcInfo\nフィールド pid：\nフィールド parent：親の pid\nフィールド activity：何をしているか\nフィールド threads：スレッドの数\nフィールド cpu_time：始まってから走った時間（1/256 tick、一周する）\nフィールド pages：使っている 4 KiB ページ\nフィールド name：実行ファイルの名前\n\n1 つのプロセスの様子と、かかっているもの。\n",
+   "text": "1 つのプロセスの様子と、かかっているもの。",
+   "fields": [
+    [
+     "i32",
+     "pid",
+     ""
+    ],
+    [
+     "i32",
+     "parent",
+     "親の pid"
+    ],
+    [
+     "ProcActivity",
+     "activity",
+     "何をしているか"
+    ],
+    [
+     "i32",
+     "threads",
+     "スレッドの数"
+    ],
+    [
+     "i32",
+     "cpu_time",
+     "始まってから走った時間（1/256 tick、一周する）"
+    ],
+    [
+     "i32",
+     "pages",
+     "使っている 4 KiB ページ"
+    ],
+    [
+     "Text<16>",
+     "name",
+     "実行ファイルの名前"
+    ]
+   ]
+  },
+  "schema.event-kind": {
+   "layer": "contract",
+   "title": "EventKind",
+   "code": [
+    "contracts/myapp/message.contract.mln",
+    "EventKind"
+   ],
+   "kind": "enum",
+   "src": "## schema.event-kind  EventKind\n列挙・contracts/myapp/message.contract.mln の EventKind\n値 NONE：\n値 CLICK：\n値 CHANGE：\n値 ACTIVATE：\n値 TIMER：タイマーのノードの 1 回\n値 KEY：token に登録したキー\n値 CLOSE：\n値 OPEN：text にパス\n値 CARET：arg = 行 << 16 | 桁\n\n[[schema.event]] の種類。\n",
+   "text": "[[schema.event]] の種類。",
+   "values": [
+    [
+     "NONE",
+     ""
+    ],
+    [
+     "CLICK",
+     ""
+    ],
+    [
+     "CHANGE",
+     ""
+    ],
+    [
+     "ACTIVATE",
+     ""
+    ],
+    [
+     "TIMER",
+     "タイマーのノードの 1 回"
+    ],
+    [
+     "KEY",
+     "token に登録したキー"
+    ],
+    [
+     "CLOSE",
+     ""
+    ],
+    [
+     "OPEN",
+     "text にパス"
+    ],
+    [
+     "CARET",
+     "arg = 行 << 16 | 桁"
+    ]
+   ]
+  },
+  "schema.request-domain": {
+   "layer": "contract",
+   "title": "RequestDomain",
+   "code": [
+    "contracts/myapp/message.contract.mln",
+    "RequestDomain"
+   ],
+   "kind": "enum",
+   "src": "## schema.request-domain  RequestDomain\n列挙・contracts/myapp/message.contract.mln の RequestDomain\n値 NONE：\n値 UI：UI の要求（[[os.ui-protocol]]）\n値 APP：アプリの起動など（shell）\n\n[[schema.request]] をどこが受けるか。\n",
+   "text": "[[schema.request]] をどこが受けるか。",
+   "values": [
+    [
+     "NONE",
+     ""
+    ],
+    [
+     "UI",
+     "UI の要求（[[os.ui-protocol]]）"
+    ],
+    [
+     "APP",
+     "アプリの起動など（shell）"
+    ]
+   ]
+  },
+  "schema.request-status": {
+   "layer": "contract",
+   "title": "RequestStatus",
+   "code": [
+    "contracts/myapp/message.contract.mln",
+    "RequestStatus"
+   ],
+   "kind": "enum",
+   "src": "## schema.request-status  RequestStatus\n列挙・contracts/myapp/message.contract.mln の RequestStatus\n値 OK：\n値 INVALID_DOMAIN：\n値 INVALID_OPERATION：\n値 MISSING_RESULT：\n\n1 つの要求の結果。\n",
+   "text": "1 つの要求の結果。",
+   "values": [
+    [
+     "OK",
+     ""
+    ],
+    [
+     "INVALID_DOMAIN",
+     ""
+    ],
+    [
+     "INVALID_OPERATION",
+     ""
+    ],
+    [
+     "MISSING_RESULT",
+     ""
+    ]
+   ]
+  },
+  "schema.uiop": {
+   "layer": "contract",
+   "title": "UiOp",
+   "code": [
+    "contracts/myapp/ui.contract.mln",
+    "UiOp"
+   ],
+   "kind": "enum",
+   "src": "## schema.uiop  UiOp\n列挙・contracts/myapp/ui.contract.mln の UiOp\n値 NONE：\n値 SET_TEXT：(ノード, s0)\n値 TEXT_COPY：\n値 SET_CHECKED：\n値 INPUT_SET：\n値 AREA_APPEND：\n値 LIST_SET_ITEMS：\n値 LIST_SELECT：\n値 GRAPH_SET：(ノード, a1 = 系列 0 か 1, s0 = % を空白で区切る)\n値 …：ADD_STYLE、FOCUS、CREATE_WINDOW など\n値 CREATE_TIMER：(a0 = 間隔) 1 回ごとに TIMER イベント\n値 …：ほかの CREATE_*\n\nUI の要求の op。[[schema.request]] の op に入る。\n",
+   "text": "UI の要求の op。[[schema.request]] の op に入る。",
+   "values": [
+    [
+     "NONE",
+     ""
+    ],
+    [
+     "SET_TEXT",
+     "(ノード, s0)"
+    ],
+    [
+     "TEXT_COPY",
+     ""
+    ],
+    [
+     "SET_CHECKED",
+     ""
+    ],
+    [
+     "INPUT_SET",
+     ""
+    ],
+    [
+     "AREA_APPEND",
+     ""
+    ],
+    [
+     "LIST_SET_ITEMS",
+     ""
+    ],
+    [
+     "LIST_SELECT",
+     ""
+    ],
+    [
+     "GRAPH_SET",
+     "(ノード, a1 = 系列 0 か 1, s0 = % を空白で区切る)"
+    ],
+    [
+     "…",
+     "ADD_STYLE、FOCUS、CREATE_WINDOW など"
+    ],
+    [
+     "CREATE_TIMER",
+     "(a0 = 間隔) 1 回ごとに TIMER イベント"
+    ],
+    [
+     "…",
+     "ほかの CREATE_*"
+    ]
+   ]
+  },
+  "schema.os-service": {
+   "layer": "contract",
+   "title": "OsService",
+   "code": [
+    "contracts/myos/services.contract.mln",
+    "OsService"
+   ],
+   "kind": "enum",
+   "src": "## schema.os-service  OsService\n列挙・contracts/myos/services.contract.mln の OsService\n値 NONE：\n値 REQUEST：(Request*) → 1 で列に入った、0 で満杯\n値 REPLY：(i32 *out) → 1 で返事あり\n値 POLL：(Event*) → 1 でイベントあり\n値 …：FS_OPEN から FS_IS_DIR まで、ファイルの 11 個\n値 PROC_SPAWN：\n値 …：PROC_BIND から PROC_FEED まで 5 個\n値 PROC_STATS：(ProcStatsArgs) 全部のプロセスと CPU の時間\n値 PROC_ARGS：\n値 LOG：\n\nOS_CALL で頼めることの一覧。アプリから見た OS の API はこれだけ。\n",
+   "text": "OS_CALL で頼めることの一覧。アプリから見た OS の API はこれだけ。",
+   "values": [
+    [
+     "NONE",
+     ""
+    ],
+    [
+     "REQUEST",
+     "(Request*) → 1 で列に入った、0 で満杯"
+    ],
+    [
+     "REPLY",
+     "(i32 *out) → 1 で返事あり"
+    ],
+    [
+     "POLL",
+     "(Event*) → 1 でイベントあり"
+    ],
+    [
+     "…",
+     "FS_OPEN から FS_IS_DIR まで、ファイルの 11 個"
+    ],
+    [
+     "PROC_SPAWN",
+     ""
+    ],
+    [
+     "…",
+     "PROC_BIND から PROC_FEED まで 5 個"
+    ],
+    [
+     "PROC_STATS",
+     "(ProcStatsArgs) 全部のプロセスと CPU の時間"
+    ],
+    [
+     "PROC_ARGS",
+     ""
+    ],
+    [
+     "LOG",
+     ""
+    ]
+   ]
+  },
+  "ctx.user": {
+   "layer": "context",
+   "title": "アプリのプロセス（ユーザ空間）",
+   "code": null,
+   "kind": "context",
+   "run": "アプリのスレッド",
+   "src": "## ctx.user  アプリのプロセス（ユーザ空間）\n実行の文脈\n走る：アプリのスレッド\n\nアプリと、それがリンクした SDK と MyStdLib。OS の中には [[kernel.os-call]] でしか入れない。\n",
+   "text": "アプリと、それがリンクした SDK と MyStdLib。OS の中には [[kernel.os-call]] でしか入れない。"
+  },
+  "ctx.syscall": {
+   "layer": "context",
+   "title": "OS_CALL の中",
+   "code": null,
+   "kind": "context",
+   "run": "アプリのスレッド",
+   "kernel": true,
+   "src": "## ctx.syscall  OS_CALL の中\n実行の文脈\n走る：アプリのスレッド\nカーネルの中：はい\n\n呼んだプロセスの代わりに、カーネルの権限で走る。ユーザメモリの読み書きは、ここでコピーして済ませる（[[os.gateway]]）。\n",
+   "text": "呼んだプロセスの代わりに、カーネルの権限で走る。ユーザメモリの読み書きは、ここでコピーして済ませる（[[os.gateway]]）。"
+  },
+  "ctx.service": {
+   "layer": "context",
+   "title": "service task",
+   "code": null,
+   "kind": "context",
+   "run": "service task（OS のスレッド）",
+   "kernel": true,
+   "src": "## ctx.service  service task\n実行の文脈\n走る：service task（OS のスレッド）\nカーネルの中：はい\n\nMyOS 自身のスレッド。[[os.request-ring]] から要求を取り出して答える。[[os.dom]] に触るのはこのスレッドだけ。\n",
+   "text": "MyOS 自身のスレッド。[[os.request-ring]] から要求を取り出して答える。[[os.dom]] に触るのはこのスレッドだけ。"
+  },
+  "ctx.irq": {
+   "layer": "context",
+   "title": "割り込みの中",
+   "code": null,
+   "kind": "context",
+   "run": "割り込み",
+   "kernel": true,
+   "src": "## ctx.irq  割り込みの中\n実行の文脈\n走る：割り込み\nカーネルの中：はい\n\nタイマーなどの割り込みで、走っていたものを止めて入る。スレッドの切り替えはここで起きる。\n",
+   "text": "タイマーなどの割り込みで、走っていたものを止めて入る。スレッドの切り替えはここで起きる。"
+  },
+  "policy.sdk-no-myos": {
+   "layer": "policy",
+   "title": "SDK は MyOS を import しない",
+   "code": null,
+   "kind": "note",
+   "src": "## policy.sdk-no-myos  SDK は MyOS を import しない\n方針\n\n境界はプロトコルだけ。共有するのはデータだけの契約（[[schema.request]] など）。新しい機能は、契約と SDK の関数の組で足す。\n",
+   "text": "境界はプロトコルだけ。共有するのはデータだけの契約（[[schema.request]] など）。新しい機能は、契約と SDK の関数の組で足す。"
+  }
+ },
+ "flows": [
+  {
+   "id": "ui",
+   "boxes": [
+    {
+     "id": "view",
+     "node": "app.tasks-view",
+     "title": "view()",
+     "ns": "Tasks",
+     "sub": "値を属性に束ねる",
+     "layer": "app"
+    },
+    {
+     "id": "tick",
+     "node": "app.tasks",
+     "title": "tick()",
+     "ns": "Tasks",
+     "sub": "@timer(1000)",
+     "layer": "app"
+    },
+    {
+     "id": "transport",
+     "node": "lib.transport",
+     "title": "request(m)",
+     "ns": "app_transport",
+     "sub": "送って返事を待つ",
+     "layer": "lib"
+    },
+    {
+     "id": "send",
+     "node": "lib.send-text",
+     "title": "send_text(id, s)",
+     "short": "send_text",
+     "ns": "elements",
+     "sub": "変わった時だけ送る",
+     "layer": "lib"
+    },
+    {
+     "id": "next",
+     "node": "lib.next",
+     "title": "next()",
+     "ns": "runtime",
+     "sub": "イベントを 1 つ処理",
+     "layer": "lib"
+    },
+    {
+     "id": "serve",
+     "node": "os.serve",
+     "title": "serve()",
+     "ns": "request_channel",
+     "sub": "取り出して振り分ける",
+     "layer": "os"
+    },
+    {
+     "id": "handle",
+     "node": "os.ui-protocol",
+     "title": "handle(m)",
+     "ns": "ui_protocol",
+     "sub": "op を実行する",
+     "layer": "os"
+    },
+    {
+     "id": "dom",
+     "node": "os.dom",
+     "title": "DOM",
+     "slots": [
+      "Window",
+      "Label",
+      "Graph"
+     ],
+     "layer": "os"
+    },
+    {
+     "id": "gateway",
+     "node": "os.gateway",
+     "title": "request(pid, req)",
+     "short": "gateway",
+     "ns": "request_gateway",
+     "sub": "pid を入れてコピー",
+     "layer": "os"
+    },
+    {
+     "id": "ring",
+     "node": "os.request-ring",
+     "title": "要求の列",
+     "slots": [
+      "Request",
+      "Request",
+      "Request"
+     ],
+     "slotSchema": "schema.request",
+     "layer": "os"
+    },
+    {
+     "id": "oscall",
+     "node": "kernel.os-call",
+     "title": "OS_CALL",
+     "ns": "syscall",
+     "sub": "OS への入口",
+     "layer": "kernel"
+    }
+   ],
+   "regions": [
+    {
+     "node": "ctx.user",
+     "boxes": [
+      "view",
+      "tick",
+      "transport",
+      "send",
+      "next"
+     ],
+     "label": "タスクマネージャのプロセス（ユーザ空間）"
+    },
+    {
+     "node": "ctx.service",
+     "boxes": [
+      "serve",
+      "handle",
+      "dom"
+     ],
+     "label": "service task",
+     "at": "br"
+    },
+    {
+     "node": "ctx.syscall",
+     "boxes": [
+      "oscall",
+      "gateway"
+     ],
+     "label": "OS_CALL の中（呼んだプロセスの代わりに走る）",
+     "label3": "OS_CALL の中",
+     "at": "bl"
+    }
+   ],
+   "steps": [
+    {
+     "kind": "call",
+     "from": "view",
+     "to": "send",
+     "verb": "値が変わった",
+     "label": "view() の Label が読む値が変わったので、属性のフック Label_text が send_text を呼ぶ",
+     "ref": "app.tasks-view"
+    },
+    {
+     "kind": "call",
+     "from": "send",
+     "to": "transport",
+     "verb": "詰める",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "domain",
+       "op",
+       "owner",
+       "a0 … a5",
+       "*s0",
+       "s0_len"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "Request に UI・SET_TEXT・ノード・文字を詰め、runtime.send から app_transport.request へ",
+     "ref": "lib.send-text"
+    },
+    {
+     "kind": "syscall",
+     "from": "transport",
+     "to": "oscall",
+     "verb": "OS_CALL(REQUEST)",
+     "data": {
+      "label": "&Request",
+      "chip": false,
+      "note": "Request のアドレスだけを渡す。中身は [[os.gateway]] がユーザメモリから読む。",
+      "schema": "schema.request"
+     },
+     "label": "OS_CALL(REQUEST) で OS に入る",
+     "ref": "lib.transport"
+    },
+    {
+     "kind": "call",
+     "from": "oscall",
+     "to": "gateway",
+     "verb": "pid を付ける",
+     "label": "カーネルが pid を付けて os_call_router に渡し、REQUEST は request_gateway.request へ",
+     "ref": "kernel.os-call"
+    },
+    {
+     "kind": "msg",
+     "from": "gateway",
+     "to": "ring",
+     "verb": "並べる",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "owner",
+       "*s0",
+       "*s1",
+       "result_out"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "owner を pid で上書きし、文字列と出力先を OS 側にコピーして、列に並べる",
+     "ops": [
+      {
+       "node": "os.request-ring",
+       "kind": "入れる"
+      }
+     ],
+     "ref": "os.gateway"
+    },
+    {
+     "kind": "signal",
+     "from": "ring",
+     "to": "serve",
+     "verb": "SERVICE で起こす",
+     "label": "並べたら、SERVICE の通知で service task を起こす",
+     "ref": "os.request-ring"
+    },
+    {
+     "kind": "call",
+     "from": "serve",
+     "to": "handle",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "domain",
+       "op"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "列から取り出し、domain が UI なので ui_protocol.handle へ",
+     "ops": [
+      {
+       "node": "os.request-ring",
+       "kind": "出す"
+      }
+     ],
+     "branches": [
+      [
+       "domain が UI",
+       "[[os.ui-protocol]] の handle"
+      ],
+      [
+       "domain が APP",
+       "shell_protocol.handle"
+      ],
+      [
+       "ほか",
+       "INVALID_DOMAIN を返す"
+      ]
+     ],
+     "ref": "os.serve"
+    },
+    {
+     "kind": "data",
+     "from": "handle",
+     "to": "dom",
+     "verb": "書き換える",
+     "label": "op が SET_TEXT なので、a0 のノードの文字を s0 に書き換える",
+     "ref": "os.ui-protocol"
+    },
+    {
+     "kind": "return",
+     "from": "serve",
+     "to": "transport",
+     "verb": "結果と REPLY",
+     "data": {
+      "label": "i32",
+      "type": "i32（runtime.send が RequestStatus に直す）",
+      "chip": false
+     },
+     "label": "結果を返事の channel に入れ、REPLY でアプリを起こす。アプリは OS_CALL(REPLY) で受け取る",
+     "ref": "os.serve"
+    },
+    {
+     "kind": "msg",
+     "from": "dom",
+     "to": "next",
+     "verb": "TIMER",
+     "ref": "os.events",
+     "data": {
+      "label": "Event",
+      "fields": [
+       "owner",
+       "id",
+       "kind"
+      ],
+      "schema": "schema.event"
+     },
+     "label": "時間が来ると、DOM のタイマーが TIMER の Event を持ち主の列へ送る。アプリは OS_CALL(POLL) で受け取る"
+    },
+    {
+     "kind": "call",
+     "from": "next",
+     "to": "tick",
+     "verb": "ハンドラを呼ぶ",
+     "label": "next() が TIMER のハンドラ tick() を呼ぶ。tick() が値を変えると 1 に戻る",
+     "ref": "lib.next"
+    },
+    {
+     "kind": "return",
+     "from": "gateway",
+     "to": "oscall",
+     "verb": "false",
+     "alt": {
+      "at": 4,
+      "when": "満杯"
+     },
+     "ref": "gateway.full",
+     "label": "列が満杯なら、gateway は REQUEST_SPACE の印を付けて false を返す"
+    },
+    {
+     "kind": "return",
+     "from": "oscall",
+     "to": "transport",
+     "verb": "0 を返す",
+     "alt": {
+      "at": 4,
+      "when": "満杯"
+     },
+     "ref": "lib.transport",
+     "label": "OS_CALL は 0 を返す。アプリの request は REQUEST_SPACE を待ってから出し直す。serve が列から 1 つ取り出すたびに REQUEST_SPACE を通知する"
+    }
+   ],
+   "src": "# docs/atlas/flows/ui.md\n# UI の要求\nタスクマネージャの表示の変更が DOM に届くまで\nはじめ：5\n\n文脈 [[ctx.user]] view tick transport send next：タスクマネージャのプロセス（ユーザ空間）\n文脈 [[ctx.service]] serve handle dom：service task ｜位置 br\n文脈 [[ctx.syscall]] oscall gateway：OS_CALL の中（呼んだプロセスの代わりに走る） ｜短く OS_CALL の中 ｜位置 bl\n\n箱 view [[app.tasks-view]] view() ｜名前空間 Tasks ｜説明 値を属性に束ねる\n箱 tick [[app.tasks]] tick() ｜名前空間 Tasks ｜説明 @timer(1000)\n箱 transport [[lib.transport]] request(m) ｜名前空間 app_transport ｜説明 送って返事を待つ\n箱 send [[lib.send-text]] send_text(id, s) ｜略 send_text ｜名前空間 elements ｜説明 変わった時だけ送る\n箱 next [[lib.next]] next() ｜名前空間 runtime ｜説明 イベントを 1 つ処理\n箱 serve [[os.serve]] serve() ｜名前空間 request_channel ｜説明 取り出して振り分ける\n箱 handle [[os.ui-protocol]] handle(m) ｜名前空間 ui_protocol ｜説明 op を実行する\n箱 dom [[os.dom]] DOM ｜中身 Window, Label, Graph\n箱 gateway [[os.gateway]] request(pid, req) ｜略 gateway ｜名前空間 request_gateway ｜説明 pid を入れてコピー\n箱 ring [[os.request-ring]] 要求の列 ｜中身 Request, Request, Request ｜中身の形 [[schema.request]]\n箱 oscall [[kernel.os-call]] OS_CALL ｜名前空間 syscall ｜説明 OS への入口\n\n1. view → send  呼び出し「値が変わった」\n   view() の Label が読む値が変わったので、属性のフック Label_text が send_text を呼ぶ\n2. send → transport  呼び出し「詰める」 渡す Request{domain, op, owner, a0 … a5, *s0, s0_len}\n   Request に UI・SET_TEXT・ノード・文字を詰め、runtime.send から app_transport.request へ\n3. transport → oscall  syscall「OS_CALL(REQUEST)」 渡す &Request 札なし\n   OS_CALL(REQUEST) で OS に入る\n   渡す値：Request のアドレスだけを渡す。中身は [[os.gateway]] がユーザメモリから読む。\n4. oscall → gateway  呼び出し「pid を付ける」\n   カーネルが pid を付けて os_call_router に渡し、REQUEST は request_gateway.request へ\n5. gateway → ring  列を通す「並べる」 渡す Request{owner, *s0, *s1, result_out}\n   owner を pid で上書きし、文字列と出力先を OS 側にコピーして、列に並べる\n   操作：[[os.request-ring]] 入れる\n6. ring → serve  通知「SERVICE で起こす」\n   並べたら、SERVICE の通知で service task を起こす\n7. serve → handle  呼び出し 渡す Request{domain, op}\n   列から取り出し、domain が UI なので ui_protocol.handle へ\n   操作：[[os.request-ring]] 出す\n   分かれる：domain が UI → [[os.ui-protocol]] の handle ／ domain が APP → shell_protocol.handle ／ ほか → INVALID_DOMAIN を返す\n8. handle → dom  読み書き「書き換える」\n   op が SET_TEXT なので、a0 のノードの文字を s0 に書き換える\n9. serve → transport  戻り「結果と REPLY」 渡す i32「i32（runtime.send が RequestStatus に直す）」 札なし\n   結果を返事の channel に入れ、REPLY でアプリを起こす。アプリは OS_CALL(REPLY) で受け取る\n10. dom → next  列を通す「TIMER」 渡す Event{owner, id, kind} [[os.events]]\n   時間が来ると、DOM のタイマーが TIMER の Event を持ち主の列へ送る。アプリは OS_CALL(POLL) で受け取る\n11. next → tick  呼び出し「ハンドラを呼ぶ」\n   next() が TIMER のハンドラ tick() を呼ぶ。tick() が値を変えると 1 に戻る\nもし 満杯（5 の代わり）. gateway → oscall  戻り「false」 [[gateway.full]]\n   列が満杯なら、gateway は REQUEST_SPACE の印を付けて false を返す\nもし 満杯（5 の代わり）. oscall → transport  戻り「0 を返す」 [[lib.transport]]\n   OS_CALL は 0 を返す。アプリの request は REQUEST_SPACE を待ってから出し直す。serve が列から 1 つ取り出すたびに REQUEST_SPACE を通知する\n",
+   "tab": "UI の要求",
+   "title": "タスクマネージャの表示の変更が DOM に届くまで",
+   "start": [
+    4,
+    "os.gateway"
+   ]
+  },
+  {
+   "id": "cpu",
+   "boxes": [
+    {
+     "id": "tasks",
+     "node": "app.tasks",
+     "title": "tick()",
+     "ns": "Tasks",
+     "sub": "1 秒ごとに読む",
+     "layer": "app"
+    },
+    {
+     "id": "stats",
+     "node": "lib.process-stats",
+     "title": "stats()",
+     "ns": "process",
+     "sub": "MyStdLib",
+     "layer": "lib"
+    },
+    {
+     "id": "fill",
+     "node": "os.proc-stats",
+     "title": "fill(out)",
+     "ns": "proc_stats",
+     "sub": "集めて書き込む",
+     "layer": "os"
+    },
+    {
+     "id": "dispatch",
+     "node": "kernel.irq-dispatch",
+     "title": "dispatch(sp)",
+     "ns": "irq_dispatch",
+     "sub": "原因を読む",
+     "layer": "kernel"
+    },
+    {
+     "id": "ktick",
+     "node": "kernel.tick",
+     "title": "tick(sp)",
+     "ns": "scheduler",
+     "sub": "追いつく",
+     "layer": "kernel"
+    },
+    {
+     "id": "resched",
+     "node": "kernel.reschedule",
+     "title": "reschedule(sp)",
+     "ns": "scheduler",
+     "sub": "次を選ぶ",
+     "layer": "kernel"
+    },
+    {
+     "id": "charge",
+     "node": "kernel.cpu-time",
+     "title": "charge_elapsed()",
+     "short": "charge_elapsed",
+     "ns": "scheduler",
+     "sub": "前回からを足す",
+     "layer": "kernel"
+    },
+    {
+     "id": "counters",
+     "node": "kernel.cpu-counters",
+     "title": "CPU 時間の置き場",
+     "slots": [
+      "cpu_time",
+      "kernel",
+      "idle"
+     ],
+     "layer": "kernel"
+    },
+    {
+     "id": "timer",
+     "node": "emulator.timer.clock",
+     "title": "タイマーの時計",
+     "bits": [
+      [
+       "tick 数",
+       24
+      ],
+      [
+       "進み",
+       8
+      ]
+     ],
+     "layer": "emu"
+    }
+   ],
+   "regions": [
+    {
+     "node": "ctx.user",
+     "boxes": [
+      "tasks",
+      "stats"
+     ],
+     "label": "タスクマネージャのプロセス"
+    },
+    {
+     "node": "ctx.syscall",
+     "boxes": [
+      "fill"
+     ],
+     "label": "OS_CALL の中",
+     "at": "r"
+    },
+    {
+     "node": "ctx.irq",
+     "boxes": [
+      "dispatch",
+      "ktick",
+      "resched"
+     ],
+     "label": "割り込みの中"
+    }
+   ],
+   "steps": [
+    {
+     "kind": "signal",
+     "from": "timer",
+     "to": "dispatch",
+     "verb": "tick の割り込み",
+     "label": "タイマーが tick の割り込みを上げる",
+     "ref": "emulator.timer.clock"
+    },
+    {
+     "kind": "call",
+     "from": "dispatch",
+     "to": "ktick",
+     "verb": "タイマーなら",
+     "label": "原因がタイマーなので scheduler.tick(sp) を呼ぶ",
+     "ref": "kernel.irq-dispatch"
+    },
+    {
+     "kind": "call",
+     "from": "ktick",
+     "to": "resched",
+     "verb": "切り替えへ",
+     "label": "tick 数を時計に追いつかせて、reschedule(sp) へ",
+     "ref": "kernel.tick"
+    },
+    {
+     "kind": "call",
+     "from": "resched",
+     "to": "charge",
+     "verb": "区切る",
+     "label": "切り替えの最初に charge_elapsed() で区切る",
+     "ref": "kernel.reschedule"
+    },
+    {
+     "kind": "data",
+     "from": "timer",
+     "to": "charge",
+     "verb": "時計を読む",
+     "ref": "kernel.cpu-time",
+     "data": {
+      "label": "clock",
+      "schema": "emulator.timer.clock",
+      "fields": [
+       "tick 数",
+       "進み"
+      ]
+     },
+     "label": "時計を読み、tick 数 × 256 ＋ 進みを今の時刻にする"
+    },
+    {
+     "kind": "data",
+     "from": "charge",
+     "to": "counters",
+     "verb": "足す",
+     "ref": "kernel.cpu-counters",
+     "data": {
+      "label": "spent",
+      "type": "i32 spent（前回からの時間、1/256 tick 単位）"
+     },
+     "label": "前回からの時間を、それまで走っていたものに足す"
+    },
+    {
+     "kind": "call",
+     "from": "tasks",
+     "to": "stats",
+     "verb": "毎秒",
+     "label": "タスクマネージャが 1 秒ごとに process.stats() を呼ぶ",
+     "ref": "app.tasks"
+    },
+    {
+     "kind": "syscall",
+     "from": "stats",
+     "to": "fill",
+     "verb": "OS_CALL(PROC_STATS)",
+     "data": {
+      "label": "&ProcStatsArgs",
+      "type": "ProcStatsArgs { ProcStats *result_out; } のアドレス",
+      "chip": false
+     },
+     "label": "OS_CALL(PROC_STATS) で OS に入り、router を通って proc_stats.fill へ",
+     "ref": "lib.process-stats"
+    },
+    {
+     "kind": "call",
+     "from": "fill",
+     "to": "charge",
+     "verb": "先に足す",
+     "label": "fill はまず charge_elapsed() で今までの分を足す",
+     "ref": "os.proc-stats"
+    },
+    {
+     "kind": "data",
+     "from": "counters",
+     "to": "fill",
+     "verb": "読む",
+     "data": {
+      "label": "CpuTimes",
+      "schema": "schema.cputimes"
+     },
+     "label": "プロセス・OS のスレッド・idle の時間を読み、CpuTimes と procs にまとめる",
+     "ref": "kernel.cpu-counters"
+    },
+    {
+     "kind": "return",
+     "from": "fill",
+     "to": "stats",
+     "verb": "copy_out",
+     "data": {
+      "label": "ProcStats",
+      "fields": [
+       "cpu",
+       "procs[16]"
+      ],
+      "schema": "schema.procstats"
+     },
+     "label": "できた ProcStats をユーザメモリへ書き戻す",
+     "ref": "os.proc-stats"
+    },
+    {
+     "kind": "return",
+     "from": "stats",
+     "to": "tasks",
+     "data": {
+      "label": "ProcStats",
+      "fields": [
+       "cpu",
+       "procs[16]"
+      ],
+      "schema": "schema.procstats"
+     },
+     "label": "ProcStats を受け取り、前回との差から % を出す",
+     "ref": "lib.process-stats"
+    }
+   ],
+   "src": "# docs/atlas/flows/cpu.md\n# CPU 時間\nCPU 時間が数えられ、タスクマネージャに届くまで\nはじめ：5\n\n文脈 [[ctx.user]] tasks stats：タスクマネージャのプロセス\n文脈 [[ctx.syscall]] fill：OS_CALL の中 ｜位置 r\n文脈 [[ctx.irq]] dispatch ktick resched：割り込みの中\n\n箱 tasks [[app.tasks]] tick() ｜名前空間 Tasks ｜説明 1 秒ごとに読む\n箱 stats [[lib.process-stats]] stats() ｜名前空間 process ｜説明 MyStdLib\n箱 fill [[os.proc-stats]] fill(out) ｜名前空間 proc_stats ｜説明 集めて書き込む\n箱 dispatch [[kernel.irq-dispatch]] dispatch(sp) ｜名前空間 irq_dispatch ｜説明 原因を読む\n箱 ktick [[kernel.tick]] tick(sp) ｜名前空間 scheduler ｜説明 追いつく\n箱 resched [[kernel.reschedule]] reschedule(sp) ｜名前空間 scheduler ｜説明 次を選ぶ\n箱 charge [[kernel.cpu-time]] charge_elapsed() ｜略 charge_elapsed ｜名前空間 scheduler ｜説明 前回からを足す\n箱 counters [[kernel.cpu-counters]] CPU 時間の置き場 ｜中身 cpu_time, kernel, idle\n箱 timer [[emulator.timer.clock]] タイマーの時計 ｜ビット tick 数 24、進み 8\n\n1. timer → dispatch  通知「tick の割り込み」\n   タイマーが tick の割り込みを上げる\n2. dispatch → ktick  呼び出し「タイマーなら」\n   原因がタイマーなので scheduler.tick(sp) を呼ぶ\n3. ktick → resched  呼び出し「切り替えへ」\n   tick 数を時計に追いつかせて、reschedule(sp) へ\n4. resched → charge  呼び出し「区切る」\n   切り替えの最初に charge_elapsed() で区切る\n5. timer → charge  読み書き「時計を読む」 渡す clock=[[emulator.timer.clock]]{tick 数, 進み} [[kernel.cpu-time]]\n   時計を読み、tick 数 × 256 ＋ 進みを今の時刻にする\n6. charge → counters  読み書き「足す」 渡す spent「i32 spent（前回からの時間、1/256 tick 単位）」 [[kernel.cpu-counters]]\n   前回からの時間を、それまで走っていたものに足す\n7. tasks → stats  呼び出し「毎秒」\n   タスクマネージャが 1 秒ごとに process.stats() を呼ぶ\n8. stats → fill  syscall「OS_CALL(PROC_STATS)」 渡す &ProcStatsArgs「ProcStatsArgs { ProcStats *result_out; } のアドレス」 札なし\n   OS_CALL(PROC_STATS) で OS に入り、router を通って proc_stats.fill へ\n9. fill → charge  呼び出し「先に足す」\n   fill はまず charge_elapsed() で今までの分を足す\n10. counters → fill  読み書き「読む」 渡す CpuTimes\n   プロセス・OS のスレッド・idle の時間を読み、CpuTimes と procs にまとめる\n11. fill → stats  戻り「copy_out」 渡す ProcStats{cpu, procs[16]}\n   できた ProcStats をユーザメモリへ書き戻す\n12. stats → tasks  戻り 渡す ProcStats{cpu, procs[16]}\n   ProcStats を受け取り、前回との差から % を出す\n",
+   "tab": "CPU 時間",
+   "title": "CPU 時間が数えられ、タスクマネージャに届くまで",
+   "start": [
+    4,
+    "kernel.cpu-time"
+   ]
+  }
+ ],
+ "papers": {
+  "app.tasks": {
+   "id": "app.tasks",
+   "boxes": [
+    {
+     "id": "stats",
+     "node": "lib.process-stats",
+     "title": "process.stats()",
+     "layer": "body",
+     "sub": "今の読み"
+    },
+    {
+     "id": "share",
+     "node": "app.tasks-share",
+     "title": "share(part, span)",
+     "layer": "body",
+     "sub": "差の比を % に"
+    },
+    {
+     "id": "show",
+     "node": "app.tasks-show",
+     "title": "t.show()",
+     "layer": "body",
+     "sub": "属性に移す"
+    },
+    {
+     "id": "last",
+     "node": "app.tasks-last",
+     "title": "t.last",
+     "layer": "state",
+     "slots": [
+      "cpu",
+      "procs"
+     ],
+     "slotSchema": "schema.procstats"
+    },
+    {
+     "id": "series",
+     "node": "app.tasks-series",
+     "title": "グラフの系列",
+     "layer": "state",
+     "slots": [
+      "CPU",
+      "OS",
+      "選んだ行"
+     ]
+    }
+   ],
+   "regions": [],
+   "steps": [
+    {
+     "kind": "call",
+     "from": "stats",
+     "to": "share",
+     "ref": "app.tasks-share",
+     "data": {
+      "label": "ProcStats",
+      "fields": [
+       "cpu",
+       "procs[16]"
+      ],
+      "schema": "schema.procstats"
+     },
+     "label": "今の読みと t.last の差から、CPU 全体・OS・各プロセスの割合を出す"
+    },
+    {
+     "kind": "data",
+     "from": "last",
+     "to": "share",
+     "verb": "前回",
+     "data": {
+      "label": "ProcStats",
+      "chip": false,
+      "schema": "schema.procstats"
+     },
+     "label": "前回の読み t.last を使う",
+     "ref": "app.tasks-last"
+    },
+    {
+     "kind": "data",
+     "from": "share",
+     "to": "series",
+     "verb": "足す",
+     "ref": "app.tasks-series",
+     "data": {
+      "label": "%",
+      "type": "i32（0〜100）"
+     },
+     "label": "t.record で、割合をグラフの系列に 1 つ足す"
+    },
+    {
+     "kind": "data",
+     "from": "stats",
+     "to": "last",
+     "ref": "app.tasks-last",
+     "data": {
+      "label": "ProcStats",
+      "schema": "schema.procstats"
+     },
+     "label": "t.last = now（次の差のために覚える）"
+    },
+    {
+     "kind": "call",
+     "from": "share",
+     "to": "show",
+     "verb": "移す",
+     "ref": "app.tasks-show",
+     "label": "t.show() で、系列と表を view() の属性が読む値に移す。変わった値だけが送られる"
+    }
+   ],
+   "src": "# docs/atlas/flows/app.tasks.md\n# Tasks.tick の中\n入口：stats\n\n帯 body 関数の中／tick・左から順に（app）\n  箱 stats [[lib.process-stats]] process.stats() ｜説明 今の読み\n  箱 share [[app.tasks-share]] share(part, span) ｜説明 差の比を % に\n  箱 show [[app.tasks-show]] t.show() ｜説明 属性に移す\n帯 state Tasks の状態／t の中（app）\n  箱 last [[app.tasks-last]] t.last ｜中身 cpu, procs ｜中身の形 [[schema.procstats]]\n  箱 series [[app.tasks-series]] グラフの系列 ｜中身 CPU, OS, 選んだ行\n\n1. stats → share  呼び出し 渡す ProcStats{cpu, procs[16]} [[app.tasks-share]]\n   今の読みと t.last の差から、CPU 全体・OS・各プロセスの割合を出す\n2. last → share  読み書き「前回」 渡す ProcStats 札なし\n   前回の読み t.last を使う\n3. share → series  読み書き「足す」 渡す %「i32（0〜100）」 [[app.tasks-series]]\n   t.record で、割合をグラフの系列に 1 つ足す\n4. stats → last  読み書き 渡す ProcStats [[app.tasks-last]]\n   t.last = now（次の差のために覚える）\n5. share → show  呼び出し「移す」 [[app.tasks-show]]\n   t.show() で、系列と表を view() の属性が読む値に移す。変わった値だけが送られる\n",
+   "entry": "stats",
+   "bands": [
+    {
+     "id": "body",
+     "name": "関数の中",
+     "sub": "tick・左から順に",
+     "tone": "app"
+    },
+    {
+     "id": "state",
+     "name": "Tasks の状態",
+     "sub": "t の中",
+     "tone": "app"
+    }
+   ],
+   "tab": "Tasks.tick",
+   "title": "Tasks.tick の中",
+   "start": [
+    0,
+    "app.tasks-share"
+   ]
+  },
+  "kernel.cpu-time": {
+   "id": "kernel.cpu-time",
+   "boxes": [
+    {
+     "id": "read",
+     "node": "charge.read",
+     "title": "now = 時計",
+     "layer": "body",
+     "sub": "read_word(TIMER_ADDR)"
+    },
+    {
+     "id": "charge",
+     "node": "kernel.charge",
+     "title": "charge(now − 前回)",
+     "layer": "body",
+     "sub": "持ち主に足す"
+    },
+    {
+     "id": "set",
+     "node": "charge.set",
+     "title": "前回 = now",
+     "layer": "body",
+     "sub": "g_clock_charged"
+    },
+    {
+     "id": "who",
+     "node": "kernel.charge-to",
+     "title": "g_charge_to",
+     "layer": "vars",
+     "slots": [
+      "枠",
+      "None"
+     ]
+    },
+    {
+     "id": "counters",
+     "node": "kernel.cpu-counters",
+     "title": "CPU 時間の置き場",
+     "layer": "vars",
+     "slots": [
+      "cpu_time",
+      "kernel",
+      "idle"
+     ]
+    },
+    {
+     "id": "last",
+     "node": "kernel.clock-charged",
+     "title": "g_clock_charged",
+     "layer": "vars",
+     "slots": [
+      "前回の時刻"
+     ]
+    },
+    {
+     "id": "clock",
+     "node": "emulator.timer.clock",
+     "title": "タイマーの時計",
+     "layer": "hw",
+     "bits": [
+      [
+       "tick 数",
+       24
+      ],
+      [
+       "進み",
+       8
+      ]
+     ]
+    }
+   ],
+   "regions": [],
+   "steps": [
+    {
+     "kind": "data",
+     "from": "clock",
+     "to": "read",
+     "verb": "読む",
+     "ref": "charge.read",
+     "data": {
+      "label": "clock",
+      "schema": "emulator.timer.clock",
+      "fields": [
+       "tick 数",
+       "進み"
+      ]
+     },
+     "label": "時計を 1 語読む。tick 数 × 256 ＋ 進みが今の時刻"
+    },
+    {
+     "kind": "call",
+     "from": "read",
+     "to": "charge",
+     "ref": "kernel.charge",
+     "data": {
+      "label": "spent",
+      "type": "i32 spent = now − g_clock_charged",
+      "chip": false
+     },
+     "label": "now − 前回 を spent として charge に渡す"
+    },
+    {
+     "kind": "data",
+     "from": "who",
+     "to": "charge",
+     "verb": "持ち主",
+     "label": "今の時間の持ち主を読む（切り替えの時にスケジューラが決めた）",
+     "ref": "kernel.charge-to"
+    },
+    {
+     "kind": "data",
+     "from": "charge",
+     "to": "counters",
+     "verb": "足す",
+     "ref": "kernel.cpu-counters",
+     "data": {
+      "label": "spent",
+      "type": "i32 spent（時計の単位）"
+     },
+     "label": "ユーザスレッドならそのプロセスの cpu_time、カーネルスレッドなら kernel、無ければ idle に足す",
+     "branches": [
+      [
+       "g_charge_to がユーザスレッド",
+       "そのプロセスの cpu_time"
+      ],
+      [
+       "カーネルスレッド",
+       "g_kernel_time"
+      ],
+      [
+       "None（走るものが無い）",
+       "g_idle_time"
+      ]
+     ]
+    },
+    {
+     "kind": "call",
+     "from": "charge",
+     "to": "set",
+     "ref": "charge.set",
+     "label": "charge から戻り、今を前回として覚える"
+    },
+    {
+     "kind": "data",
+     "from": "set",
+     "to": "last",
+     "verb": "書く",
+     "ref": "kernel.clock-charged",
+     "label": "g_clock_charged = now"
+    }
+   ],
+   "src": "# docs/atlas/flows/kernel.cpu-time.md\n# charge_elapsed の中\n入口：read\nはじめ：2\n\n帯 body 関数の中／charge_elapsed（kernel）\n  箱 read [[charge.read]] now = 時計 ｜説明 read_word(TIMER_ADDR)\n  箱 charge [[kernel.charge]] charge(now − 前回) ｜説明 持ち主に足す\n  箱 set [[charge.set]] 前回 = now ｜説明 g_clock_charged\n帯 vars カーネルの変数／scheduler（kernel）\n  箱 who [[kernel.charge-to]] g_charge_to ｜中身 枠, None\n  箱 counters [[kernel.cpu-counters]] CPU 時間の置き場 ｜中身 cpu_time, kernel, idle\n  箱 last [[kernel.clock-charged]] g_clock_charged ｜中身 前回の時刻\n帯 hw エミュレータ／タイマー（emu）\n  箱 clock [[emulator.timer.clock]] タイマーの時計 ｜ビット tick 数 24、進み 8\n\n1. clock → read  読み書き「読む」 渡す clock=[[emulator.timer.clock]]{tick 数, 進み} [[charge.read]]\n   時計を 1 語読む。tick 数 × 256 ＋ 進みが今の時刻\n2. read → charge  呼び出し 渡す spent「i32 spent = now − g_clock_charged」 札なし [[kernel.charge]]\n   now − 前回 を spent として charge に渡す\n3. who → charge  読み書き「持ち主」\n   今の時間の持ち主を読む（切り替えの時にスケジューラが決めた）\n4. charge → counters  読み書き「足す」 渡す spent「i32 spent（時計の単位）」 [[kernel.cpu-counters]]\n   ユーザスレッドならそのプロセスの cpu_time、カーネルスレッドなら kernel、無ければ idle に足す\n   分かれる：g_charge_to がユーザスレッド → そのプロセスの cpu_time ／ カーネルスレッド → g_kernel_time ／ None（走るものが無い） → g_idle_time\n5. charge → set  呼び出し [[charge.set]]\n   charge から戻り、今を前回として覚える\n6. set → last  読み書き「書く」 [[kernel.clock-charged]]\n   g_clock_charged = now\n",
+   "entry": "read",
+   "bands": [
+    {
+     "id": "body",
+     "name": "関数の中",
+     "sub": "charge_elapsed",
+     "tone": "kernel"
+    },
+    {
+     "id": "vars",
+     "name": "カーネルの変数",
+     "sub": "scheduler",
+     "tone": "kernel"
+    },
+    {
+     "id": "hw",
+     "name": "エミュレータ",
+     "sub": "タイマー",
+     "tone": "emu"
+    }
+   ],
+   "tab": "charge_elapsed",
+   "title": "charge_elapsed の中",
+   "start": [
+    1,
+    "kernel.charge"
+   ]
+  },
+  "os.gateway": {
+   "id": "os.gateway",
+   "boxes": [
+    {
+     "id": "ureq",
+     "node": "mem.user-request",
+     "title": "Request",
+     "layer": "user",
+     "slots": [
+      "op",
+      "owner",
+      "s0",
+      "out"
+     ],
+     "slotSchema": "schema.request"
+    },
+    {
+     "id": "ustr",
+     "node": "mem.user-strings",
+     "title": "文字列",
+     "layer": "user",
+     "slots": [
+      "s0",
+      "s1"
+     ]
+    },
+    {
+     "id": "read",
+     "node": "gateway.read",
+     "title": "read_user_request",
+     "layer": "body",
+     "sub": "13 語を読む"
+    },
+    {
+     "id": "owner",
+     "node": "gateway.owner",
+     "title": "owner = pid",
+     "layer": "body",
+     "sub": "名乗りを上書き"
+    },
+    {
+     "id": "copy",
+     "node": "gateway.copy",
+     "title": "copy_request_strings",
+     "layer": "body",
+     "sub": "s0・s1 を写す"
+    },
+    {
+     "id": "stage",
+     "node": "gateway.stage",
+     "title": "stage_request_outputs",
+     "layer": "body",
+     "sub": "出力先を差し替え"
+    },
+    {
+     "id": "full",
+     "node": "gateway.full",
+     "title": "満杯なら印を付ける",
+     "layer": "body",
+     "sub": "REQUEST_SPACE・false を返す"
+    },
+    {
+     "id": "slot",
+     "node": "gateway.slots",
+     "title": "gateway_slots[i]",
+     "layer": "kbuf",
+     "slots": [
+      "s0",
+      "s1",
+      "out",
+      "result"
+     ]
+    },
+    {
+     "id": "submit",
+     "node": "os.submit",
+     "title": "submit(req, ch)",
+     "layer": "kbuf",
+     "ns": "request_channel",
+     "sub": "列に並べる"
+    }
+   ],
+   "regions": [],
+   "steps": [
+    {
+     "kind": "data",
+     "from": "ureq",
+     "to": "read",
+     "verb": "13 語",
+     "ref": "gateway.read",
+     "data": {
+      "label": "Request",
+      "schema": "schema.request"
+     },
+     "label": "アプリのメモリから、Request の 13 語を 1 語ずつ読む"
+    },
+    {
+     "kind": "call",
+     "from": "read",
+     "to": "owner",
+     "ref": "gateway.owner",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "owner"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "owner を、呼んだプロセスの pid で上書きする"
+    },
+    {
+     "kind": "call",
+     "from": "owner",
+     "to": "copy",
+     "ref": "gateway.copy",
+     "label": "次に、文字列を OS 側へ写す"
+    },
+    {
+     "kind": "data",
+     "from": "ustr",
+     "to": "copy",
+     "verb": "読む",
+     "data": {
+      "label": "s0, s1",
+      "type": "s0・s1 が指す文字（長さは s0_len・s1_len）"
+     },
+     "label": "アプリのメモリから s0・s1 の文字を読む",
+     "ref": "mem.user-strings"
+    },
+    {
+     "kind": "data",
+     "from": "copy",
+     "to": "slot",
+     "verb": "写す",
+     "ref": "gateway.slots",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "*s0",
+       "*s1"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "プロセスごとの受け皿に写し、Request の s0・s1 をその写しに差し替える"
+    },
+    {
+     "kind": "call",
+     "from": "copy",
+     "to": "stage",
+     "ref": "gateway.stage",
+     "label": "次に、結果の書き込み先を用意する"
+    },
+    {
+     "kind": "data",
+     "from": "stage",
+     "to": "slot",
+     "verb": "差し替え",
+     "data": {
+      "label": "Request",
+      "fields": [
+       "result_out",
+       "result_size"
+      ],
+      "schema": "schema.request"
+     },
+     "label": "result_out を受け皿の場所に差し替え、アプリ側の元の場所を覚える",
+     "ref": "gateway.stage"
+    },
+    {
+     "kind": "call",
+     "from": "stage",
+     "to": "submit",
+     "verb": "並べる",
+     "ref": "os.submit",
+     "data": {
+      "label": "Request",
+      "schema": "schema.request"
+     },
+     "label": "OS 側の値だけになった Request を、要求の列に並べる（submit の中にも紙がある）"
+    },
+    {
+     "kind": "return",
+     "from": "submit",
+     "to": "full",
+     "verb": "false",
+     "alt": {
+      "at": 7,
+      "when": "満杯"
+     },
+     "ref": "gateway.full",
+     "label": "列が満杯なら submit は false を返す。request は REQUEST_SPACE の印を付けて、自分も false を返す"
+    }
+   ],
+   "src": "# docs/atlas/flows/os.gateway.md\n# request_gateway.request の中\n入口：read\n出口 [[os.request-ring]]：submit\n出口 [[kernel.os-call]]：full\nはじめ：2\n\n帯 user アプリのメモリ／ユーザ空間（app）\n  箱 ureq [[mem.user-request]] Request ｜中身 op, owner, s0, out ｜中身の形 [[schema.request]]\n  箱 ustr [[mem.user-strings]] 文字列 ｜中身 s0, s1\n帯 body 関数の中／request・左から順に（os）\n  箱 read [[gateway.read]] read_user_request ｜説明 13 語を読む\n  箱 owner [[gateway.owner]] owner = pid ｜説明 名乗りを上書き\n  箱 copy [[gateway.copy]] copy_request_strings ｜説明 s0・s1 を写す\n  箱 stage [[gateway.stage]] stage_request_outputs ｜説明 出力先を差し替え\n  箱 full [[gateway.full]] 満杯なら印を付ける ｜説明 REQUEST_SPACE・false を返す\n帯 kbuf OS 側／受け皿と列（os）\n  箱 slot [[gateway.slots]] gateway_slots[i] ｜中身 s0, s1, out, result\n  箱 submit [[os.submit]] submit(req, ch) ｜名前空間 request_channel ｜説明 列に並べる\n\n1. ureq → read  読み書き「13 語」 渡す Request [[gateway.read]]\n   アプリのメモリから、Request の 13 語を 1 語ずつ読む\n2. read → owner  呼び出し 渡す Request{owner} [[gateway.owner]]\n   owner を、呼んだプロセスの pid で上書きする\n3. owner → copy  呼び出し [[gateway.copy]]\n   次に、文字列を OS 側へ写す\n4. ustr → copy  読み書き「読む」 渡す s0, s1「s0・s1 が指す文字（長さは s0_len・s1_len）」\n   アプリのメモリから s0・s1 の文字を読む\n5. copy → slot  読み書き「写す」 渡す Request{*s0, *s1} [[gateway.slots]]\n   プロセスごとの受け皿に写し、Request の s0・s1 をその写しに差し替える\n6. copy → stage  呼び出し [[gateway.stage]]\n   次に、結果の書き込み先を用意する\n7. stage → slot  読み書き「差し替え」 渡す Request{result_out, result_size}\n   result_out を受け皿の場所に差し替え、アプリ側の元の場所を覚える\n8. stage → submit  呼び出し「並べる」 渡す Request [[os.submit]]\n   OS 側の値だけになった Request を、要求の列に並べる（submit の中にも紙がある）\nもし 満杯（8 の代わり）. submit → full  戻り「false」 [[gateway.full]]\n   列が満杯なら submit は false を返す。request は REQUEST_SPACE の印を付けて、自分も false を返す\n",
+   "entry": "read",
+   "ports": {
+    "os.request-ring": "submit",
+    "kernel.os-call": "full"
+   },
+   "bands": [
+    {
+     "id": "user",
+     "name": "アプリのメモリ",
+     "sub": "ユーザ空間",
+     "tone": "app"
+    },
+    {
+     "id": "body",
+     "name": "関数の中",
+     "sub": "request・左から順に",
+     "tone": "os"
+    },
+    {
+     "id": "kbuf",
+     "name": "OS 側",
+     "sub": "受け皿と列",
+     "tone": "os"
+    }
+   ],
+   "tab": "request_gateway.request",
+   "title": "request_gateway.request の中",
+   "start": [
+    1,
+    "gateway.owner"
+   ]
+  },
+  "os.submit": {
+   "id": "os.submit",
+   "boxes": [
+    {
+     "id": "encode",
+     "node": "channel.encode",
+     "title": "encode_request_words",
+     "layer": "body",
+     "sub": "24 語に詰める"
+    },
+    {
+     "id": "words",
+     "node": "channel.words",
+     "title": "words[24]",
+     "layer": "body",
+     "slots": [
+      "Request",
+      "reply_ch",
+      "空き"
+     ]
+    },
+    {
+     "id": "send",
+     "node": "kernel.ipc-send",
+     "title": "ipc.send(ch, w)",
+     "layer": "body",
+     "sub": "空きがあれば入れる"
+    },
+    {
+     "id": "ring",
+     "node": "os.request-ring",
+     "title": "要求の列",
+     "layer": "ring",
+     "slots": [
+      "24 語",
+      "24 語",
+      "24 語"
+     ]
+    },
+    {
+     "id": "notify",
+     "node": "kernel.notify-armed",
+     "title": "notify_armed(SERVICE)",
+     "layer": "sched",
+     "sub": "service task を起こす"
+    }
+   ],
+   "regions": [],
+   "steps": [
+    {
+     "kind": "data",
+     "from": "encode",
+     "to": "words",
+     "verb": "書く",
+     "data": {
+      "label": "Request",
+      "schema": "schema.request"
+     },
+     "label": "Request を 0〜12 語目に、返事の channel を 13 語目に書く",
+     "ref": "channel.encode"
+    },
+    {
+     "kind": "data",
+     "from": "words",
+     "to": "send",
+     "data": {
+      "label": "24 語",
+      "type": "i32 words[24]",
+      "chip": false
+     },
+     "label": "24 語をまとめて ipc.send に渡す",
+     "ref": "channel.words"
+    },
+    {
+     "kind": "msg",
+     "from": "send",
+     "to": "ring",
+     "verb": "入れる",
+     "data": {
+      "label": "24 語",
+      "type": "24 語の 1 通",
+      "chip": false
+     },
+     "label": "列に空きがあれば入れる。満杯なら false を返し、アプリは REQUEST_SPACE を待ってやり直す",
+     "branches": [
+      [
+       "空きがある",
+       "入れて true。続けて SERVICE を通知する"
+      ],
+      [
+       "満杯",
+       "入れずに false。通知もしない（呼んだ側がやり直す）"
+      ]
+     ],
+     "ref": "kernel.ipc-send"
+    },
+    {
+     "kind": "call",
+     "from": "send",
+     "to": "notify",
+     "verb": "入ったら",
+     "ref": "kernel.notify-armed",
+     "label": "入ったら SERVICE を通知して、それを待つ service task を起こす"
+    }
+   ],
+   "src": "# docs/atlas/flows/os.submit.md\n# request_channel.submit の中\n入口：encode\n出口 [[gateway.full]]：send\n\n帯 body 関数の中／submit・左から順に（os）\n  箱 encode [[channel.encode]] encode_request_words ｜説明 24 語に詰める\n  箱 words [[channel.words]] words[24] ｜中身 Request, reply_ch, 空き\n  箱 send [[kernel.ipc-send]] ipc.send(ch, w) ｜説明 空きがあれば入れる\n帯 ring 要求の列／全部のアプリで 1 本（os）\n  箱 ring [[os.request-ring]] 要求の列 ｜中身 24 語, 24 語, 24 語\n帯 sched スケジューラ／MyKernel（kernel）\n  箱 notify [[kernel.notify-armed]] notify_armed(SERVICE) ｜説明 service task を起こす\n\n1. encode → words  読み書き「書く」 渡す Request\n   Request を 0〜12 語目に、返事の channel を 13 語目に書く\n2. words → send  読み書き 渡す 24 語「i32 words[24]」 札なし\n   24 語をまとめて ipc.send に渡す\n3. send → ring  列を通す「入れる」 渡す 24 語「24 語の 1 通」 札なし\n   列に空きがあれば入れる。満杯なら false を返し、アプリは REQUEST_SPACE を待ってやり直す\n   分かれる：空きがある → 入れて true。続けて SERVICE を通知する ／ 満杯 → 入れずに false。通知もしない（呼んだ側がやり直す）\n4. send → notify  呼び出し「入ったら」 [[kernel.notify-armed]]\n   入ったら SERVICE を通知して、それを待つ service task を起こす\n",
+   "entry": "encode",
+   "ports": {
+    "gateway.full": "send"
+   },
+   "bands": [
+    {
+     "id": "body",
+     "name": "関数の中",
+     "sub": "submit・左から順に",
+     "tone": "os"
+    },
+    {
+     "id": "ring",
+     "name": "要求の列",
+     "sub": "全部のアプリで 1 本",
+     "tone": "os"
+    },
+    {
+     "id": "sched",
+     "name": "スケジューラ",
+     "sub": "MyKernel",
+     "tone": "kernel"
+    }
+   ],
+   "tab": "request_channel.submit",
+   "title": "request_channel.submit の中",
+   "start": [
+    0,
+    "channel.encode"
+   ]
+  }
+ },
+ "traces": [
+  {
+   "id": "ui-request",
+   "title": "Editor で「x」を打った 1 回",
+   "date": "2026-11-19T19:51:15+09:00",
+   "run": {
+    "typed": "x",
+    "before": {
+     "text": "",
+     "title": "Untitled - Editor",
+     "position": "Ln 1, Col 1"
+    },
+    "after": {
+     "text": "x",
+     "title": "*Untitled - Editor",
+     "position": "Ln 1, Col 2"
+    },
+    "watching": 44,
+    "timer_interval_us": 1000,
+    "events": 528,
+    "truncated": false
+   },
+   "build": {
+    "MyComputer": "450ae67+dirty",
+    "system/MyKernel": "28fc60f",
+    "system/MyOS": "6ac72d5",
+    "system/MyAppFramework": "b4248af",
+    "toolchain/MyStdLib": "1199138",
+    "runtime/MyEmulator": "b3f447c"
+   },
+   "threads": {
+    "-1": "none running (idle)",
+    "0": "kernel: compositor.run",
+    "2": "kernel: automation_ui.run",
+    "3": "editor"
+   },
+   "events": [
+    {
+     "seq": 0,
+     "instr": 0,
+     "thread": -1,
+     "ev": "request",
+     "method": "input.key.type"
+    },
+    {
+     "seq": 1,
+     "instr": 0,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "keyboard"
+     ]
+    },
+    {
+     "seq": 2,
+     "instr": 355,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 3,
+     "instr": 501,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "keyboard.drain_hw",
+     "ev": "enter"
+    },
+    {
+     "seq": 5,
+     "instr": 2575,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 6,
+     "instr": 2644,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 7,
+     "instr": 2861,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 8,
+     "instr": 2911,
+     "thread": -1,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 11,
+     "instr": 3509,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 12,
+     "instr": 4472,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 13,
+     "instr": 4522,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 16,
+     "instr": 5731,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "dom_widgets.dispatch_key_event",
+     "ev": "enter"
+    },
+    {
+     "seq": 17,
+     "instr": 11303,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "app_events.forward_ui_event",
+     "ev": "enter"
+    },
+    {
+     "seq": 18,
+     "instr": 11383,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "app_events.push",
+     "ev": "enter",
+     "n": "os.events"
+    },
+    {
+     "seq": 19,
+     "instr": 18459,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 21,
+     "instr": 19981,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_pid",
+     "ev": "enter"
+    },
+    {
+     "seq": 25,
+     "instr": 23331,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "app_events.forward_ui_event",
+     "ev": "enter"
+    },
+    {
+     "seq": 26,
+     "instr": 23450,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "app_events.push",
+     "ev": "enter",
+     "n": "os.events"
+    },
+    {
+     "seq": 27,
+     "instr": 30526,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 29,
+     "instr": 32048,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_pid",
+     "ev": "enter"
+    },
+    {
+     "seq": 34,
+     "instr": 56514,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "request_channel.serve",
+     "ev": "enter",
+     "n": "os.serve"
+    },
+    {
+     "seq": 35,
+     "instr": 56632,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 38,
+     "instr": 196675,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 39,
+     "instr": 197030,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 40,
+     "instr": 197271,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 41,
+     "instr": 197426,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 42,
+     "instr": 197462,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 43,
+     "instr": 197512,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 46,
+     "instr": 199273,
+     "thread": 3,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 47,
+     "instr": 200571,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.next",
+     "ev": "enter",
+     "n": "lib.next"
+    },
+    {
+     "seq": 48,
+     "instr": 200667,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 49,
+     "instr": 200709,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 50,
+     "instr": 200741,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 51,
+     "instr": 200743,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "POLL"
+    },
+    {
+     "seq": 52,
+     "instr": 201098,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 53,
+     "instr": 201332,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 54,
+     "instr": 201942,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 55,
+     "instr": 201995,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 56,
+     "instr": 202502,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 61,
+     "instr": 214768,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 68,
+     "instr": 215218,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.call_handler",
+     "ev": "enter"
+    },
+    {
+     "seq": 69,
+     "instr": 215343,
+     "thread": 3,
+     "program": "editor",
+     "fn": "Editor.edited",
+     "ev": "enter"
+    },
+    {
+     "seq": 73,
+     "instr": 217664,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Window_title",
+     "ev": "enter"
+    },
+    {
+     "seq": 74,
+     "instr": 218920,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.send_text",
+     "ev": "enter",
+     "n": "lib.send-text"
+    },
+    {
+     "seq": 75,
+     "instr": 219320,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.send",
+     "ev": "enter"
+    },
+    {
+     "seq": 76,
+     "instr": 219343,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.request",
+     "ev": "enter",
+     "n": "lib.transport"
+    },
+    {
+     "seq": 77,
+     "instr": 219385,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 78,
+     "instr": 219417,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 79,
+     "instr": 219419,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REQUEST"
+    },
+    {
+     "seq": 80,
+     "instr": 219774,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 81,
+     "instr": 220008,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 82,
+     "instr": 220618,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 83,
+     "instr": 220653,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.request",
+     "ev": "enter",
+     "n": "os.gateway"
+    },
+    {
+     "seq": 84,
+     "instr": 221107,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.read_user_request",
+     "ev": "enter",
+     "n": "gateway.read"
+    },
+    {
+     "seq": 86,
+     "instr": 223222,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.copy_request_strings",
+     "ev": "enter",
+     "n": "gateway.copy"
+    },
+    {
+     "seq": 88,
+     "instr": 226026,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.stage_request_outputs",
+     "ev": "enter",
+     "n": "gateway.stage"
+    },
+    {
+     "seq": 90,
+     "instr": 226159,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_channel.submit",
+     "ev": "enter",
+     "n": "os.submit"
+    },
+    {
+     "seq": 91,
+     "instr": 227277,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 93,
+     "instr": 228794,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.notify_armed",
+     "ev": "enter",
+     "n": "kernel.notify-armed"
+    },
+    {
+     "seq": 99,
+     "instr": 230876,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 105,
+     "instr": 231099,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 106,
+     "instr": 231131,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 107,
+     "instr": 231133,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REPLY"
+    },
+    {
+     "seq": 108,
+     "instr": 231488,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 109,
+     "instr": 231722,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 110,
+     "instr": 232332,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 111,
+     "instr": 232376,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.reply",
+     "ev": "enter"
+    },
+    {
+     "seq": 112,
+     "instr": 232683,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 117,
+     "instr": 233497,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 123,
+     "instr": 233698,
+     "thread": 3,
+     "program": "editor",
+     "fn": "sys_wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 124,
+     "instr": 233700,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ]
+    },
+    {
+     "seq": 125,
+     "instr": 234055,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 126,
+     "instr": 234289,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 127,
+     "instr": 234634,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 128,
+     "instr": 235406,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 129,
+     "instr": 235442,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 130,
+     "instr": 235492,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 131,
+     "instr": 235769,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "process.charge_time",
+     "ev": "enter"
+    },
+    {
+     "seq": 135,
+     "instr": 237685,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 136,
+     "instr": 238592,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 142,
+     "instr": 391616,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.await_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 144,
+     "instr": 393474,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "request_channel.serve",
+     "ev": "enter",
+     "n": "os.serve"
+    },
+    {
+     "seq": 145,
+     "instr": 393592,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 147,
+     "instr": 395117,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_armed",
+     "ev": "enter",
+     "n": "kernel.notify-armed"
+    },
+    {
+     "seq": 149,
+     "instr": 396675,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 150,
+     "instr": 397030,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 151,
+     "instr": 397271,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 152,
+     "instr": 397426,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 153,
+     "instr": 397462,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 154,
+     "instr": 397512,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 161,
+     "instr": 401571,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.handle",
+     "ev": "enter",
+     "n": "os.ui-protocol"
+    },
+    {
+     "seq": 162,
+     "instr": 401677,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.run_request",
+     "ev": "enter"
+    },
+    {
+     "seq": 163,
+     "instr": 401770,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.set_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 167,
+     "instr": 409909,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 169,
+     "instr": 411432,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_pid",
+     "ev": "enter"
+    },
+    {
+     "seq": 171,
+     "instr": 413871,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 174,
+     "instr": 420486,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.await_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 175,
+     "instr": 421266,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 176,
+     "instr": 421316,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 179,
+     "instr": 421863,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 180,
+     "instr": 422218,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 181,
+     "instr": 422459,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 182,
+     "instr": 422614,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 183,
+     "instr": 422650,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 184,
+     "instr": 422700,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 187,
+     "instr": 425414,
+     "thread": 3,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 194,
+     "instr": 426735,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 195,
+     "instr": 426767,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 196,
+     "instr": 426769,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REPLY"
+    },
+    {
+     "seq": 197,
+     "instr": 427124,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 198,
+     "instr": 427358,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 199,
+     "instr": 427968,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 200,
+     "instr": 428012,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.reply",
+     "ev": "enter"
+    },
+    {
+     "seq": 201,
+     "instr": 428319,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 206,
+     "instr": 430776,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 216,
+     "instr": 437474,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Label_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 218,
+     "instr": 438237,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Label_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 220,
+     "instr": 439600,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.next",
+     "ev": "enter",
+     "n": "lib.next"
+    },
+    {
+     "seq": 221,
+     "instr": 439696,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 222,
+     "instr": 439738,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 223,
+     "instr": 439770,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 224,
+     "instr": 439772,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "POLL"
+    },
+    {
+     "seq": 225,
+     "instr": 440127,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 226,
+     "instr": 440361,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 227,
+     "instr": 440971,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 228,
+     "instr": 441024,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 229,
+     "instr": 441531,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 234,
+     "instr": 453797,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 241,
+     "instr": 454318,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.call_handler",
+     "ev": "enter"
+    },
+    {
+     "seq": 242,
+     "instr": 454554,
+     "thread": 3,
+     "program": "editor",
+     "fn": "Editor.moved",
+     "ev": "enter"
+    },
+    {
+     "seq": 246,
+     "instr": 454724,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Window_title",
+     "ev": "enter"
+    },
+    {
+     "seq": 248,
+     "instr": 462226,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Label_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 249,
+     "instr": 463627,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.send_text",
+     "ev": "enter",
+     "n": "lib.send-text"
+    },
+    {
+     "seq": 250,
+     "instr": 464027,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.send",
+     "ev": "enter"
+    },
+    {
+     "seq": 251,
+     "instr": 464050,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.request",
+     "ev": "enter",
+     "n": "lib.transport"
+    },
+    {
+     "seq": 252,
+     "instr": 464092,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 253,
+     "instr": 464124,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 254,
+     "instr": 464126,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REQUEST"
+    },
+    {
+     "seq": 255,
+     "instr": 464481,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 256,
+     "instr": 464715,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 257,
+     "instr": 465325,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 258,
+     "instr": 465360,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.request",
+     "ev": "enter",
+     "n": "os.gateway"
+    },
+    {
+     "seq": 259,
+     "instr": 465814,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.read_user_request",
+     "ev": "enter",
+     "n": "gateway.read"
+    },
+    {
+     "seq": 261,
+     "instr": 467929,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.copy_request_strings",
+     "ev": "enter",
+     "n": "gateway.copy"
+    },
+    {
+     "seq": 263,
+     "instr": 469746,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.stage_request_outputs",
+     "ev": "enter",
+     "n": "gateway.stage"
+    },
+    {
+     "seq": 265,
+     "instr": 469879,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_channel.submit",
+     "ev": "enter",
+     "n": "os.submit"
+    },
+    {
+     "seq": 266,
+     "instr": 470675,
+     "thread": 3,
+     "ev": "request",
+     "method": "dom.snapshot"
+    },
+    {
+     "seq": 267,
+     "instr": 470997,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 269,
+     "instr": 472514,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.notify_armed",
+     "ev": "enter",
+     "n": "kernel.notify-armed"
+    },
+    {
+     "seq": 275,
+     "instr": 474513,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 279,
+     "instr": 474587,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "automation"
+     ]
+    },
+    {
+     "seq": 280,
+     "instr": 474942,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 281,
+     "instr": 476787,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 287,
+     "instr": 477010,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 288,
+     "instr": 477042,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 289,
+     "instr": 477044,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REPLY"
+    },
+    {
+     "seq": 290,
+     "instr": 477399,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 291,
+     "instr": 477633,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 292,
+     "instr": 478243,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 293,
+     "instr": 478287,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.reply",
+     "ev": "enter"
+    },
+    {
+     "seq": 294,
+     "instr": 478594,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 299,
+     "instr": 479408,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 305,
+     "instr": 479609,
+     "thread": 3,
+     "program": "editor",
+     "fn": "sys_wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 306,
+     "instr": 479611,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ]
+    },
+    {
+     "seq": 307,
+     "instr": 479966,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 308,
+     "instr": 480200,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 309,
+     "instr": 480545,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 310,
+     "instr": 481317,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 311,
+     "instr": 481353,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 312,
+     "instr": 481403,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 313,
+     "instr": 481680,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "process.charge_time",
+     "ev": "enter"
+    },
+    {
+     "seq": 317,
+     "instr": 483588,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 318,
+     "instr": 484495,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 324,
+     "instr": 484778,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 325,
+     "instr": 484828,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 329,
+     "instr": 508402,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "request_channel.serve",
+     "ev": "enter",
+     "n": "os.serve"
+    },
+    {
+     "seq": 330,
+     "instr": 508520,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 332,
+     "instr": 510045,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_armed",
+     "ev": "enter",
+     "n": "kernel.notify-armed"
+    },
+    {
+     "seq": 334,
+     "instr": 512431,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.handle",
+     "ev": "enter",
+     "n": "os.ui-protocol"
+    },
+    {
+     "seq": 335,
+     "instr": 512537,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.run_request",
+     "ev": "enter"
+    },
+    {
+     "seq": 336,
+     "instr": 512630,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ui_protocol.set_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 340,
+     "instr": 525073,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.send",
+     "ev": "enter",
+     "n": "kernel.ipc-send"
+    },
+    {
+     "seq": 342,
+     "instr": 526596,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.notify_pid",
+     "ev": "enter"
+    },
+    {
+     "seq": 344,
+     "instr": 529035,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 347,
+     "instr": 535554,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.await_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 348,
+     "instr": 536328,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 349,
+     "instr": 536378,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 352,
+     "instr": 536925,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 353,
+     "instr": 537280,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 354,
+     "instr": 537521,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 355,
+     "instr": 537676,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 356,
+     "instr": 537712,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 357,
+     "instr": 537762,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 360,
+     "instr": 540132,
+     "thread": 2,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 361,
+     "instr": 541096,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 362,
+     "instr": 541146,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 365,
+     "instr": 737675,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 366,
+     "instr": 738030,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 367,
+     "instr": 738271,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 368,
+     "instr": 738426,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 369,
+     "instr": 738462,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 370,
+     "instr": 738512,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 373,
+     "instr": 739799,
+     "thread": 3,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 380,
+     "instr": 741120,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 381,
+     "instr": 741152,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 382,
+     "instr": 741154,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "REPLY"
+    },
+    {
+     "seq": 383,
+     "instr": 741509,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 384,
+     "instr": 741743,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 385,
+     "instr": 742353,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 386,
+     "instr": 742397,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.reply",
+     "ev": "enter"
+    },
+    {
+     "seq": 387,
+     "instr": 742704,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 392,
+     "instr": 745161,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 402,
+     "instr": 745435,
+     "thread": 3,
+     "program": "editor",
+     "fn": "elements.Label_text",
+     "ev": "enter"
+    },
+    {
+     "seq": 404,
+     "instr": 746798,
+     "thread": 3,
+     "program": "editor",
+     "fn": "runtime.next",
+     "ev": "enter",
+     "n": "lib.next"
+    },
+    {
+     "seq": 405,
+     "instr": 746894,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 406,
+     "instr": 746936,
+     "thread": 3,
+     "program": "editor",
+     "fn": "myos_service.call",
+     "ev": "enter"
+    },
+    {
+     "seq": 407,
+     "instr": 746968,
+     "thread": 3,
+     "program": "editor",
+     "fn": "os_call",
+     "ev": "enter"
+    },
+    {
+     "seq": 408,
+     "instr": 746970,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ],
+     "service": "POLL"
+    },
+    {
+     "seq": 409,
+     "instr": 747325,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 410,
+     "instr": 747559,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 411,
+     "instr": 748169,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "os_call_router.handle",
+     "ev": "enter",
+     "n": "os.router"
+    },
+    {
+     "seq": 412,
+     "instr": 748222,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "request_gateway.poll",
+     "ev": "enter"
+    },
+    {
+     "seq": 413,
+     "instr": 748729,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    },
+    {
+     "seq": 418,
+     "instr": 749543,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 426,
+     "instr": 749757,
+     "thread": 3,
+     "program": "editor",
+     "fn": "app_transport.idle",
+     "ev": "enter"
+    },
+    {
+     "seq": 427,
+     "instr": 749786,
+     "thread": 3,
+     "program": "editor",
+     "fn": "sys_wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 428,
+     "instr": 749788,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "syscall"
+     ]
+    },
+    {
+     "seq": 429,
+     "instr": 750143,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 430,
+     "instr": 750377,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "syscall.dispatch",
+     "ev": "enter",
+     "n": "kernel.os-call"
+    },
+    {
+     "seq": 431,
+     "instr": 750722,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.wait_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 432,
+     "instr": 751494,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 433,
+     "instr": 751530,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 434,
+     "instr": 751580,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 435,
+     "instr": 751857,
+     "thread": 3,
+     "program": "kernel",
+     "fn": "process.charge_time",
+     "ev": "enter"
+    },
+    {
+     "seq": 439,
+     "instr": 753765,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 440,
+     "instr": 754672,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.resume_after_interrupt",
+     "ev": "enter"
+    },
+    {
+     "seq": 446,
+     "instr": 754955,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 447,
+     "instr": 755005,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 451,
+     "instr": 756505,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 452,
+     "instr": 756555,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 455,
+     "instr": 757102,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 456,
+     "instr": 757457,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 457,
+     "instr": 757698,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 458,
+     "instr": 757853,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 459,
+     "instr": 757889,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 460,
+     "instr": 757939,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 463,
+     "instr": 760236,
+     "thread": 2,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 468,
+     "instr": 957675,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 469,
+     "instr": 958030,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 470,
+     "instr": 958271,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 471,
+     "instr": 958426,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 472,
+     "instr": 958462,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 473,
+     "instr": 958512,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 476,
+     "instr": 960514,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 481,
+     "instr": 961478,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 482,
+     "instr": 961528,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 485,
+     "instr": 962415,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 486,
+     "instr": 962465,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 489,
+     "instr": 963012,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 490,
+     "instr": 963367,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 491,
+     "instr": 963608,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 492,
+     "instr": 963763,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 493,
+     "instr": 963799,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 494,
+     "instr": 963849,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 497,
+     "instr": 966146,
+     "thread": 2,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 502,
+     "instr": 1098613,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.await_notification",
+     "ev": "enter"
+    },
+    {
+     "seq": 503,
+     "instr": 1099313,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 504,
+     "instr": 1099363,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 507,
+     "instr": 1099910,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.entry",
+     "ev": "irq",
+     "cause": [
+      "timer"
+     ]
+    },
+    {
+     "seq": 508,
+     "instr": 1100265,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "irq_dispatch.dispatch",
+     "ev": "enter",
+     "n": "kernel.irq-dispatch"
+    },
+    {
+     "seq": 509,
+     "instr": 1100506,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.tick",
+     "ev": "enter",
+     "n": "kernel.tick"
+    },
+    {
+     "seq": 510,
+     "instr": 1100661,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.reschedule",
+     "ev": "enter",
+     "n": "kernel.reschedule"
+    },
+    {
+     "seq": 511,
+     "instr": 1100697,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 512,
+     "instr": 1100747,
+     "thread": 2,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 515,
+     "instr": 1102499,
+     "thread": 0,
+     "program": "kernel",
+     "ev": "switch"
+    },
+    {
+     "seq": 520,
+     "instr": 1103463,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge_elapsed",
+     "ev": "enter",
+     "n": "kernel.cpu-time"
+    },
+    {
+     "seq": 521,
+     "instr": 1103513,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "scheduler.charge",
+     "ev": "enter",
+     "n": "kernel.charge"
+    },
+    {
+     "seq": 524,
+     "instr": 1126574,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "request_channel.serve",
+     "ev": "enter",
+     "n": "os.serve"
+    },
+    {
+     "seq": 525,
+     "instr": 1126692,
+     "thread": 0,
+     "program": "kernel",
+     "fn": "ipc.recv",
+     "ev": "enter"
+    }
+   ]
+  }
+ ]
+}

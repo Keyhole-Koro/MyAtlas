@@ -1,0 +1,598 @@
+namespace runtime;
+
+// The application side of the framework: what runs inside an app process to
+// turn its annotations and markup handlers into behaviour. The OS never calls
+// into it -- it only sends events (contracts/myapp/message.contract.mln); app.run
+// drives it.
+//
+// - The handler table: `onClick={c.click}` in markup and @timer / @key methods
+//   are registered here as (key, kind) -> function, and called from next() when
+//   the matching event arrives. The server holds no app function pointers.
+// - start_annotations(): creates the app's timers and claims its keys.
+// - next(): takes one event and runs its handler, or says what app.run has to do.
+//
+// A handler is called with the instance and the value its event carries, and a
+// method is passed as is, because a `borrow` receiver is an address underneath.
+
+import app_transport from "transport.mln";
+import app_allocator from "allocator.mln";
+import { Request, RequestDomain, RequestStatus, Event, EventKind } from "@contracts/myapp/message.contract.mln";
+import { UiOp } from "@contracts/myapp/ui.contract.mln";
+import { AppOp, AppError, KeyClaimError } from "@contracts/myapp/lifecycle.contract.mln";
+import hosted_log from "@std/hosted/log.mln";
+import annotations from "@std/meta/annotations.mln";
+import { Annotations, AnnotationError } from "@std/meta/annotations.mln";
+import { NodeId, UiError } from "@contracts/ui/widget.contract.mln";
+import { Result } from "@std/core/result.mln";
+import { Option } from "@std/core/option.mln";
+import { CodeAddress } from "@std/core/address.mln";
+import { Text } from "@std/text/text.mln";
+import str from "@std/text/str.mln";
+
+// The instance this process runs (one per process): handlers get it as
+// their receiver. Requests carry it as `owner` too, but the OS replaces
+// that with the pid -- to the server, the owner of everything this process
+// creates is the process -- and events name that pid, not this pointer.
+i32 current_owner = 0;
+i32 g_main_window = 0;
+Text<64> g_open_path;
+
+i32 annotation_i32(Result<i32, AnnotationError> value) {
+    return case value of {
+        Ok(v) -> v;
+        Err(_) -> 0;
+    };
+}
+
+CodeAddress annotation_code(Result<CodeAddress, AnnotationError> value) {
+    return case value of {
+        Ok(v) -> v;
+        Err(_) -> CodeAddress(0);
+    };
+}
+
+str annotation_text(Result<str, AnnotationError> value) {
+    return case value of {
+        Ok(v) -> v;
+        Err(_) -> "";
+    };
+}
+
+// A line on the OS's debug console, for an app's own diagnostics.
+@safe
+export void log(str line) {
+    hosted_log.write(line);
+}
+
+// JSX construction is atomic from an application's point of view: a partial
+// tree is not useful. Typed element calls expose UiError to ordinary callers;
+// markup uses this terminal policy and ends the process on construction
+// failure instead of inventing node id 0.
+@safe
+export void fail_ui(UiError error) {
+    log("UI construction failed");
+    app_transport.exit();
+    while (1) { app_transport.idle(); }
+}
+
+// --- handler table ---------------------------------------------------------------------
+
+i32 HANDLERS_MAX = 256;
+
+// What a handler takes after its receiver, which is what its event carries.
+enum HandlerShape {
+    NONE,   // ()
+    FLAG,   // (bool on)
+    TEXT,   // (str text), read from the node
+    ROW,    // (i32 row)
+    CARET,  // (i32 line, i32 column), packed in the event as line << 16 | column
+}
+
+struct Handler {
+    i32 key;           // node id, or KEY claim token
+    EventKind kind;
+    HandlerShape shape;
+    fn(i32 owner) -> void callback;
+};
+Handler handlers[256];
+i32 handler_count = 0;
+
+/** Registers a handler of an event that carries nothing. */
+@safe
+export void on_event(i32 key, EventKind kind, fn(i32 owner) -> void callback) {
+    add_handler(key, kind, HandlerShape::NONE, callback);
+}
+
+/** Registers a handler of a change that carries an on or off. */
+@safe
+export void on_flag(i32 key, EventKind kind, fn(i32 owner, bool on) -> void callback) {
+    add_handler(key, kind, HandlerShape::FLAG, (fn(i32 owner) -> void)callback);
+}
+
+/** Registers a handler of a change that carries the node's text. */
+@safe
+export void on_text(i32 key, EventKind kind, fn(i32 owner, str text) -> void callback) {
+    add_handler(key, kind, HandlerShape::TEXT, (fn(i32 owner) -> void)callback);
+}
+
+/** Registers a handler of an event that carries a row. */
+@safe
+export void on_row(i32 key, EventKind kind, fn(i32 owner, i32 row) -> void callback) {
+    add_handler(key, kind, HandlerShape::ROW, (fn(i32 owner) -> void)callback);
+}
+
+/** Registers a handler of a caret that moved: its line and column, from 1. */
+@safe
+export void on_caret(i32 key, fn(i32 owner, i32 line, i32 column) -> void callback) {
+    add_handler(key, EventKind::CARET, HandlerShape::CARET, (fn(i32 owner) -> void)callback);
+}
+
+void add_handler(i32 key, EventKind kind, HandlerShape shape, fn(i32 owner) -> void callback) {
+    if (callback == 0 || handler_count >= HANDLERS_MAX) { return; }
+    handlers[handler_count].key = key;
+    handlers[handler_count].kind = kind;
+    handlers[handler_count].shape = shape;
+    handlers[handler_count].callback = callback;
+    handler_count++;
+}
+
+// The row of the handler for (key, kind), or -1.
+i32 find_handler(i32 key, EventKind kind) {
+    i32 i = 0;
+    while (i < handler_count) {
+        if (handlers[i].key == key && handlers[i].kind == kind) { return i; }
+        i++;
+    }
+    return -1;
+}
+
+void call_handler(i32 row, Event *ev) {
+    fn(i32 owner) -> void callback = handlers[row].callback;
+    if (handlers[row].shape == HandlerShape::FLAG) {
+        fn(i32 owner, bool on) -> void flag = (fn(i32 owner, bool on) -> void)callback;
+        flag(current_owner, ev->arg != 0);
+        return;
+    }
+    if (handlers[row].shape == HandlerShape::TEXT) {
+        fn(i32 owner, str text) -> void changed = (fn(i32 owner, str text) -> void)callback;
+        changed(current_owner, read_text(NodeId(ev->id)));
+        return;
+    }
+    if (handlers[row].shape == HandlerShape::ROW) {
+        fn(i32 owner, i32 row) -> void selected = (fn(i32 owner, i32 row) -> void)callback;
+        selected(current_owner, ev->arg);
+        return;
+    }
+    if (handlers[row].shape == HandlerShape::CARET) {
+        fn(i32 owner, i32 line, i32 column) -> void moved = (fn(i32 owner, i32 line, i32 column) -> void)callback;
+        moved(current_owner, ev->arg >> 16, ev->arg & 0xFFFF);
+        return;
+    }
+    callback(current_owner);
+}
+
+// --- requests ------------------------------------------------------------------------------
+
+/** Creates a zero-filled UI request with safe empty string payloads. */
+@safe
+export Request ui_request(i32 op) {
+    Request request = Request {};
+    request.domain = RequestDomain::UI;
+    request.op = op;
+    request.s0 = "";
+    request.s1 = "";
+    return request;
+}
+
+/** Creates a zero-filled application lifecycle request. */
+@safe
+export Request app_request(i32 op) {
+    Request request = Request {};
+    request.domain = RequestDomain::APP;
+    request.op = op;
+    request.s0 = "";
+    request.s1 = "";
+    return request;
+}
+
+/** Sends one fully described request as the current application instance. */
+@safe
+export RequestStatus send(borrow Request request) {
+    request.owner = current_owner;
+    return app_transport.request(&request);
+}
+
+/** Attaches the first string argument. The OS copies it during send(). */
+@safe
+export void put_s0(borrow Request request, str s) {
+    request.s0 = s.data;
+    request.s0_len = s.length;
+}
+
+/** Attaches the second string argument. The OS copies it during send(). */
+@safe
+export void put_s1(borrow Request request, str s) {
+    request.s1 = s.data;
+    request.s1_len = s.length;
+}
+
+// Sends a request whose typed answer the OS copies to `address`.
+void ask(borrow Request request, i32 address, i32 size) {
+    request.result_out = address;
+    request.result_size = size;
+    send(&request);
+}
+
+/** Sends a request and receives its Result<i32, UiError> answer. */
+@safe
+export void ask_i32(borrow Request request, borrow Result<i32, UiError> result) {
+    ask(&request, (i32)&result, sizeof(Result<i32, UiError>));
+}
+
+/** Sends a request and receives its Result<NodeId, UiError> answer. */
+@safe
+export void ask_node(borrow Request request, borrow Result<NodeId, UiError> result) {
+    ask(&request, (i32)&result, sizeof(Result<NodeId, UiError>));
+}
+
+/** Sends an OPEN request. The answer names the window, which only the shell needs. */
+@safe
+export Result<_, AppError> ask_open(borrow Request request) {
+    Result<Option<NodeId>, AppError> result = Err(AppError::NoOpenHandler);
+    ask(&request, (i32)&result, sizeof(Result<Option<NodeId>, AppError>));
+    AppError error = case result of {
+        Ok(_) -> ({ return Ok(_); });
+        Err(value) -> value;
+    };
+    return Err(error);
+}
+
+/** Sends a request and receives its Result<i32, KeyClaimError> answer. */
+@safe
+export void ask_key(borrow Request request, borrow Result<i32, KeyClaimError> result) {
+    ask(&request, (i32)&result, sizeof(Result<i32, KeyClaimError>));
+}
+
+/** Sends a request and receives its Result<_, UiError> answer. */
+@safe
+/** Sends a request and receives its Result<_, AppError> answer. */
+@safe
+void send_app_value(i32 op, i32 a0, str s0) {
+    Request request = app_request(op);
+    request.a0 = a0;
+    put_s0(&request, s0);
+    send(&request);
+}
+
+// --- bound properties ------------------------------------------------------------------------
+
+// A property of `view` that reads the state. Each pass the element's hook
+// hands in the value; what goes to the server is what differs from the last
+// value. `view` built the node with the first value, so the first pass only
+// records it. Text is kept whole on the heap: a hash would miss a change.
+i32 BINDINGS_MAX = 32;
+struct Binding {
+    i32 node;
+    bool seen;
+    i32 word;
+    char *text;
+    i32 length;
+    i32 capacity;
+};
+Binding bindings[32];
+
+/** Records the node of a bound property. */
+@safe
+export void bind(i32 slot, i32 node) {
+    if (slot >= BINDINGS_MAX) {
+        log("Too many bound properties");
+        app_transport.exit();
+    }
+    bindings[slot].node = node;
+}
+
+/** The node of a bound property. */
+@safe
+export NodeId bound(i32 slot) { return NodeId(bindings[slot].node); }
+
+/** Records a scalar value.
+ * @return True when it differs from the last one, so the screen must change.
+ */
+@safe
+export bool word_changed(i32 slot, i32 value) {
+    bool first = !bindings[slot].seen;
+    return word_differs(slot, value) && !first;
+}
+
+/** Records a scalar value that `view` did not show: a binding starts at zero.
+ * @return True when it differs from the last one.
+ */
+@safe
+export bool word_differs(i32 slot, i32 value) {
+    bool same = bindings[slot].word == value;
+    bindings[slot].seen = true;
+    bindings[slot].word = value;
+    return !same;
+}
+
+bool same_bytes(char *a, str b) {
+    i32 i = 0;
+    while (i < b.length) {
+        if (a[i] != b.data[i]) { return false; }
+        i++;
+    }
+    return true;
+}
+
+/** Records a text value.
+ * @return True when it differs from the last one, so the screen must change.
+ */
+@safe
+export bool text_changed(i32 slot, str value) {
+    bool first = !bindings[slot].seen;
+    bindings[slot].seen = true;
+    if (!first && bindings[slot].length == value.length && same_bytes(bindings[slot].text, value)) {
+        return false;
+    }
+    if (value.length > bindings[slot].capacity) {
+        app_allocator.free((i32)bindings[slot].text);
+        i32 room = value.length + 16;
+        bindings[slot].text = case app_allocator.alloc(room) of {
+            Ok(pointer) -> (char*)pointer;
+            Err(_) -> ({ log("Out of memory for a bound text"); app_transport.exit(); (char*)0; });
+        };
+        bindings[slot].capacity = room;
+    }
+    i32 i = 0;
+    while (i < value.length) {
+        bindings[slot].text[i] = value.data[i];
+        i++;
+    }
+    bindings[slot].length = value.length;
+    return !first;
+}
+
+// --- parts -------------------------------------------------------------------------------------
+
+// A part is what an app holds of a value the DOM keeps: a number it gets in
+// `start`, because `view` cannot write to the state. `view` hands the number to
+// an element, which is how it comes to name a node. Zero is no part.
+i32 PARTS_MAX = 16;
+i32 parts[16];
+i32 part_count = 0;
+
+/** A new part's number. */
+@safe
+export i32 new_part() {
+    if (part_count + 1 >= PARTS_MAX) {
+        log("Too many parts");
+        app_transport.exit();
+    }
+    part_count++;
+    return part_count;
+}
+
+/** Makes a part name a node. */
+@safe
+export void attach(i32 part, NodeId node) {
+    if (part != 0) { parts[part] = (i32)node; }
+}
+
+/** The node of a part. */
+@safe
+export NodeId part_node(i32 part) { return NodeId(parts[part]); }
+
+// A read's text. The largest is an Editor's body, and few apps read that much,
+// so it comes from the heap on the first read.
+i32 READ_MAX = 4096;
+char *g_read = (char*)0;
+
+/** A node's text, valid until the next read. */
+@safe
+export str read_text(NodeId id) {
+    if (g_read == 0) {
+        g_read = case app_allocator.alloc(READ_MAX) of {
+            Ok(pointer) -> (char*)pointer;
+            Err(_) -> ({ log("Out of memory for a text"); app_transport.exit(); (char*)0; });
+        };
+    }
+    Result<i32, UiError> result = Err(UiError::NodeNotFound(id));
+    Request request = ui_request(UiOp::TEXT_COPY);
+    request.a0 = (i32)id;
+    request.a1 = (i32)g_read;
+    request.a2 = READ_MAX;
+    ask_i32(&request, &result);
+    i32 length = case result of { Ok(value) -> value; Err(_) -> 0; };
+    return str { data: g_read, length: length };
+}
+
+// --- dialogs -----------------------------------------------------------------------------------
+
+// A dialog is built with the rest of `view`, but as a window of its own: it
+// stays out of the tree its markup sits in, off the desktop until it is shown.
+i32 DIALOGS_MAX = 4;
+struct Dialog {
+    i32 window;
+    i32 text;      // the label that says what is asked
+};
+Dialog dialogs[4];
+i32 dialog_count = 0;
+
+/** Records a dialog's window and the label its text goes to. */
+@safe
+export void add_dialog(NodeId window, NodeId text) {
+    if (dialog_count >= DIALOGS_MAX) {
+        log("Too many dialogs");
+        app_transport.exit();
+    }
+    dialogs[dialog_count].window = (i32)window;
+    dialogs[dialog_count].text = (i32)text;
+    dialog_count++;
+}
+
+/** Whether a node is a dialog's window. */
+@safe
+export bool is_dialog(NodeId window) {
+    i32 i = 0;
+    while (i < dialog_count) {
+        if (dialogs[i].window == (i32)window) { return true; }
+        i++;
+    }
+    return false;
+}
+
+/** The label of a dialog's window. */
+@safe
+export NodeId dialog_text(NodeId window) {
+    i32 i = 0;
+    while (i < dialog_count) {
+        if (dialogs[i].window == (i32)window) { return NodeId(dialogs[i].text); }
+        i++;
+    }
+    return window;
+}
+
+/** Puts a dialog on the desktop, or takes it off. */
+@safe
+export void show_dialog(NodeId window, bool shown) {
+    send_app_value(shown ? AppOp::SHOW_DIALOG : AppOp::HIDE_DIALOG, (i32)window, "");
+}
+
+// --- lifecycle -----------------------------------------------------------------------------
+
+/** Prepares the process before the app's first state is made. */
+@safe
+export void enter() { app_allocator.init(); }
+
+/** Names the instance handlers are called on. */
+@safe
+export void adopt(i32 self) { current_owner = self; }
+
+/** Hands the shell the app's window. */
+@safe
+export void show_main(NodeId win) {
+    g_main_window = (i32)win;
+    send_app_value(AppOp::MAIN_WINDOW, (i32)win, "");
+}
+
+/** What the event just taken asks of the instance. */
+export enum Step {
+    Idle,     // no event is waiting
+    Handled,  // its handler has run
+    Open,     // open(opened_path())
+    Close,    // close(), then exit()
+}
+
+/** The path of the Step::Open just taken, valid until the next event. */
+@safe
+export str opened_path() { return g_open_path.as_str(); }
+
+/** Takes one event and runs its handler. */
+@safe
+export Step next() {
+    Event ev;
+    if (!app_transport.poll(&ev)) { return Step::Idle; }
+    if (ev.kind == EventKind::OPEN) {
+        g_open_path.clear();
+        g_open_path.append(str.from_c(&ev.text[0]));
+        return Step::Open;
+    }
+    if (ev.kind == EventKind::CLOSE && ev.id == g_main_window) { return Step::Close; }
+    i32 key = ev.id;
+    if (ev.kind == EventKind::KEY) { key = ev.token; }
+    i32 row = find_handler(key, ev.kind);
+    if (row >= 0) { call_handler(row, &ev); }
+    return Step::Handled;
+}
+
+/** Blocks until an event is published. */
+@safe
+export void idle() { app_transport.idle(); }
+
+/** Tells the OS the instance is done and ends the process. */
+@safe
+export void exit() {
+    send_app_value(AppOp::EXIT, 0, "");
+    app_transport.exit();
+}
+
+// Creates the @timer timers of type `type` and claims its @key shortcuts.
+void start_annotated(str type) {
+    Annotations timers = annotations.where("timer", type);
+    while (timers.next()) {
+        Result<NodeId, UiError> created = Err(UiError::TimerLimit);
+        Request request = ui_request(UiOp::CREATE_TIMER);
+        request.a0 = annotation_i32(timers.arg(0));
+        ask_node(&request, &created);
+        NodeId id = case created of { Ok(value) -> value; Err(e) -> ({ fail_ui(e); (NodeId)0; }); };
+        on_event((i32)id, EventKind::TIMER, (fn(i32 owner) -> void)annotation_code(timers.fn()));
+    }
+    Annotations keys = annotations.where("key", type);
+    while (keys.next()) {
+        Result<i32, KeyClaimError> claimed = Err(KeyClaimError::TableFull);
+        Request request = app_request(AppOp::CLAIM_KEY);
+        put_s0(&request, annotation_text(keys.text(0)));
+        ask_key(&request, &claimed);
+        case claimed of {
+            Ok(token) -> on_event(token, EventKind::KEY, (fn(i32 owner) -> void)annotation_code(keys.fn()));
+            Err(_) -> log("Could not register app keyboard shortcut");
+        };
+    }
+}
+
+/** Starts what the @app type's annotations ask for: its timers and keys. */
+@safe
+export void start_annotations() {
+    Annotations rows = annotations.named("app");
+    if (rows.next()) { start_annotated(annotation_text(rows.type())); }
+}
+
+// --- nodes --------------------------------------------------------------------------------------
+
+// What the framework does to a node for an app. An app holds parts, never nodes,
+// so these stay out of ui.mln.
+
+/** Adds NodeStyle bits an app may set (UiOp::ADD_STYLE): following the
+ * window's size, a TextArea's wrapping, reporting its caret. */
+@safe
+export void add_style(NodeId id, i32 bits) {
+    if (bits == 0) { return; }
+    Request request = ui_request(UiOp::ADD_STYLE);
+    request.a0 = (i32)id;
+    request.a1 = bits;
+    send(&request);
+}
+
+/** Cuts, copies, pastes or selects all in a TextInput or TextArea
+ * (UiOp::TEXT_EDIT), as its Ctrl+X, C, V and A keys do. */
+@safe
+export void text_edit(NodeId id, i32 command) {
+    Request request = ui_request(UiOp::TEXT_EDIT);
+    request.a0 = (i32)id;
+    request.a1 = command;
+    send(&request);
+}
+
+/** Replaces the text of a TextInput or TextArea. */
+@safe
+export void input_set(NodeId id, str s) {
+    Request request = ui_request(UiOp::INPUT_SET);
+    request.a0 = (i32)id; put_s0(&request, s);
+    send(&request);
+}
+
+/** Adds to the end of a TextArea's text. */
+@safe
+export void area_append(NodeId id, str s) {
+    Request request = ui_request(UiOp::AREA_APPEND);
+    request.a0 = (i32)id; put_s0(&request, s);
+    send(&request);
+}
+
+/** Moves the keyboard to a node. */
+@safe
+export void focus(NodeId id) {
+    Request request = ui_request(UiOp::FOCUS);
+    request.a0 = (i32)id;
+    send(&request);
+}

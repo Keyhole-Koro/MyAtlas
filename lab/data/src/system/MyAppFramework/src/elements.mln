@@ -1,0 +1,697 @@
+namespace elements;
+
+import runtime from "runtime/runtime.mln";
+import { UiOp } from "@contracts/myapp/ui.contract.mln";
+import { Request, EventKind } from "@contracts/myapp/message.contract.mln";
+import { Result } from "@std/core/result.mln";
+import { NodeId, UiError } from "@contracts/ui/widget.contract.mln";
+import ui from "ui.mln";
+import { TextField, Screen } from "ui.mln";
+import { Text } from "@std/text/text.mln";
+import { Option } from "@std/core/option.mln";
+import str from "@std/text/str.mln";
+
+// NodeStyle bits the elements set themselves (contracts' ADD_STYLE).
+const i32 WRAP = 256;
+const i32 REPORT_CARET = 512;
+
+// The markup vocabulary. `<Window title="A" x={0} w={400}>...</Window>` in a
+// .dom.mln source lowers to a call of the function of the same name, with
+// each property handed to the parameter of the same name and children passed
+// to append_child. The vocabulary therefore lives here rather than in the
+// compiler: adding an element means adding a function, and its parameters
+// are its properties.
+//
+// A parameter with a default is an optional property, and the defaults are
+// these -- position defaults to the parent's origin (what a child of a
+// Column or Row wants, since the container places it), sizes to something
+// sensible, handlers to none. `testId` names the node for automation.
+//
+// Each element is one CREATE_* request of the UI contract, answered by the UI server
+// (system/MyOS/src/ui/protocol_elements.mln) with the new node's id. Handler
+// parameters (on*) never leave the app: they go into the runtime's handler
+// table against that id, and the server's CLICK / CHANGE / ACTIVATE / TIMER
+// events come back to them with the value the parameter's type says, and never
+// the node's id. Since apps run as processes, the request becomes a syscall and
+// no markup changes.
+
+// Children of an element are attached with the `append_child` in scope.
+Result<NodeId, UiError> create(Request request) {
+    Result<NodeId, UiError> result = Err(UiError::UnknownOperation(request.op));
+    runtime.ask_node(&request, &result);
+    return result;
+}
+
+void register_handler(Result<NodeId, UiError> result, EventKind kind, fn(i32 owner) -> void callback) {
+    case result of {
+        Ok(id) -> ({ runtime.on_event((i32)id, kind, callback); });
+        Err(_) -> _;
+    };
+}
+
+// Compiler hooks used only by `.dom.mln` lowering. Programmatic callers keep
+// the Result-returning APIs above/below; markup chooses the framework's
+// fail-the-instance policy for a tree that could not be constructed.
+export NodeId unwrap_node(Result<NodeId, UiError> result) {
+    return case result of {
+        Ok(id) -> id;
+        Err(e) -> ({ runtime.fail_ui(e); (NodeId)0; });
+    };
+}
+
+export void unwrap_append(Result<_, UiError> result) {
+    case result of {
+        Ok(_) -> _;
+        Err(e) -> ({ runtime.fail_ui(e); });
+    };
+}
+
+export Result<_, UiError> append_child(NodeId parent, NodeId child) {
+    Request request = runtime.ui_request(UiOp::APPEND_CHILD);
+    request.a0 = (i32)parent;
+    request.a1 = (i32)child;
+    return case create(request) of {
+        Ok(ignored) -> Ok(_);
+        Err(e) -> Err(e);
+    };
+}
+
+/**
+ * Lowers JSX `<Window title="..." w={...} h={...} testId="..." />`. The shell
+ * decides where it goes.
+ * @param title Window title text.
+ * @param w Logical width (default 400).
+ * @param h Logical height (default 300).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Window(str title, i32 w = 400, i32 h = 300, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_WINDOW);
+    request.a2 = w; request.a3 = h;
+    runtime.put_s0(&request, title); runtime.put_s1(&request, testId);
+    return create(request);
+}
+
+/**
+ * Lowers JSX `<Button text="..." x={...} y={...} w={...} h={...} onClick={...} testId="..." />`.
+ * @param text Button label text.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 90).
+ * @param h Logical height (default 34).
+ * @param onClick Click handler function pointer (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Button(str text, i32 x = 0, i32 y = 0, i32 w = 90, i32 h = 34, fn(i32 owner) -> void onClick = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_BUTTON);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    runtime.put_s0(&request, text); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    register_handler(result, EventKind::CLICK, onClick);
+    return result;
+}
+
+/**
+ * Lowers JSX `<PrimaryButton text="..." x={...} y={...} w={...} h={...} onClick={...} testId="..." />`.
+ * Accent-coloured call to action.
+ * @param text Button label text.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 90).
+ * @param h Logical height (default 34).
+ * @param onClick Click handler function pointer (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> PrimaryButton(str text, i32 x = 0, i32 y = 0, i32 w = 90, i32 h = 34, fn(i32 owner) -> void onClick = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_PRIMARY_BUTTON);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    runtime.put_s0(&request, text); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    register_handler(result, EventKind::CLICK, onClick);
+    return result;
+}
+
+/**
+ * Lowers JSX `<Text text="..." x={...} y={...} testId="..." />`.
+ * @param text Text content string.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Text(str text, i32 x = 0, i32 y = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_TEXT);
+    request.a0 = x; request.a1 = y;
+    runtime.put_s0(&request, text); runtime.put_s1(&request, testId);
+    return create(request);
+}
+
+/**
+ * Lowers JSX `<Label text="..." x={...} y={...} color={...} bold={...} testId="..." />`.
+ * Text with an explicit colour (graphics.rgb(); 0 = theme default) and weight.
+ * @param text Label text string.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param color Text color (RGB, 0 for default).
+ * @param bold Non-zero for bold styling.
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Label(str text, i32 x = 0, i32 y = 0, i32 color = 0, i32 bold = 0, i32 anchor = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_LABEL);
+    request.a0 = x; request.a1 = y; request.a2 = color; request.a3 = bold;
+    runtime.put_s0(&request, text); runtime.put_s1(&request, testId);
+    return anchored(create(request), anchor);
+}
+
+// A created node, given the NodeStyle bits of how it follows its window's size.
+Result<NodeId, UiError> anchored(Result<NodeId, UiError> created, i32 anchor) {
+    case created of {
+        Ok(id) -> runtime.add_style(id, anchor);
+        Err(_) -> _;
+    };
+    return created;
+}
+
+/**
+ * Lowers JSX `<Box x={...} y={...} w={...} h={...} background={...} border={...} />`.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 100).
+ * @param h Logical height (default 100).
+ * @param background Background color (RGB, default 0).
+ * @param border Border color (RGB, default 0).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Box(i32 x = 0, i32 y = 0, i32 w = 100, i32 h = 100,
+               i32 background = 0, i32 border = 0, i32 anchor = 0) {
+    Request request = runtime.ui_request(UiOp::CREATE_BOX);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    request.a4 = background; request.a5 = border;
+    return anchored(create(request), anchor);
+}
+
+/**
+ * Lowers JSX `<Panel x={...} y={...} w={...} h={...} radius={...} />`.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 100).
+ * @param h Logical height (default 100).
+ * @param radius Corner radius in logical pixels (default 0).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Panel(i32 x = 0, i32 y = 0, i32 w = 100, i32 h = 100, i32 radius = 0) {
+    Request request = runtime.ui_request(UiOp::CREATE_PANEL);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h; request.a4 = radius;
+    return create(request);
+}
+
+/**
+ * Lowers JSX `<Column x={...} y={...} w={...} h={...} padding={...} gap={...} />`.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 100).
+ * @param h Logical height (default 100).
+ * @param padding Inset padding in logical pixels (default 0).
+ * @param gap Gap between children in logical pixels (default 0).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Column(i32 x = 0, i32 y = 0, i32 w = 100, i32 h = 100,
+                  i32 padding = 0, i32 gap = 0, i32 anchor = 0) {
+    Request request = runtime.ui_request(UiOp::CREATE_COLUMN);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    request.a4 = padding; request.a5 = gap;
+    return anchored(create(request), anchor);
+}
+
+/**
+ * Lowers JSX `<Row x={...} y={...} w={...} h={...} padding={...} gap={...} />`.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 100).
+ * @param h Logical height (default 34).
+ * @param padding Inset padding in logical pixels (default 0).
+ * @param gap Gap between children in logical pixels (default 0).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Row(i32 x = 0, i32 y = 0, i32 w = 100, i32 h = 34,
+               i32 padding = 0, i32 gap = 0, i32 anchor = 0) {
+    Request request = runtime.ui_request(UiOp::CREATE_ROW);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    request.a4 = padding; request.a5 = gap;
+    return anchored(create(request), anchor);
+}
+
+/**
+ * Lowers JSX `<TextInput placeholder="..." field={...} x={...} y={...} w={...} h={...} capacity={...} focus={...} onChange={...} testId="..." />`.
+ * @param placeholder Placeholder text string.
+ * @param field The part that reads and writes the text (default none).
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 200).
+ * @param h Logical height (default 34).
+ * @param capacity Buffer capacity in bytes (default 64).
+ * @param focus Whether the keyboard starts here (default false).
+ * @param onChange Called with the text when the user changes it (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> TextInput(str placeholder, TextField field = 0, i32 x = 0, i32 y = 0, i32 w = 200, i32 h = 34, i32 capacity = 64, bool focus = false, fn(i32 owner, str text) -> void onChange = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_TEXT_INPUT);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h; request.a4 = capacity;
+    runtime.put_s0(&request, placeholder); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            runtime.attach((i32)field, id);
+            runtime.on_text((i32)id, EventKind::CHANGE, onChange);
+            if (focus) { runtime.focus(id); }
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Checkbox text="..." x={...} y={...} checked={...} onChange={...} testId="..." />`.
+ * @param text Checkbox label text.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param checked Checked state (default false).
+ * @param onChange Called with the new state when the user toggles it (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Checkbox(str text, i32 x = 0, i32 y = 0, bool checked = false, fn(i32 owner, bool on) -> void onChange = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_CHECKBOX);
+    request.a0 = x; request.a1 = y; request.a2 = checked ? 1 : 0;
+    runtime.put_s0(&request, text); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({ runtime.on_flag((i32)id, EventKind::CHANGE, onChange); });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Separator x={...} y={...} w={...} />`.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 100).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Separator(i32 x = 0, i32 y = 0, i32 w = 100) {
+    Request request = runtime.ui_request(UiOp::CREATE_SEPARATOR);
+    request.a0 = x; request.a1 = y; request.a2 = w;
+    return create(request);
+}
+
+/**
+ * Lowers JSX `<Timer interval={...} onTick={...} />`.
+ * @param interval Timer tick interval in system ticks.
+ * @param onTick Timer callback function pointer.
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Timer(i32 interval, fn(i32 owner) -> void onTick) {
+    Request request = runtime.ui_request(UiOp::CREATE_TIMER);
+    request.a0 = interval;
+    Result<NodeId, UiError> result = create(request);
+    register_handler(result, EventKind::TIMER, onTick);
+    return result;
+}
+
+/**
+ * Lowers JSX `<TextArea name="..." field={...} text="..." x={...} y={...} w={...} h={...} capacity={...} readonly={...} onChange={...} testId="..." />`.
+ * @param name Node name identifier.
+ * @param field The part that reads, writes and adds to the text (default none).
+ * @param text The text it starts with (default none).
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 300).
+ * @param h Logical height (default 200).
+ * @param capacity Buffer capacity in bytes (default 1024).
+ * @param readonly Non-zero for read-only / display console mode (default 0).
+ * @param wrap Whether long lines break to fit its width (default false).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @param onChange Called with the text when the user changes it (default none).
+ * @param onEdit Called when the user changes the text, without it: cheaper for a long text (default none).
+ * @param onCaret Called with the caret's line and column, from 1, when it moves (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> TextArea(str name, TextField field = 0, str text = "", i32 x = 0, i32 y = 0, i32 w = 300, i32 h = 200, i32 capacity = 1024, i32 readonly = 0, bool wrap = false, i32 anchor = 0, fn(i32 owner, str text) -> void onChange = 0, fn(i32 owner) -> void onEdit = 0, fn(i32 owner, i32 line, i32 column) -> void onCaret = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_TEXT_AREA);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    request.a4 = capacity; request.a5 = readonly;
+    runtime.put_s0(&request, name); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            runtime.attach((i32)field, id);
+            if (!text.is_empty()) { runtime.area_append(id, text); }
+            i32 style = anchor;
+            if (wrap) { style = style | WRAP; }
+            if (onCaret != 0) { style = style | REPORT_CARET; }
+            runtime.add_style(id, style);
+            runtime.on_text((i32)id, EventKind::CHANGE, onChange);
+            runtime.on_event((i32)id, EventKind::CHANGE, onEdit);
+            runtime.on_caret((i32)id, onCaret);
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Terminal screen={...} x={...} y={...} w={...} h={...} capacity={...} focus={...} testId="..." />`.
+ * A grid of fixed-width cells: the processes started on its screen write to
+ * it, and a line typed on it goes to the one started last
+ * (`terminal.spawn_bound`).
+ * @param screen The part processes are started on (default none).
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 560).
+ * @param h Logical height (default 360).
+ * @param capacity Bytes of text it keeps; the oldest lines go first (default 8192).
+ * @param focus Whether the keyboard starts here (default false).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Terminal(Screen screen = 0, i32 x = 0, i32 y = 0, i32 w = 560, i32 h = 360, i32 capacity = 8192, bool focus = false, i32 anchor = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_TERMINAL);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h; request.a4 = capacity;
+    runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            runtime.attach((i32)screen, id);
+            runtime.add_style(id, anchor);
+            if (focus) { runtime.focus(id); }
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Menu title="..." items="..." x={...} y={...} w={...} h={...} onSelect={...} testId="..." />`.
+ * A button in a window's menu bar that opens a menu of its items below it.
+ * Picking one calls onSelect with its index. An item's tabs line shortcuts up
+ * in a column, as in a List.
+ * @param title The button's text.
+ * @param items The items, joined by newlines.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 60).
+ * @param h Logical height (default 26).
+ * @param onSelect Called with the index of the item picked (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Menu(str title, str items = "", i32 x = 0, i32 y = 0, i32 w = 60, i32 h = 26, fn(i32 owner, i32 index) -> void onSelect = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_MENU_BUTTON);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h;
+    runtime.put_s0(&request, title); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            send_items(id, items);
+            runtime.on_row((i32)id, EventKind::CHANGE, onSelect);
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<List name="..." items={...} selected={...} x={...} y={...} w={...} h={...} capacity={...} focus={...} onChange={...} onActivate={...} testId="..." />`.
+ * onChange fires when the user selects a row, onActivate when a row is clicked
+ * again or Enter is pressed.
+ * @param name Node name identifier.
+ * @param items The rows, joined by newlines (default none).
+ * @param selected The selected row (default none).
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 300).
+ * @param h Logical height (default 200).
+ * @param capacity Buffer capacity in bytes (default 1024).
+ * @param focus Whether the keyboard starts here (default false).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @param onChange Called with the row the user selected (default none).
+ * @param onActivate Called with the row the user activated (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> List(str name, str items = "", Option<i32> selected = None, i32 x = 0, i32 y = 0, i32 w = 300, i32 h = 200, i32 capacity = 1024, bool focus = false, i32 anchor = 0, fn(i32 owner, i32 row) -> void onChange = 0, fn(i32 owner, i32 row) -> void onActivate = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_LIST);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h; request.a4 = capacity;
+    runtime.put_s0(&request, name); runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            runtime.add_style(id, anchor);
+            runtime.on_row((i32)id, EventKind::CHANGE, onChange);
+            runtime.on_row((i32)id, EventKind::ACTIVATE, onActivate);
+            if (!items.is_empty()) { send_items(id, items); }
+            case selected of {
+                Some(row) -> ({ send_selected(id, row); });
+                None -> _;
+            };
+            if (focus) { runtime.focus(id); }
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Graph fill={...} line={...} samples={60} />`.
+ * Percentages over time, newest at the right: `fill` is drawn filled under an
+ * accent line, `line` as a second line over it. Each is decimal numbers from
+ * 0 to 100 apart by spaces, oldest first; past `samples` the oldest drop off.
+ * @param x Logical X coordinate (default 0).
+ * @param y Logical Y coordinate (default 0).
+ * @param w Logical width (default 300).
+ * @param h Logical height (default 120).
+ * @param samples How many samples span the width, 2 to 120 (default 60).
+ * @param fill The filled series (default none).
+ * @param line The second series (default none).
+ * @param anchor How it follows the window's size: ui.GROW_W, ui.GROW_H, ui.PIN_BOTTOM (default none).
+ * @param testId Stable automation locator id (default none).
+ * @return DOM Node ID.
+ */
+export Result<NodeId, UiError> Graph(i32 x = 0, i32 y = 0, i32 w = 300, i32 h = 120, i32 samples = 60, str fill = "", str line = "", i32 anchor = 0, str testId = "") {
+    Request request = runtime.ui_request(UiOp::CREATE_GRAPH);
+    request.a0 = x; request.a1 = y; request.a2 = w; request.a3 = h; request.a4 = samples;
+    runtime.put_s1(&request, testId);
+    Result<NodeId, UiError> result = create(request);
+    case result of {
+        Ok(id) -> ({
+            runtime.add_style(id, anchor);
+            if (!fill.is_empty()) { send_series(id, 0, fill); }
+            if (!line.is_empty()) { send_series(id, 1, line); }
+        });
+        Err(_) -> _;
+    };
+    return result;
+}
+
+/**
+ * Lowers JSX `<Dialog when={...} title="..." text="..." confirm="..." cancel="..." other="..." w={...} h={...} onConfirm={...} onCancel={...} onOther={...}>...</Dialog>`.
+ * A question in a window of its own, up while `when` is true. A handler ends
+ * it by changing that state. Closing its window, or Esc, is cancelling, and
+ * Enter is confirming. Elements inside it go in its window, between the
+ * question at the top and the buttons along the bottom.
+ * @param when Whether the dialog is up.
+ * @param title Window title text.
+ * @param text The question.
+ * @param confirm Label of the button that answers yes (default "OK").
+ * @param cancel Label of the button that answers no (default "Cancel").
+ * @param other Label of a third answer between them, say "Don't Save" (default none).
+ * @param w Logical width (default 340).
+ * @param h Logical height, title bar included (default 140).
+ * @param onConfirm Called when the user answers yes (default none).
+ * @param onCancel Called when the user answers no (default none).
+ * @param onOther Called when the user gives the third answer (default none).
+ * @return DOM Node ID of its window.
+ */
+export Result<NodeId, UiError> Dialog(bool when, str title, str text, str confirm = "OK", str cancel = "Cancel", str other = "", i32 w = 340, i32 h = 140, fn(i32 owner) -> void onConfirm = 0, fn(i32 owner) -> void onCancel = 0, fn(i32 owner) -> void onOther = 0) {
+    NodeId window = Window(title, w, h, "")?;
+    NodeId label = Label(text, 20, 16, 0, 0, 0, "")?;
+    append_child(window, label)?;
+    // The buttons sit along the bottom: the window's h includes its title bar.
+    NodeId row = Row(20, h - 80, w - 40, 34, 0, 10)?;
+    append_child(window, row)?;
+    NodeId yes = PrimaryButton(confirm, 0, 0, 100, 34, 0, "")?;
+    append_child(row, yes)?;
+    if (!other.is_empty()) {
+        NodeId third = Button(other, 0, 0, 100, 34, 0, "")?;
+        append_child(row, third)?;
+        runtime.on_event((i32)third, EventKind::CLICK, onOther);
+    }
+    NodeId no = Button(cancel, 0, 0, 100, 34, 0, "")?;
+    append_child(row, no)?;
+    runtime.on_event((i32)yes, EventKind::CLICK, onConfirm);
+    runtime.on_event((i32)no, EventKind::CLICK, onCancel);
+    runtime.on_event((i32)window, EventKind::CLOSE, onCancel);
+    runtime.add_dialog(window, label);
+    return Ok(window);
+}
+
+// `.dom.mln` adapters. JSX has an atomic tree-construction policy: it invokes
+// the same typed functions above, but a failed node aborts the application
+// instead of leaving a partial tree. These adapters preserve UiError all the
+// way to that terminal policy; they do not translate it to a sentinel.
+export void dom_append_child(NodeId parent, NodeId child) {
+    if (runtime.is_dialog(child)) { return; }
+    unwrap_append(append_child(parent, child));
+}
+export NodeId dom_Window(str title, i32 w, i32 h, str testId) { return unwrap_node(Window(title, w, h, testId)); }
+export NodeId dom_Button(str text, i32 x, i32 y, i32 w, i32 h, fn(i32 owner) -> void onClick, str testId) { return unwrap_node(Button(text, x, y, w, h, onClick, testId)); }
+export NodeId dom_PrimaryButton(str text, i32 x, i32 y, i32 w, i32 h, fn(i32 owner) -> void onClick, str testId) { return unwrap_node(PrimaryButton(text, x, y, w, h, onClick, testId)); }
+export NodeId dom_Text(str text, i32 x, i32 y, str testId) { return unwrap_node(Text(text, x, y, testId)); }
+export NodeId dom_Label(str text, i32 x, i32 y, i32 color, i32 bold, i32 anchor, str testId) { return unwrap_node(Label(text, x, y, color, bold, anchor, testId)); }
+export NodeId dom_Box(i32 x, i32 y, i32 w, i32 h, i32 background, i32 border, i32 anchor) { return unwrap_node(Box(x, y, w, h, background, border, anchor)); }
+export NodeId dom_Panel(i32 x, i32 y, i32 w, i32 h, i32 radius) { return unwrap_node(Panel(x, y, w, h, radius)); }
+export NodeId dom_Column(i32 x, i32 y, i32 w, i32 h, i32 padding, i32 gap, i32 anchor) { return unwrap_node(Column(x, y, w, h, padding, gap, anchor)); }
+export NodeId dom_Row(i32 x, i32 y, i32 w, i32 h, i32 padding, i32 gap, i32 anchor) { return unwrap_node(Row(x, y, w, h, padding, gap, anchor)); }
+export NodeId dom_TextInput(str placeholder, TextField field, i32 x, i32 y, i32 w, i32 h, i32 capacity, bool focus, fn(i32 owner, str text) -> void onChange, str testId) { return unwrap_node(TextInput(placeholder, field, x, y, w, h, capacity, focus, onChange, testId)); }
+export NodeId dom_Checkbox(str text, i32 x, i32 y, bool checked, fn(i32 owner, bool on) -> void onChange, str testId) { return unwrap_node(Checkbox(text, x, y, checked, onChange, testId)); }
+export NodeId dom_Separator(i32 x, i32 y, i32 w) { return unwrap_node(Separator(x, y, w)); }
+export NodeId dom_Timer(i32 interval, fn(i32 owner) -> void onTick) { return unwrap_node(Timer(interval, onTick)); }
+export NodeId dom_TextArea(str name, TextField field, str text, i32 x, i32 y, i32 w, i32 h, i32 capacity, i32 readonly, bool wrap, i32 anchor, fn(i32 owner, str text) -> void onChange, fn(i32 owner) -> void onEdit, fn(i32 owner, i32 line, i32 column) -> void onCaret, str testId) { return unwrap_node(TextArea(name, field, text, x, y, w, h, capacity, readonly, wrap, anchor, onChange, onEdit, onCaret, testId)); }
+export NodeId dom_Terminal(Screen screen, i32 x, i32 y, i32 w, i32 h, i32 capacity, bool focus, i32 anchor, str testId) { return unwrap_node(Terminal(screen, x, y, w, h, capacity, focus, anchor, testId)); }
+export NodeId dom_Menu(str title, str items, i32 x, i32 y, i32 w, i32 h, fn(i32 owner, i32 index) -> void onSelect, str testId) { return unwrap_node(Menu(title, items, x, y, w, h, onSelect, testId)); }
+export NodeId dom_List(str name, str items, Option<i32> selected, i32 x, i32 y, i32 w, i32 h, i32 capacity, bool focus, i32 anchor, fn(i32 owner, i32 row) -> void onChange, fn(i32 owner, i32 row) -> void onActivate, str testId) { return unwrap_node(List(name, items, selected, x, y, w, h, capacity, focus, anchor, onChange, onActivate, testId)); }
+export NodeId dom_Graph(i32 x, i32 y, i32 w, i32 h, i32 samples, str fill, str line, i32 anchor, str testId) { return unwrap_node(Graph(x, y, w, h, samples, fill, line, anchor, testId)); }
+export NodeId dom_Dialog(bool when, str title, str text, str confirm, str cancel, str other, i32 w, i32 h, fn(i32 owner) -> void onConfirm, fn(i32 owner) -> void onCancel, fn(i32 owner) -> void onOther) { return unwrap_node(Dialog(when, title, text, confirm, cancel, other, w, h, onConfirm, onCancel, onOther)); }
+
+// --- what follows the state ------------------------------------------------------------
+
+// `.dom.mln` lowering calls these. A property of `view` that reads the state is
+// recorded with bind, and its hook, `<Tag>_<property>`, is called with the
+// value after every event. A hook sends only what changed.
+
+export void bind(i32 slot, NodeId node) { runtime.bind(slot, (i32)node); }
+
+void send_text(NodeId id, str value) {
+    Request request = runtime.ui_request(UiOp::SET_TEXT);
+    request.a0 = (i32)id;
+    runtime.put_s0(&request, value);
+    runtime.send(&request);
+}
+
+export void Window_title(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_text(runtime.bound(slot), value); }
+}
+
+export void Label_text(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_text(runtime.bound(slot), value); }
+}
+
+void send_items(NodeId id, str items) {
+    Request request = runtime.ui_request(UiOp::LIST_SET_ITEMS);
+    request.a0 = (i32)id;
+    runtime.put_s0(&request, items);
+    runtime.send(&request);
+}
+
+void send_selected(NodeId id, i32 row) {
+    Request request = runtime.ui_request(UiOp::LIST_SELECT);
+    request.a0 = (i32)id;
+    request.a1 = row;
+    runtime.send(&request);
+}
+
+export void List_items(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_items(runtime.bound(slot), value); }
+}
+
+export void List_selected(i32 slot, Option<i32> value) {
+    i32 row = case value of { Some(selected) -> selected; None -> -1; };
+    if (runtime.word_changed(slot, row)) { send_selected(runtime.bound(slot), row); }
+}
+
+void send_series(NodeId id, i32 series, str values) {
+    Request request = runtime.ui_request(UiOp::GRAPH_SET);
+    request.a0 = (i32)id;
+    request.a1 = series;
+    runtime.put_s0(&request, values);
+    runtime.send(&request);
+}
+
+export void Graph_fill(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_series(runtime.bound(slot), 0, value); }
+}
+
+export void Graph_line(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_series(runtime.bound(slot), 1, value); }
+}
+
+// A dialog starts off the desktop whatever `when` says, so its first pass counts.
+export void Dialog_when(i32 slot, bool value) {
+    if (runtime.word_differs(slot, value ? 1 : 0)) { runtime.show_dialog(runtime.bound(slot), value); }
+}
+
+export void Dialog_text(i32 slot, str value) {
+    if (runtime.text_changed(slot, value)) { send_text(runtime.dialog_text(runtime.bound(slot)), value); }
+}
+
+export void Checkbox_checked(i32 slot, bool value) {
+    if (!runtime.word_changed(slot, value ? 1 : 0)) { return; }
+    Request request = runtime.ui_request(UiOp::SET_CHECKED);
+    request.a0 = (i32)runtime.bound(slot);
+    request.a1 = value ? 1 : 0;
+    runtime.send(&request);
+}
+
+// `{"clicks: %d", c.clicks}` lowers to format, then format_int or format_str
+// per value, then format_end. Each takes what is left of the format and copies
+// the text up to the next value. The text lives here until the next format.
+Text<256> g_format;
+
+// Copies the literal text at the start of `left` and returns what follows the
+// next %d or %s.
+str format_literal(str left) {
+    i32 i = 0;
+    while (i < left.length) {
+        i32 c = left.byte(i);
+        i32 spec = left.byte(i + 1);
+        if (c == '%' && spec == '%') {
+            g_format.push((u8)'%');
+            i = i + 2;
+        } else if (c == '%') {
+            return case left.slice(i + 2, left.length) of { Some(after) -> after; None -> ""; };
+        } else {
+            g_format.push((u8)c);
+            i++;
+        }
+    }
+    return "";
+}
+
+export str format(str text) {
+    g_format.clear();
+    return format_literal(text);
+}
+
+export str format_int(str left, i32 value) {
+    Text<12> decimal = value.to_string();
+    g_format.append(decimal.as_str());
+    return format_literal(left);
+}
+
+export str format_str(str left, str value) {
+    g_format.append(value);
+    return format_literal(left);
+}
+
+export str format_end(str left) { return g_format.as_str(); }

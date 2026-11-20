@@ -1,0 +1,1144 @@
+namespace dom_render;
+import debug from "@kernel/debug/debug.mln";
+import blob from "@std/memory/blob.mln";
+import graphics from "@os/ui/graphics.mln";
+import theme from "@os/ui/theme.mln";
+import str from "@std/text/str.mln";
+import dom_menu from "dom_menu.mln";
+import dom_graph from "dom_graph.mln";
+import { Samples } from "dom_graph.mln";
+import dom_text_edit from "dom_text_edit.mln";
+import dom_terminal from "dom_terminal.mln";
+import dom_scroll from "dom_scroll.mln";
+import icons from "@os/ui/icons.mln";
+import dom_window_chrome from "dom_window_chrome.mln";
+import dom from "dom.mln";
+import { NodeRow } from "dom_model.mln";
+import { Blob } from "@std/memory/blob.mln";
+import { NodeKind, NodeRole, NodeState, NodeStyle, Children } from "dom.mln";
+import { Option } from "@std/core/option.mln";
+import { Text } from "@std/text/text.mln";
+import { NodeId } from "@contracts/ui/widget.contract.mln";
+
+// --- renderer ---------------------------------------------------------------------------------
+// Walk the UI subtree and paint each node with graphics.*. The renderer and
+// the window manager are one: z-order is sibling order (later siblings on
+// top), and hover/pressed/focus looks come from the node's state bitmask.
+// Colours and metrics come from theme.mln.
+//
+// Theme values are fetched into locals before use because a cross-package
+// call nested inside another package's argument list does not resolve.
+
+/**
+ * Resolves foreground text color for a node, returning fallback if unset.
+ * @param n DOM Node row.
+ * @param fallback Default RGB color if the node has none.
+ * @return Resolved RGB color.
+ */
+export i32 node_fg(borrow NodeRow n, i32 fallback) {
+    return case n.color of { Some(color) -> color; None -> fallback; };
+}
+
+/**
+ * Renders a WINDOW node including drop shadow, title bar, chrome buttons, resize grip, and border.
+ * @param n Window node row.
+ */
+export void draw_window(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 state = n.state;
+    i32 active = state & NodeState::FOCUSED;
+    i32 hovered = state & NodeState::HOVERED;
+
+    i32 r = theme.WINDOW_RADIUS * s;
+    i32 tb = theme.TITLEBAR_H * s;
+
+    // Shadow first, then the body over it.
+    i32 shadow = theme.SHADOW_SIZE * s;
+    i32 shadow_off = theme.SHADOW_OFFSET * s;
+    i32 shadow_a = theme.SHADOW_ALPHA;
+    if (!active) { shadow_a = theme.SHADOW_ALPHA_INACTIVE; }
+    graphics.draw_shadow(x, y, w, h, r, shadow, shadow_off, shadow_a);
+
+    i32 bg = theme.WINDOW_BG;
+    graphics.fill_round_rect(x, y, w, h, r, bg);
+
+    // Title bar: rounded on top, squared off where it meets the content.
+    i32 tb_top = theme.TITLEBAR_TOP;
+    i32 tb_bottom = theme.TITLEBAR_BOTTOM;
+    if (!active) {
+        tb_top = theme.TITLEBAR_INACTIVE;
+        tb_bottom = tb_top;
+    }
+    graphics.push_clip(x, y, w, tb);
+    graphics.fill_round_rect(x, y, w, tb + r, r, tb_top);
+    graphics.fill_gradient_v(x + r, y, w - 2 * r, tb, tb_top, tb_bottom);
+    graphics.fill_gradient_v(x, y + r, r, tb - r, tb_top, tb_bottom);
+    graphics.fill_gradient_v(x + w - r, y + r, r, tb - r, tb_top, tb_bottom);
+    graphics.pop_clip();
+    i32 divider = theme.TITLEBAR_DIVIDER;
+    graphics.blend_rect(x, y + tb - s, w, s, divider);
+
+    // Title-bar buttons: close, minimize, maximize discs; their glyphs
+    // (x, -, +) appear while the pointer is over the window.
+    i32 cy = dom_window_chrome.button_cy(&n);
+    i32 cr = dom_window_chrome.button_radius();
+    i32 ring = theme.CLOSE_BUTTON_RING;
+    i32 g = theme.CLOSE_GLYPH;
+    i32 k = cr / 2;
+    i32 buttons = dom_window_chrome.button_count(&n);
+    i32 which = 1;
+    while (which <= buttons) {
+        i32 bx = dom_window_chrome.button_cx(&n, which);
+        i32 face = theme.CLOSE_BUTTON;
+        if (which == 2) { face = theme.MINIMIZE_BUTTON; }
+        if (which == 3) { face = theme.MAXIMIZE_BUTTON; }
+        if (!active) { face = theme.CLOSE_BUTTON_INACTIVE; }
+        graphics.fill_disc(bx, cy, cr, face);
+        graphics.draw_round_rect(bx - cr, cy - cr, 2 * cr, 2 * cr, cr, s, ring);
+        if (hovered != 0) {
+            if (which == 1) {
+                graphics.draw_line(bx - k, cy - k, bx + k, cy + k, g);
+                graphics.draw_line(bx + k, cy - k, bx - k, cy + k, g);
+                graphics.draw_line(bx - k + 1, cy - k, bx + k + 1, cy + k, g);
+                graphics.draw_line(bx + k + 1, cy - k, bx - k + 1, cy + k, g);
+            }
+            if (which == 2) {
+                graphics.fill_rect(bx - k, cy - s / 2, 2 * k + 1, s + 1, g);
+            }
+            if (which == 3) {
+                graphics.fill_rect(bx - k, cy - s / 2, 2 * k + 1, s + 1, g);
+                graphics.fill_rect(bx - s / 2, cy - k, s + 1, 2 * k + 1, g);
+            }
+        }
+        which++;
+    }
+
+    // Resize grip: three short diagonal lines in the bottom-right corner. A
+    // dialog keeps its size.
+    if (!dom.is_dialog(&n)) {
+        i32 grip = theme.TEXT_DISABLED;
+        i32 gx = x + w - 4 * s;
+        i32 gy = y + h - 4 * s;
+        i32 d = 4 * s;
+        while (d <= 12 * s) {
+            graphics.draw_line(gx - d, gy, gx, gy - d, grip);
+            d = d + 4 * s;
+        }
+    }
+
+    // Title, centred, kept clear of the buttons.
+    if (n.text.is_live()) {
+        i32 title_color = theme.TEXT_PRIMARY;
+        if (!active) { title_color = theme.TEXT_SECONDARY; }
+        i32 th = graphics.text_height(1, s);
+        i32 inset = 2 * (dom_window_chrome.button_cx(&n, 3) - x);
+        graphics.push_clip(x + inset, y, w - 2 * inset, tb);
+        str label_1 = n.text.as_str();
+        graphics.draw_label_centered(x, y + (tb - th) / 2, w, label_1, title_color, 1, s);
+        graphics.pop_clip();
+    }
+
+    // Border last so it sits over the title bar edge.
+    i32 border = theme.WINDOW_BORDER;
+    if (!active) { border = theme.WINDOW_BORDER_INACTIVE; }
+    graphics.draw_round_rect(x, y, w, h, r, s, border);
+}
+
+/**
+ * Renders a BUTTON node with hover, press, focus ring, and primary styling.
+ * @param n Button node row.
+ */
+export void draw_button(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 state = n.state;
+    i32 style = n.style;
+    i32 r = theme.BUTTON_RADIUS * s;
+
+    i32 face = theme.BUTTON_FACE;
+    i32 label = theme.TEXT_PRIMARY;
+    i32 border = theme.BUTTON_BORDER;
+    if (style & NodeStyle::PRIMARY) {
+        face = theme.ACCENT;
+        label = theme.ON_ACCENT;
+        border = theme.ACCENT_PRESSED;
+        if (state & NodeState::PRESSED) { face = theme.ACCENT_PRESSED; }
+        else if (state & NodeState::HOVERED) { face = theme.ACCENT_HOVER; }
+    } else {
+        if (state & NodeState::PRESSED) { face = theme.BUTTON_FACE_PRESSED; }
+        else if (state & NodeState::HOVERED) { face = theme.BUTTON_FACE_HOVER; }
+    }
+    label = node_fg(&n, label);
+
+    graphics.fill_round_rect(x, y, w, h, r, face);
+    graphics.draw_round_rect(x, y, w, h, r, s, border);
+    if (state & NodeState::FOCUSED) {
+        // Keyboard focus ring just outside the button.
+        i32 ring = theme.ACCENT;
+        graphics.draw_round_rect(x - 2 * s, y - 2 * s, w + 4 * s, h + 4 * s, r + 2 * s, s, ring);
+    }
+    if (n.text.is_live()) {
+        i32 th = graphics.text_height(0, s);
+        graphics.push_clip(x, y, w, h);
+        str label_2 = n.text.as_str();
+        graphics.draw_label_centered(x, y + (h - th) / 2, w, label_2, label, 0, s);
+        graphics.pop_clip();
+    }
+}
+
+// --- TextArea / List / Menu rendering ---
+// All three are rows of text inside a rounded box; the list and menu add a
+// selection/hover highlight, the text area a caret.
+
+/**
+ * Copies a slice of text bytes into a bounded Text for safe rendering.
+ * @param buf Source text buffer.
+ * @param start Start byte offset in source.
+ * @param llen Number of bytes to copy.
+ * @return A bounded NUL-terminated copy of the requested line.
+ */
+export Text<160> copy_line(Blob buf, i32 start, i32 llen) {
+    Text<160> out = Text<160> {};
+    out.clear();
+    i32 i = 0;
+    while (i < llen) {
+        if (!out.push((u8)buf.at(start + i))) { break; }
+        i++;
+    }
+    return out;
+}
+
+/**
+ * Renders the background card and border for multi-row container controls.
+ * @param n DOM Node row.
+ * @param focused Non-zero if control has keyboard focus.
+ */
+export void draw_rows_box(borrow NodeRow n, i32 focused) {
+    i32 s = dom.ui_scale();
+    i32 r = theme.INPUT_RADIUS * s;
+    i32 bg = theme.INPUT_BG;
+    graphics.fill_round_rect(n.x, n.y, n.w, n.h, r, bg);
+    i32 border = theme.INPUT_BORDER;
+    i32 bw = s;
+    if (focused != 0) {
+        border = theme.INPUT_BORDER_FOCUS;
+        bw = 2 * s;
+    }
+    graphics.draw_round_rect(n.x, n.y, n.w, n.h, r, bw, border);
+}
+
+/**
+ * Draws a box's scroll thumb when not all its rows fit (dom_scroll).
+ * @param n TextArea, List or Terminal node row.
+ * @param color The thumb's ARGB colour.
+ */
+void draw_scroll_thumb(borrow NodeRow n, i32 color) {
+    case dom_scroll.bar_of(&n) of {
+        Some(b) -> ({
+            graphics.blend_rect(dom_scroll.thumb_left(b), dom_scroll.thumb_top(b),
+                                3 * dom.ui_scale(), dom_scroll.thumb_length(b), color);
+        });
+        None -> _;
+    };
+}
+
+/**
+ * Renders a multi-line TEXT_AREA node, including text lines and cursor caret.
+ * @param n TextArea node row.
+ */
+export void draw_text_area(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 state = n.state;
+    i32 focused = state & NodeState::FOCUSED;
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 pad = 8 * s;
+    i32 lh = graphics.text_height(0, s);
+    draw_rows_box(&n, focused);
+
+    i32 fg = theme.TEXT_PRIMARY;
+    fg = node_fg(&n, fg);
+    bool ro = dom_text_edit.is_readonly(&n);
+    Blob buf = n.text;
+    i32 len = n.len;
+    graphics.push_clip(x + s, y + s, w - 2 * s, h - 2 * s);
+    // Rows: lines, or lines broken to fit with NodeStyle::WRAP (dom_text_edit).
+    str text = n.text.as_str();
+    i32 rows = dom_text_edit.visible_lines(&n);
+    i32 first = n.scroll;
+    i32 start = dom_text_edit.row_start(&n, first);
+    i32 row = 0;
+    bool selecting = focused != 0 && dom_text_edit.has_selection(&n);
+    i32 sel_from = dom_text_edit.selection_start(&n);
+    i32 sel_to = dom_text_edit.selection_end(&n);
+    bool has_caret = false;
+    i32 caret_x = 0;
+    i32 caret_y = 0;
+    while (row < rows) {
+        i32 end = dom_text_edit.row_end(&n, text, start);
+        i32 llen = end - start;
+        i32 ty = y + pad + row * lh;
+        Text<160> line = copy_line(buf, start, llen);
+        str label_3 = line.as_str();
+        if (selecting && sel_from <= end && sel_to > start) {
+            // The part of this row inside the selection; a selected line break
+            // shows as a little more after the row's text.
+            i32 a = sel_from > start ? sel_from - start : 0;
+            i32 b = sel_to < end ? sel_to - start : llen;
+            i32 sel_left = x + pad + graphics.text_width_n(label_3, a, 0, s);
+            i32 sel_right = x + pad + graphics.text_width_n(label_3, b, 0, s);
+            if (sel_to > end && end < len) { sel_right = sel_right + 4 * s; }
+            if (sel_right > sel_left) { graphics.fill_rect(sel_left, ty, sel_right - sel_left, lh, theme.SELECTION); }
+        }
+        graphics.draw_label(x + pad, ty, label_3, fg, 0, s);
+        // The caret is in this row up to its end, unless a wrapped row breaks
+        // there: then it starts the next row.
+        i32 cur = n.cursor;
+        bool line_end = end >= len || text.byte(end) == '\n';
+        if (cur >= start && (cur < end || cur == end && line_end)) {
+            str label_4 = line.as_str();
+            caret_x = x + pad + graphics.text_width_n(label_4, cur - start, 0, s);
+            caret_y = ty;
+            has_caret = true;
+        }
+        if (end >= len) { break; }
+        start = dom_text_edit.next_row_start(text, end);
+        row++;
+    }
+    if (focused != 0) {
+        if (!ro) {
+            if (has_caret) {
+                i32 caret = theme.CARET;
+                graphics.fill_rect(caret_x, caret_y + s, s, lh - 2 * s, caret);
+            }
+        }
+    }
+    graphics.pop_clip();
+    draw_scroll_thumb(&n, theme.SCROLL_THUMB);
+    // Empty editable area: placeholder from the node name.
+    if (len == 0) {
+        if (!ro) {
+            if (n.name.is_live()) {
+                i32 ph = theme.INPUT_PLACEHOLDER;
+                str label_5 = n.name.as_str();
+                graphics.draw_label(x + pad, y + pad, label_5, ph, 0, s);
+            }
+        }
+    }
+}
+
+/**
+ * Renders a TERMINAL: its text on a grid of fixed-width cells, long lines
+ * wrapped at the grid's width, the end in view unless it is scrolled back, and
+ * a block caret after the typed line while it has the keyboard.
+ * @param n Terminal node row.
+ */
+export void draw_terminal(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 pad = dom_terminal.PAD * s;
+    i32 cell = graphics.mono_cell_width(s);
+    i32 lh = graphics.mono_line_height(s);
+    i32 cols = dom_terminal.columns(&n);
+    i32 rows = dom_terminal.visible_rows(&n);
+    graphics.fill_rect(n.x, n.y, n.w, n.h, theme.TERMINAL_BG);
+
+    str text = n.text.as_str();
+    i32 total = dom_terminal.row_count(text, cols);
+    i32 first = total - rows - n.scroll;
+    if (first < 0) { first = 0; }
+    i32 left = n.x + pad;
+    i32 top = n.y + pad;
+    bool selecting = dom_terminal.has_selection(&n);
+    i32 sel_from = dom_terminal.selection_start(&n);
+    i32 sel_to = dom_terminal.selection_end(&n);
+    graphics.push_clip(n.x, n.y, n.w, n.h);
+    // `row` counts the rows of the whole text; the visible ones are first..first+rows.
+    i32 row = 0;
+    i32 start = 0;
+    bool done = false;
+    while (!done) {
+        i32 end = start;
+        while (end < text.length && text.byte(end) != '\n') { end++; }
+        bool last = end >= text.length;
+        i32 count = dom_terminal.line_rows(end - start, last, cols);
+        i32 k = 0;
+        while (k < count && row + k - first < rows) {
+            i32 at = row + k - first;
+            i32 a = start + k * cols;
+            i32 b = a + cols;
+            if (b > end) { b = end; }
+            if (at >= 0 && a < b) {
+                if (selecting && sel_from < b && sel_to > a) {
+                    i32 lo = sel_from > a ? sel_from : a;
+                    i32 hi = sel_to < b ? sel_to : b;
+                    graphics.fill_rect(left + (lo - a) * cell, top + at * lh, (hi - lo) * cell, lh,
+                                       theme.TERMINAL_SELECTION);
+                }
+                Option<str> part = text.slice(a, b);
+                str piece = case part of { Some(view) -> view; None -> ""; };
+                graphics.draw_mono(left, top + at * lh, piece, theme.TERMINAL_TEXT, s);
+            }
+            k++;
+        }
+        row = row + count;
+        if (last || row - first >= rows) {
+            done = true;
+        } else {
+            start = end + 1;
+        }
+    }
+    // The caret is in the typed line, on the last line of the text, which
+    // takes the last rows; a caret over a byte shows it through.
+    if ((n.state & NodeState::FOCUSED) != 0) {
+        i32 line_start = text.length;
+        while (line_start > 0 && text.byte(line_start - 1) != '\n') { line_start--; }
+        i32 caret = dom_terminal.caret_byte(&n);
+        i32 offset = caret - line_start;
+        i32 at = total - dom_terminal.line_rows(text.length - line_start, true, cols) + offset / cols - first;
+        if (at >= 0 && at < rows) {
+            i32 column = offset % cols;
+            graphics.fill_rect(left + column * cell, top + at * lh, cell, lh, theme.TERMINAL_CARET);
+            if (caret < text.length) {
+                Option<str> under = text.slice(caret, caret + 1);
+                str glyph = case under of { Some(view) -> view; None -> ""; };
+                graphics.draw_mono(left + column * cell, top + at * lh, glyph, theme.TERMINAL_BG, s);
+            }
+        }
+    }
+    graphics.pop_clip();
+    draw_scroll_thumb(&n, theme.SCROLL_THUMB_ON_DARK);
+}
+
+/**
+ * Renders a MENU_BUTTON: its title, on a highlight while the pointer is over it.
+ * @param n MenuButton node row.
+ */
+export void draw_menu_button(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    if ((n.state & NodeState::HOVERED) != 0) {
+        graphics.fill_round_rect(n.x, n.y, n.w, n.h, 4 * s, theme.MENU_BUTTON_HOVER);
+    }
+    if (n.name.is_live()) {
+        i32 th = graphics.text_height(0, s);
+        str title = n.name.as_str();
+        graphics.draw_label_centered(n.x, n.y + (n.h - th) / 2, n.w, title, theme.TEXT_PRIMARY, 0, s);
+    }
+}
+
+/**
+ * Renders text rows for List or Menu controls, highlighting the row in `sel`.
+ * @param n DOM Node row.
+ * @param hl_color Background RGB color for highlight.
+ * @param hl_fg Foreground text RGB color for highlight.
+ */
+export void draw_rows(borrow NodeRow n, i32 hl_color, i32 hl_fg) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 pad = 8 * s;
+    i32 lh = graphics.text_height(0, s);
+    i32 fg = theme.TEXT_PRIMARY;
+    fg = node_fg(&n, fg);
+    Blob buf = n.text;
+    i32 len = n.len;
+    i32 r = theme.BUTTON_RADIUS * s;
+    graphics.push_clip(x + s, y + s, w - 2 * s, h - 2 * s);
+    defer graphics.pop_clip();
+    i32 rows = dom_text_edit.visible_lines(&n);
+    i32 first = n.scroll;
+    i32 start = dom_text_edit.line_start(&n, first);
+    i32 row = 0;
+    while (row < rows) {
+        if (start >= len) { break; }
+        i32 llen = dom_text_edit.line_len_at(&n, start);
+        i32 ty = y + pad + row * lh;
+        i32 color = fg;
+        bool highlighted = case n.sel of {
+            Some(index) -> first + row == index;
+            None -> false;
+        };
+        if (highlighted) {
+            graphics.fill_round_rect(x + 4 * s, ty - s, w - 8 * s, lh + 2 * s, r, hl_color);
+            color = hl_fg;
+        }
+        Text<160> line = copy_line(buf, start, llen);
+        str label_6 = line.as_str();
+        i32 tx = x + pad + 4 * s;
+        i32 icon = dom_text_edit.row_icon(label_6);
+        i32 skip = 0;
+        if (icon != 0) {
+            icons.draw(icon, tx, ty + (lh - icons.SIZE * s) / 2, s);
+            tx = tx + dom_text_edit.ROW_ICON_W * s;
+            skip = 1;
+        }
+        str shown = case label_6.slice(skip, label_6.length) of { Some(view) -> view; None -> ""; };
+        graphics.draw_label(tx, ty, shown, color, 0, s);
+        start = start + llen + 1;
+        row = row + 1;
+    }
+}
+
+/**
+ * Renders a GRAPH: a card with lines at each quarter, the first series filled
+ * under an accent line and the second as a line over it. The samples span the
+ * width newest-right, so a series still filling up starts partway across.
+ * @param n Graph node row.
+ */
+export void draw_graph(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    draw_rows_box(&n, 0);
+    i32 pad = 8 * s;
+    i32 left = n.x + pad;
+    i32 top = n.y + pad;
+    i32 w = n.w - 2 * pad;
+    i32 h = n.h - 2 * pad;
+    if (w <= 0 || h <= 0) { return; }
+    i32 k = 1;
+    while (k < 4) {
+        graphics.blend_rect(left, top + h * k / 4, w, s, theme.GRAPH_GRID);
+        k++;
+    }
+    i32 cap = n.cap;
+    Samples samples = Samples {};
+    dom_graph.parse_series(dom_graph.series_text(&n, 0), cap, &samples);
+    draw_series(&samples, cap, left, top, w, h, true, theme.ACCENT);
+    dom_graph.parse_series(dom_graph.series_text(&n, 1), cap, &samples);
+    draw_series(&samples, cap, left, top, w, h, false, theme.GRAPH_SECOND);
+}
+
+/**
+ * Draws one series of a graph as a line, two pixels thick at UI scale 1.
+ * @param v The samples, oldest first.
+ * @param cap How many samples span the width.
+ * @param left Left of the plot area.
+ * @param top Top of the plot area: 100%.
+ * @param w Width of the plot area.
+ * @param h Height of the plot area.
+ * @param filled Whether to fill the area under the line.
+ * @param color Line colour.
+ */
+void draw_series(borrow Samples v, i32 cap, i32 left, i32 top, i32 w, i32 h, bool filled, i32 color) {
+    i32 thickness = 2 * dom.ui_scale();
+    i32 bottom = top + h;
+    i32 first = cap - v.count; // where the oldest sample goes
+    i32 i = 0;
+    while (i + 1 < v.count) {
+        i32 x0 = left + w * (first + i) / (cap - 1);
+        i32 x1 = left + w * (first + i + 1) / (cap - 1);
+        i32 y0 = bottom - h * v.values[i] / 100;
+        i32 y1 = bottom - h * v.values[i + 1] / 100;
+        if (filled) {
+            i32 x = x0;
+            while (x < x1) {
+                i32 y = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+                if (y < bottom) { graphics.blend_rect(x, y, 1, bottom - y, theme.GRAPH_FILL); }
+                x++;
+            }
+        }
+        i32 t = 0;
+        while (t < thickness) {
+            graphics.draw_line(x0, y0 - t, x1, y1 - t, color);
+            t++;
+        }
+        i++;
+    }
+}
+
+/**
+ * Renders a LIST control showing item rows and selected item highlight.
+ * @param n List node row.
+ */
+export void draw_list(borrow NodeRow n) {
+    i32 state = n.state;
+    i32 focused = state & NodeState::FOCUSED;
+    draw_rows_box(&n, focused);
+    i32 hl = theme.ACCENT;
+    i32 hl_fg = theme.ON_ACCENT;
+    if (!focused) {
+        hl = theme.BUTTON_FACE_PRESSED;
+        hl_fg = theme.TEXT_PRIMARY;
+    }
+    draw_rows(&n, hl, hl_fg);
+    draw_scroll_thumb(&n, theme.SCROLL_THUMB);
+}
+
+/**
+ * Renders a floating popup MENU control with drop shadow and hovered item highlight.
+ * @param n Menu node row.
+ */
+export void draw_menu(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 r = theme.BUTTON_RADIUS * s;
+    graphics.draw_shadow(n.x, n.y, n.w, n.h, r, 8 * s, 3 * s, 70);
+    i32 bg = theme.PANEL_BG;
+    graphics.fill_round_rect(n.x, n.y, n.w, n.h, r, bg);
+    i32 border = theme.WINDOW_BORDER;
+    graphics.draw_round_rect(n.x, n.y, n.w, n.h, r, s, border);
+    i32 hl = theme.ACCENT;
+    i32 hl_fg = theme.ON_ACCENT;
+    draw_rows(&n, hl, hl_fg);
+}
+
+/**
+ * Renders a static TEXT node with left or centered alignment.
+ * @param n Text node row.
+ */
+export void draw_text_node(borrow NodeRow n) {
+    if (!n.text.is_live()) { return; }
+    i32 s = dom.ui_scale();
+    i32 color = theme.TEXT_PRIMARY;
+    color = node_fg(&n, color);
+    i32 bold = 0;
+    if (dom.text_bold(&n)) { bold = 1; }
+    i32 style = n.style;
+    if (style & NodeStyle::CENTER) {
+        str label_7 = n.text.as_str();
+        graphics.draw_label_centered(n.x, n.y, n.w, label_7, color, bold, s);
+    } else {
+        str label_8 = n.text.as_str();
+        graphics.draw_label(n.x, n.y, label_8, color, bold, s);
+    }
+}
+
+/**
+ * Renders a single-line TEXT_INPUT control with placeholder or text and blinking caret.
+ * @param n TextInput node row.
+ */
+export void draw_text_input(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 state = n.state;
+    i32 focused = state & NodeState::FOCUSED;
+    i32 r = theme.INPUT_RADIUS * s;
+    i32 pad = theme.INPUT_PADDING_X * s;
+
+    i32 bg = theme.INPUT_BG;
+    graphics.fill_round_rect(x, y, w, h, r, bg);
+    i32 border = theme.INPUT_BORDER;
+    i32 bw = s;
+    if (focused != 0) {
+        border = theme.INPUT_BORDER_FOCUS;
+        bw = 2 * s;
+    }
+    graphics.draw_round_rect(x, y, w, h, r, bw, border);
+
+    i32 th = graphics.text_height(0, s);
+    i32 ty = y + (h - th) / 2;
+    // Text wider than the field slides left to keep the caret in view.
+    i32 left = x + pad - dom_text_edit.input_scroll(&n);
+    graphics.push_clip(x + pad / 2, y, w - pad, h);
+    defer graphics.pop_clip();
+    if (focused != 0 && dom_text_edit.has_selection(&n)) {
+        str all = n.text.as_str();
+        i32 sel_left = left + graphics.text_width_n(all, dom_text_edit.selection_start(&n), 0, s);
+        i32 sel_right = left + graphics.text_width_n(all, dom_text_edit.selection_end(&n), 0, s);
+        graphics.fill_rect(sel_left, ty, sel_right - sel_left, th, theme.SELECTION);
+    }
+    if (n.len == 0) {
+        if (n.name.is_live()) {
+            i32 ph = theme.INPUT_PLACEHOLDER;
+            str label_9 = n.name.as_str();
+            graphics.draw_label(x + pad, ty, label_9, ph, 0, s);
+        }
+    } else {
+        i32 fg = theme.TEXT_PRIMARY;
+        fg = node_fg(&n, fg);
+        str label_10 = n.text.as_str();
+        graphics.draw_label(left, ty, label_10, fg, 0, s);
+    }
+    if (focused != 0) {
+        i32 cur = n.cursor;
+        str label_11 = n.text.as_str();
+        i32 caret_x = left + graphics.text_width_n(label_11, cur, 0, s);
+        i32 caret = theme.CARET;
+        graphics.fill_rect(caret_x, ty + s, s, th - 2 * s, caret);
+    }
+}
+
+/**
+ * Renders a CHECKBOX control with box, checkmark, and label text.
+ * @param n Checkbox node row.
+ */
+export void draw_checkbox(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 h = n.h;
+    i32 state = n.state;
+    i32 checked = state & NodeState::CHECKED;
+    i32 box = theme.CHECKBOX_SIZE * s;
+    i32 r = theme.CHECKBOX_RADIUS * s;
+    i32 by = y + (h - box) / 2;
+
+    i32 face = theme.CHECKBOX_BG;
+    i32 border = theme.CHECKBOX_BORDER;
+    if (checked) {
+        face = theme.ACCENT;
+        border = theme.ACCENT_PRESSED;
+        if (state & NodeState::PRESSED) { face = theme.ACCENT_PRESSED; }
+        else if (state & NodeState::HOVERED) { face = theme.ACCENT_HOVER; }
+    } else {
+        if (state & NodeState::PRESSED) { face = theme.BUTTON_FACE_PRESSED; }
+        else if (state & NodeState::HOVERED) { face = theme.BUTTON_FACE_HOVER; }
+    }
+    graphics.fill_round_rect(x, by, box, box, r, face);
+    graphics.draw_round_rect(x, by, box, box, r, s, border);
+    if (state & NodeState::FOCUSED) {
+        i32 ring = theme.ACCENT;
+        graphics.draw_round_rect(x - 2 * s, by - 2 * s, box + 4 * s, box + 4 * s, r + 2 * s, s, ring);
+    }
+    if (checked) {
+        // Check mark: two strokes, drawn s+1 times side by side for weight.
+        i32 white = theme.ON_ACCENT;
+        i32 x0 = x + box * 25 / 100;
+        i32 y0 = by + box * 52 / 100;
+        i32 x1 = x + box * 43 / 100;
+        i32 y1 = by + box * 70 / 100;
+        i32 x2 = x + box * 76 / 100;
+        i32 y2 = by + box * 30 / 100;
+        i32 k = 0;
+        while (k < s + 1) {
+            graphics.draw_line(x0, y0 + k, x1, y1 + k, white);
+            graphics.draw_line(x1, y1 + k, x2, y2 + k, white);
+            k++;
+        }
+    }
+    if (n.text.is_live()) {
+        i32 fg = theme.TEXT_PRIMARY;
+        fg = node_fg(&n, fg);
+        i32 th = graphics.text_height(0, s);
+        str label_12 = n.text.as_str();
+        graphics.draw_label(x + box + 8 * s, y + (h - th) / 2, label_12, fg, 0, s);
+    }
+}
+
+/**
+ * Renders a rounded card PANEL container.
+ * @param n Panel node row.
+ */
+export void draw_panel(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 bg = theme.PANEL_BG;
+    i32 border = theme.PANEL_BORDER;
+    i32 r = n.radius;
+    graphics.fill_round_rect(n.x, n.y, n.w, n.h, r, bg);
+    graphics.draw_round_rect(n.x, n.y, n.w, n.h, r, s, border);
+}
+
+// --- taskbar ---
+// The bar lists every window on the desktop but dialogs (click to activate),
+// oldest first, with a launcher button at the left. Entries are laid out
+// arithmetically at draw and hit time rather than as child nodes, so the bar
+// never has to be rebuilt when windows come and go; they narrow when there
+// are more than fit at full width.
+
+/**
+ * The window the taskbar lists after the one created `after`: each window on
+ * the desktop but a dialog, oldest first. A node id is reused, so the order
+ * goes by NodeRow.serial.
+ * @param after The serial of the last window listed, or 0 for the first.
+ * @return The next window, if any.
+ */
+export Option<NodeId> next_window_after(i32 after) {
+    Option<NodeId> best = None;
+    i32 best_serial = 0;
+    for (NodeId child_id in dom.children(dom.desktop_id())) {
+        borrow NodeRow c = dom.row_of(child_id);
+        if (c.kind == NodeKind::WINDOW && !dom.is_dialog(&c) && c.serial > after) {
+            if (best.is_none() || c.serial < best_serial) {
+                best = Some(child_id);
+                best_serial = c.serial;
+            }
+        }
+    }
+    return best;
+}
+
+// Apps started that have no window yet: the taskbar shows each after the
+// windows, dimmed, until its window comes or it ends. The shell says which.
+
+/**
+ * An app the taskbar shows as starting.
+ * @property key Whatever the shell knows it by: its process.
+ * @property icon Its icon (Icon).
+ * @property label Its name.
+ */
+struct Starting {
+    i32 key;
+    i32 icon;
+    Text<32> label;
+};
+
+const i32 STARTING_MAX = 4;
+Starting g_starting[4];
+i32 g_starting_count = 0;
+
+void damage_taskbar() {
+    case dom.row_in(dom.taskbar_id()) of {
+        Some(bar) -> ({ dom.damage_row(&bar); });
+        None -> _;
+    };
+}
+
+/**
+ * Shows an app on the taskbar as starting, until forget_starting.
+ * @param key What the shell knows it by.
+ * @param label Its name.
+ * @param icon Its icon (Icon).
+ */
+export void note_starting(i32 key, str label, i32 icon) {
+    if (g_starting_count >= STARTING_MAX) { return; }
+    Starting entry = Starting { key: key, icon: icon, label: Text<32> {} };
+    entry.label.append(label);
+    g_starting[g_starting_count] = entry;
+    g_starting_count++;
+    damage_taskbar();
+}
+
+/**
+ * Takes a starting app off the taskbar: its window came, or it ended.
+ * @param key What the shell knows it by.
+ */
+export void forget_starting(i32 key) {
+    i32 i = 0;
+    while (i < g_starting_count) {
+        if (g_starting[i].key == key) {
+            i32 j = i;
+            while (j + 1 < g_starting_count) {
+                g_starting[j] = g_starting[j + 1];
+                j++;
+            }
+            g_starting_count--;
+            damage_taskbar();
+            return;
+        }
+        i++;
+    }
+}
+
+// How many windows the taskbar lists.
+i32 taskbar_window_count() {
+    i32 count = 0;
+    i32 after = 0;
+    while (1) {
+        NodeId win = case next_window_after(after) of { Some(id) -> id; None -> ({ break; }); };
+        after = dom.row_of(win).serial;
+        count++;
+    }
+    return count;
+}
+
+/**
+ * The width of each taskbar entry when `count` share a bar `bar_w` wide: the
+ * full width while they fit, narrower after that.
+ * @param count Windows listed.
+ * @param bar_w The taskbar's width in display pixels.
+ * @return Entry width in display pixels.
+ */
+export i32 taskbar_entry_width(i32 count, i32 bar_w) {
+    i32 s = dom.ui_scale();
+    i32 full = theme.TASKBAR_ENTRY_W * s;
+    if (count <= 0) { return full; }
+    i32 gap = 6 * s;
+    i32 room = bar_w - taskbar_entry_x(0, full) - 8 * s;
+    i32 fit = (room + gap) / count - gap;
+    if (fit < 24 * s) { fit = 24 * s; }
+    return fit < full ? fit : full;
+}
+
+/**
+ * Computes the X offset of a taskbar entry from the bar's left edge.
+ * @param index 0-based window index.
+ * @param width Entry width (taskbar_entry_width).
+ * @return Offset in display pixels.
+ */
+export i32 taskbar_entry_x(i32 index, i32 width) {
+    i32 s = dom.ui_scale();
+    i32 launcher = theme.TASKBAR_LAUNCHER_W * s;
+    return 8 * s + launcher + 8 * s + index * (width + 6 * s);
+}
+
+/**
+ * Renders the desktop taskbar: the launcher button and an entry per window.
+ * @param n Taskbar node row.
+ */
+export void draw_taskbar(borrow NodeRow n) {
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+
+    i32 bg = theme.TASKBAR_BG;
+    graphics.blend_rect(x, y, w, h, bg);
+    i32 edge = theme.TASKBAR_EDGE;
+    graphics.blend_rect(x, y, w, s, edge);
+
+    // Launcher: accent dot + "MyOS".
+    i32 accent = theme.ACCENT;
+    i32 on_dark = theme.TEXT_ON_DARK;
+    i32 lx = x + 8 * s;
+    i32 lw = theme.TASKBAR_LAUNCHER_W * s;
+    i32 er = theme.TASKBAR_ENTRY_RADIUS * s;
+    i32 entry_bg = theme.TASKBAR_ENTRY;
+    graphics.fill_round_rect(lx, y + 6 * s, lw, h - 12 * s, er, entry_bg);
+    graphics.fill_disc(lx + 16 * s, y + h / 2, 6 * s, accent);
+    i32 th_b = graphics.text_height(1, s);
+    graphics.draw_label(lx + 30 * s, y + (h - th_b) / 2, "MyOS", on_dark, 1, s);
+
+    // One entry per window, in creation order, so raising a window does not
+    // shuffle the bar; then the apps still starting.
+    i32 ew = taskbar_entry_width(taskbar_window_count() + g_starting_count, w);
+    i32 active_bg = theme.TASKBAR_ENTRY_ACTIVE;
+    i32 dim = theme.TEXT_ON_DARK_DIM;
+    i32 th = graphics.text_height(0, s);
+    i32 index = 0;
+    i32 after = 0;
+    while (1) {
+        NodeId win = case next_window_after(after) of { Some(id) -> id; None -> ({ break; }); };
+        borrow NodeRow c = dom.row_of(win);
+        i32 ex = x + taskbar_entry_x(index, ew);
+        i32 ebg = entry_bg;
+        i32 fg = dim;
+        bool active = dom.holds(dom.active_window_id(), win);
+        if (active) { ebg = active_bg; fg = on_dark; }
+        graphics.fill_round_rect(ex, y + 6 * s, ew, h - 12 * s, er, ebg);
+        if (active) {
+            graphics.fill_round_rect(ex + 10 * s, y + h - 9 * s, ew - 20 * s, 2 * s, s, accent);
+        }
+        graphics.push_clip(ex + 10 * s, y, ew - 20 * s, h);
+        i32 tx = ex + 12 * s;
+        if (c.icon != 0) {
+            icons.draw(c.icon, ex + 10 * s, y + (h - icons.SIZE * s) / 2, s);
+            tx = ex + 32 * s;
+        }
+        if (c.text.is_live()) {
+            str label_13 = c.text.as_str();
+            graphics.draw_label(tx, y + (h - th) / 2, label_13, fg, 0, s);
+        }
+        graphics.pop_clip();
+        index = index + 1;
+        after = c.serial;
+    }
+    i32 k = 0;
+    while (k < g_starting_count) {
+        Starting entry = g_starting[k];
+        i32 ex = x + taskbar_entry_x(index, ew);
+        graphics.draw_round_rect(ex, y + 6 * s, ew, h - 12 * s, er, s, entry_bg);
+        graphics.push_clip(ex + 10 * s, y, ew - 20 * s, h);
+        icons.draw(entry.icon, ex + 10 * s, y + (h - icons.SIZE * s) / 2, s);
+        str name = entry.label.as_str();
+        graphics.draw_label(ex + 32 * s, y + (h - th) / 2, name, dim, 0, s);
+        graphics.pop_clip();
+        index = index + 1;
+        k++;
+    }
+}
+
+/** Target identified by hit-testing a pointer position on the taskbar. */
+export enum TaskbarTarget {
+    Miss,
+    Launcher,
+    Window(NodeId),
+}
+
+/**
+ * Hit tests display point (px, py) on the taskbar to identify what was clicked.
+ * @param px Screen X coordinate.
+ * @param py Screen Y coordinate.
+ * @return TaskbarTarget (Miss, Launcher, or Window(id)).
+ */
+export TaskbarTarget taskbar_target_at(i32 px, i32 py) {
+    borrow NodeRow n = case dom.row_in(dom.taskbar_id()) of { Some(row) -> row; None -> ({ return TaskbarTarget::Miss; }); };
+    i32 s = dom.ui_scale();
+    i32 x = n.x;
+    i32 lx = x + 8 * s;
+    i32 lw = theme.TASKBAR_LAUNCHER_W * s;
+    if (px >= lx) {
+        if (px < lx + lw) { return TaskbarTarget::Launcher; }
+    }
+    i32 ew = taskbar_entry_width(taskbar_window_count(), n.w);
+    i32 index = 0;
+    i32 after = 0;
+    while (1) {
+        NodeId win = case next_window_after(after) of { Some(id) -> id; None -> ({ break; }); };
+        i32 ex = x + taskbar_entry_x(index, ew);
+        if (px >= ex) {
+            if (px < ex + ew) { return TaskbarTarget::Window(win); }
+        }
+        index++;
+        after = dom.row_of(win).serial;
+    }
+    return TaskbarTarget::Miss;
+}
+
+// What the launcher button does; the shell installs it.
+void no_launcher() { }
+fn() -> void g_launcher = no_launcher;
+
+/**
+ * Registers an application launcher callback for the taskbar launcher button.
+ * @param handler Function pointer to launcher callback: fn().
+ */
+export void set_launcher(fn() -> void handler) { g_launcher = handler; }
+
+/**
+ * Returns the callback for the taskbar launcher button.
+ * @return The callback set_launcher installed, or one that does nothing.
+ */
+export fn() -> void launcher_handler() { return g_launcher; }
+
+/**
+ * Dispatches node drawing to the kind-specific drawing routine.
+ * @param n DOM Node row to render.
+ */
+export void draw_node(borrow NodeRow n) {
+    i32 kind = n.kind;
+    i32 x = n.x;
+    i32 y = n.y;
+    i32 w = n.w;
+    i32 h = n.h;
+    i32 scale = dom.ui_scale();
+
+    if (kind == NodeKind::TEXT_AREA) {
+        draw_text_area(&n);
+    } else if (kind == NodeKind::LIST) {
+        draw_list(&n);
+    } else if (kind == NodeKind::GRAPH) {
+        draw_graph(&n);
+    } else if (kind == NodeKind::TERMINAL) {
+        draw_terminal(&n);
+    } else if (kind == NodeKind::MENU_BUTTON) {
+        draw_menu_button(&n);
+    } else if (kind == NodeKind::MENU) {
+        draw_menu(&n);
+    } else if (kind == NodeKind::BOX) {
+        graphics.fill_rect(x, y, w, h, n.background_color);
+        graphics.draw_rect_scaled(x, y, w, h, n.border_color, scale);
+    } else if (kind == NodeKind::WINDOW) {
+        draw_window(&n);
+    } else if (kind == NodeKind::BUTTON) {
+        draw_button(&n);
+    } else if (kind == NodeKind::TEXT) {
+        draw_text_node(&n);
+    } else if (kind == NodeKind::TEXT_INPUT) {
+        draw_text_input(&n);
+    } else if (kind == NodeKind::CHECKBOX) {
+        draw_checkbox(&n);
+    } else if (kind == NodeKind::SEPARATOR) {
+        i32 sep = theme.SEPARATOR;
+        graphics.blend_rect(x, y, w, h, sep);
+    } else if (kind == NodeKind::PANEL) {
+        draw_panel(&n);
+    } else if (kind == NodeKind::TASKBAR) {
+        draw_taskbar(&n);
+    }
+    // Structural nodes (root/system/process/...) draw nothing.
+}
+
+/**
+ * Checks if a node's full extent intersects the current paint damage rectangle.
+ * @param n DOM Node row.
+ * @return True if node overlaps damage area or full repaint active, false otherwise.
+ */
+export bool node_in_damage(borrow NodeRow n) {
+    return dom.node_intersects_paint(&n);
+}
+
+/**
+ * Recursively renders a DOM row and its descendants respecting damage clipping.
+ * @param n DOM Node row to render.
+ */
+export void render(borrow NodeRow n) {
+    if (!(n.state & NodeState::VISIBLE)) { return; }
+
+    bool in_damage = node_in_damage(&n);
+    if (in_damage) {
+        draw_node(&n);
+    }
+
+    // Children are visited regardless: a child can overlap the damage region
+    // even when its parent does not -- unless the parent clips them, in
+    // which case an off-damage parent means off-damage children.
+    bool clip = dom.clips_children(&n);
+    if (clip) {
+        if (!in_damage) { return; }
+        graphics.push_clip(n.x, n.y, n.w, n.h);
+    }
+    for (NodeId child_id in dom.children(n.id)) {
+        render(&dom.row_of(child_id));
+    }
+    if (clip) { graphics.pop_clip(); }
+}
+
+/**
+ * Paints the desktop background gradient, all desktop child windows, taskbar, and active menu.
+ */
+export void paint_desktop() {
+    i32 top = theme.DESKTOP_TOP;
+    i32 bottom = theme.DESKTOP_BOTTOM;
+    i32 dw = graphics.display_width();
+    i32 dh = graphics.display_height();
+    graphics.fill_gradient_v(0, 0, dw, dh, top, bottom);
+
+    Option<NodeId> taskbar = dom.taskbar_id();
+    Option<NodeId> menu = dom_menu.menu_id();
+    for (NodeId child_id in dom.children(dom.desktop_id())) {
+        if (!dom.holds(taskbar, child_id) && !dom.holds(menu, child_id)) {
+            render(&dom.row_of(child_id));
+        }
+    }
+    case dom.row_in(taskbar) of { Some(row) -> render(&row); None -> _; };
+    case dom.row_in(menu) of { Some(row) -> render(&row); None -> _; };
+}
+
+/**
+ * Performs an unconditional full screen repaint of the desktop. It covers all
+ * damage queued before it starts; damage added while it paints stays queued.
+ */
+export void render_all() {
+    dom.clear_damage();
+    dom.select_full_paint();
+    graphics.clear_clip();
+    paint_desktop();
+}
+
+/**
+ * Repaints only damaged regions using clip rectangles, falling back to full repaint if empty.
+ */
+export void render_scene() {
+    if (dom.damage_count() == 0) {
+        render_all();
+        return;
+    }
+
+    // Paint each damaged rectangle under its own clip. The rectangles are
+    // taken off the queue as the paint begins, so anything damaged while
+    // painting (a process's console output arrives on its own task) waits
+    // for the next frame rather than extending this loop or being dropped.
+    i32 count = dom.take_damage();
+    i32 i = 0;
+    while (i < count) {
+        dom.select_damage(i);
+        graphics.set_clip(dom.paint_x(), dom.paint_y(), dom.paint_width(), dom.paint_height());
+        paint_desktop();
+        i++;
+    }
+    dom.select_full_paint();
+    graphics.clear_clip();
+}
+
