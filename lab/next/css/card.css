@@ -1,0 +1,72 @@
+/* the node card: one card for every view */
+.nc-head { position: relative; padding: var(--sp-3) var(--sp-4) var(--sp-3); border-bottom: 1px solid var(--border); }
+.nc-head::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 2px 2px 0; background: var(--lc); }
+.nc-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-right: 36px; }
+.nc-id { font-size: var(--fs-11); color: var(--text-2); }
+.nc-x { position: absolute; top: 10px; right: 10px; }
+.nc-title { margin-top: var(--sp-2); font-size: var(--fs-20); font-weight: 750; line-height: 1.35; word-break: break-word; }
+.nc-title.code { font-family: var(--mono); font-size: var(--fs-20); font-weight: 700; }
+.nc-body { flex: 1; min-height: 0; padding: var(--sp-3) var(--sp-4) var(--sp-6); font-size: var(--fs-13); }
+.nc-sig { margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); background: var(--surface-2); font: var(--fs-12)/1.6 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.nc-text { display: grid; gap: var(--sp-2); }
+.nc-p { font-size: var(--fs-14); line-height: 1.8; }
+.nc-p .chip, .nc-table .chip, .nc-trace .chip { font-size: var(--fs-12); vertical-align: 1px; }
+.nc-fig { margin: var(--sp-2) 0; padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); }
+.nc-fig svg { width: 100%; height: auto; display: block; }
+.nc-fig figcaption { font-size: var(--fs-12); color: var(--text-2); line-height: 1.7; margin-top: 4px; }
+/* figures drawn by the map use these classes */
+.nc-fig .z-acc { fill: var(--accent-soft); stroke: var(--accent-line); }
+.nc-fig .z-cell { fill: var(--surface-2); stroke: var(--border-strong); }
+.nc-fig .z-t { font: 600 14px var(--font); fill: var(--text); }
+.nc-fig .z-s { font: 12px var(--font); fill: var(--text-2); }
+.nc-fig .z-line, .nc-fig line, .nc-fig path { stroke: var(--text-2); }
+.nc-fig text { fill: var(--text); }
+.nc-sec { display: flex; align-items: baseline; gap: var(--sp-2); margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-12); font-weight: 750; color: var(--text); }
+.nc-cnt { font-weight: 600; color: var(--text-2); font-size: var(--fs-12); }
+.nc-hint { margin-left: auto; font-weight: 500; color: var(--text-2); font-size: var(--fs-11); }
+.nc-table { width: 100%; border-collapse: collapse; font-size: var(--fs-13); }
+.nc-table td { padding: 5px 8px 5px 0; border-top: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+.nc-table td.k { white-space: nowrap; color: var(--text-2); }
+.nc-table code { font-size: var(--fs-12); }
+.nc-fns { font-size: var(--fs-11); color: var(--text-2); word-break: break-word; }
+.nc-code { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.nc-code code { font-size: var(--fs-12); color: var(--text-2); min-width: 0; }
+.nc-code .nc-path { overflow-wrap: anywhere; }
+.nc-code .nc-lines { color: var(--text); white-space: nowrap; }
+.nc-reg { font-size: var(--fs-13); font-weight: 650; margin-right: 6px; }
+.nc-roles { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: var(--fs-12); margin: 0 0 var(--sp-2); }
+.nc-role code { font-size: var(--fs-12); padding: 1px 6px; border-radius: 4px; background: var(--surface-2); }
+.nc-ops { list-style: none; margin: 0 0 var(--sp-2); padding: 0; display: grid; gap: var(--sp-2); }
+.nc-ops li { padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); }
+.nc-op-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nc-op-h code { font-size: var(--fs-12); font-weight: 650; }
+.nc-cost { font: 650 var(--fs-11)/1 var(--mono); color: var(--text-2); padding: 3px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--border-strong); }
+.nc-ops p { margin-top: 4px; font-size: var(--fs-12); line-height: 1.65; color: var(--text); }
+.nc-inv { display: flex; gap: 8px; align-items: baseline; font-size: var(--fs-12); line-height: 1.65; margin: 0 0 var(--sp-2); }
+.nc-inv .tag { flex: none; }
+.nc-paper { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: var(--sp-4); padding: 10px var(--sp-3); border-radius: var(--r); border: 1px solid var(--accent-line); background: var(--accent-soft); text-align: left; cursor: pointer; }
+.nc-paper svg { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.nc-paper span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.nc-paper b { font-size: var(--fs-13); }
+.nc-paper small { font-size: var(--fs-12); color: var(--text-2); }
+.nc-apps { display: grid; gap: var(--sp-2); }
+.nc-app-t { display: block; font-size: var(--fs-12); font-weight: 650; color: var(--text-2); margin-bottom: 4px; }
+.nc-app-s { display: flex; flex-wrap: wrap; gap: 4px; }
+.nc-step { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 10px 2px 3px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: var(--fs-12); cursor: pointer; }
+.nc-step:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.nc-step .num { min-width: 20px; height: 20px; font-size: var(--fs-11); }
+.nc-sv { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-back { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+.nc-who { display: flex; align-items: center; gap: var(--sp-2); }
+.nc-who-k { font-size: var(--fs-11); color: var(--text-2); }
+.nc-why { list-style: none; margin: 6px 0 0 6px; padding: 0 0 0 12px; border-left: 2px solid var(--border); display: grid; gap: 6px; }
+.nc-why li { font-size: var(--fs-13); }
+.nc-why p { line-height: 1.75; color: var(--text); }
+.nc-why mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 2px; }
+.nc-rk { display: inline-flex; align-items: center; gap: 4px; margin-right: 6px; font-size: var(--fs-11); font-weight: 700; color: var(--text-2); }
+.nc-where { border: 0; background: none; padding: 0; color: var(--accent); font-size: var(--fs-11); font-weight: 650; cursor: pointer; }
+.nc-where:hover { text-decoration: underline; }
+.nc-where-t { font-size: var(--fs-11); color: var(--text-2); }
+.nc-empty { color: var(--text-2); }
+.nc-trace { line-height: 1.75; color: var(--text); }
+.nc-trace code { font-size: var(--fs-12); }

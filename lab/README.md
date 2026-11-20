@@ -1,7 +1,7 @@
 # MyAtlas ラボ
 
 MyComputer の文書マップ（MyAtlas）を、今のビューアより読みやすく見せる方法を、一晩で 14 通り試した試作の置き場。
-入口はギャラリー（`index.html`）。
+最後に、その良い所を 1 つのビューアにまとめた（`next/`、「次のビューア」）。入口はギャラリー（`index.html`）。
 
 ## 目的
 
@@ -37,6 +37,7 @@ python3 lab/export.py          # MyComputer は既定で ~/Workspaces/MyComputer
   `node trace-timeline/tools/build-trace.mjs`
 - metro の保存した配置（`layout.data.js`）：`node metro/tools/precompute.mjs --warm`
 - terminal のブラウザ版で再生する画面（`web/frames-*.json.gz`）：`python3 terminal/tools/build_web.py`
+- 次のビューアが持つデータの写し（`next/data/`）：`node next/tools/sync-data.mjs`（上の 2 つの後に）
 
 ### ほかの道具
 
@@ -46,6 +47,29 @@ python3 lab/export.py          # MyComputer は既定で ~/Workspaces/MyComputer
 - コードと歩くの「エディタで開く」：serve.sh の代わりに `python3 lab/code-tour/server.py`（VS Code の `code` で開く）。
 - 試作の検査：`node lab/metro/tools/check.mjs` と `node lab/matrix/check.mjs`（どちらも MyAtlas-lab で）、
   `node stack3d/tools/check-labels.mjs`（lab/ で）、`python3 test_atlas_tui.py`（lab/terminal/ で）。
+
+## まとめ：次のビューア（`next/`）
+
+14 の試作の良い所を、1 つの色・文字・部品の決まりでまとめたビューア。本体のビューアがどうなるとよいかを、触って確かめるためのもの。
+http://127.0.0.1:8765/next/ で開く。くわしくは `next/NOTES.md`。
+
+| 見方 | 何が見えるか | もとにした試作 |
+|---|---|---|
+| 歩く（開いた画面） | 道のり（層の上り下り）、手順の列と紙の入れ子、手順のカード（渡すデータ・文脈が変わる・記録の回数）、やりとり図、コードの行と吹き出し | code-tour・comic・seq-plus・graph-notebook・terminal・stack3d |
+| 地図 | 路線図（共有する節は乗り換え駅、中の紙は支線、始発の札）。今の手順を線の上に出す | metro（保存した配置） |
+| やりとり | 手順の文・矢印・記録の時刻の 3 列。紙はその場で開いて、外の手順を畳む | seq-plus |
+| 記録 | スレッドごとの呼び出し、場面、キー → DOM の道筋、OS_CALL の数え直し | trace-timeline |
+| データ | Request のフィールド × 手順（紙を開いた 22 手順）。線の色は値のあるメモリ | data-journey |
+| 節のカード | 形・操作・不変・コードの場所・出てくる手順・被参照（だれが・なぜ） | matrix・graph-notebook |
+
+- 5 つの見方は同じ手順と同じ節を選ぶ。場所はアドレス（`#v=walk&s=ui:3/os.gateway:1&n=os.gateway`）に残り、戻る・進むが効く。
+- 地図とコードの食い違い（Request の 13 語と 15 語、result_out の条件）は、カード・吹き出し・やりとり・時刻表に「!」で示す。
+- 2 つの独立したレビュー（初めての人と見た目、事実と作り）の点は、直す前で 3・4・3・4 と 4・4・3・4（読みやすさ・正しさ・仕上がり・まとまり）。
+  重い指摘 5 つと中くらいの 13 は、すべて直した。
+- フォルダだけで動く：相対パスの普通の `<script>` だけで、ネットワークもサービスワーカーも使わない。localStorage は try/catch の中だけ。
+  file:// でも、オリジンの無いサンドボックス（artifact のサイト）でも動く。大きさは約 1.2 MB（スクリーンショットを除く）。
+- 確かめ直す：`node lab/next/tools/check.mjs`（MyAtlas-lab で、約 3 分）。
+- 本体に移す時に足すデータ：手順の行とその確かさ、ソースの写し、exit と iret を残した記録、保存した路線図の配置（`next/NOTES.md` に順序）。
 
 ## 試作の一覧
 
@@ -178,6 +202,8 @@ python3 lab/export.py          # MyComputer は既定で ~/Workspaces/MyComputer
 - metro：`node lab/metro/tools/check.mjs clicks` の 14 項目（マウスとタッチで乗り換え駅・駅・ラベル・線・番号の札・始発の札を押す）がすべて通った。
 - comic：スマホ幅（390×844）で大きく読む画面を開き、コマと人物が画面に収まることを見た。
 - terminal：`python3 lab/terminal/atlas_tui.py --render ui` が UI の要求の図を出す。
+- 次のビューア：`node lab/next/tools/check.mjs` がすべて通った。51 手順 × 5 つの見方 × 5 通りの大きさと色でエラー 0、70 の節のカードでエラー 0、
+  11px 未満の文字 0、図・地図・記録の札の重なり 0、ふるまい 9 項目、オリジンの無いサンドボックスの iframe でも動く。
 - ギャラリー：明るい画面と暗い画面、1440 幅とスマホ幅、NOTES.md と README の読み取り、画面の一覧を撮って見た（`shots/gallery*.png`）。
 
 ## ファイル
@@ -193,4 +219,5 @@ tools/shot.mjs  画面を撮る道具（Playwright）
 reference/      今のビューアと、その画面
 shots/          ギャラリーの画面（gallery*.png）と、読み込みの確認の画面（load/）
 <id>/           試作。index.html、NOTES.md、shots/（main.png が最初の画面）
+next/           次のビューア（まとめ）。data/ にデータの写し、tools/ に sync-data.mjs と check.mjs
 ```

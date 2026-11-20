@@ -139,6 +139,37 @@ section { margin: 30px 0 34px; }
 .card .run { margin: 0; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px; }
 .actions { margin-top: auto; padding-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
 
+.next-sec { margin-bottom: 8px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.hero-shots { display: flex; flex-direction: column; background: var(--soft); border-right: 1px solid var(--line); }
+.hero .shot { aspect-ratio: 16 / 10; }
+.thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+.thumbs a { position: relative; display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card); color: var(--ink); text-decoration: none; }
+.thumbs img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; }
+.thumbs span { position: absolute; left: 6px; bottom: 6px; font-size: 12px; font-weight: 600; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.thumbs a:hover { border-color: var(--accent); }
+.hero .body { padding: 16px 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.hero h3 { margin: 0; font-size: 24px; line-height: 1.3; }
+.hero h3 a { color: inherit; text-decoration: none; }
+.hero h3 a:hover { color: var(--accent); }
+.hero p { margin: 0; }
+.views { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; font-size: 14px; }
+.views li { display: flex; flex-direction: column; padding-left: 10px; border-left: 3px solid var(--line); }
+.views b { font-weight: 600; }
+.views span { color: var(--muted); font-size: 13px; }
+.reviews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.reviews h4 { margin: 0 0 3px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.reviews .scores { grid-template-columns: 1fr; }
+.hero .fixed { font-size: 13px; color: var(--muted); }
+.hero .try { margin: 0; font-size: 14px; }
+@media (max-width: 1180px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-shots { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 700px) {
+  .views, .reviews { grid-template-columns: 1fr; }
+}
+
 .scorenote { font-size: 13px; color: var(--muted); }
 
 footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 18px 0 40px; color: var(--muted); font-size: 14px; }
@@ -217,7 +248,7 @@ dialog::backdrop { background: rgb(8 10 14 / .58); }
   <header class="top">
     <div class="titlebar">
       <h1>MyAtlas ラボ</h1>
-      <span class="sub">文書マップの見せ方を、一晩で 14 通り試した</span>
+      <span class="sub">文書マップの見せ方を一晩で 14 通り試し、1 つにまとめた</span>
       <nav class="toplinks" aria-label="まとめと比べるもの">
         <a class="btn" href="README.md" data-readme>README（順位と提案）</a>
         <a class="btn" href="reference/index.html">今のビューア</a>
@@ -225,7 +256,7 @@ dialog::backdrop { background: rgb(8 10 14 / .58); }
     </div>
     <div class="intro">
       <div>
-        <p>MyComputer の文書マップ（MyAtlas）を、今のビューアより読みやすく見せる方法を探した試作の置き場です。今のビューアは 1 枚のページに全部を詰めていて、層の帯・小さな札・番号の札・点線の枠・交差する矢印が多く、密です。ここではその制約を外し、路線図、マンガ、コードと並べる形、データを追う表など、14 通りの見せ方を作りました。</p>
+        <p>MyComputer の文書マップ（MyAtlas）を、今のビューアより読みやすく見せる方法を探した試作の置き場です。今のビューアは 1 枚のページに全部を詰めていて、層の帯・小さな札・番号の札・点線の枠・交差する矢印が多く、密です。ここではその制約を外し、路線図、マンガ、コードと並べる形、データを追う表など、14 通りの見せ方を作り、最後にその良い所を 1 つのビューアにまとめました。</p>
         <p>どの試作も同じデータ（<code>lab/data</code>）を読み、地図とソースに無いことは描きません。どれも独立したレビューを受けて、指摘を直してあります。</p>
         <p class="facts">地図の中身：70 の節、5 つの層と横断する 3 つ、2 つの流れ（UI の要求 11 手順＋もし 2、CPU 時間 12 手順）、4 枚の中の紙、記録 1 回（Editor で「x」を打った 1 回）。</p>
       </div>
@@ -242,6 +273,14 @@ dialog::backdrop { background: rgb(8 10 14 / .58); }
   </header>
 
   <main>
+    <section aria-labelledby="next-h" class="next-sec">
+      <div class="sec-head">
+        <h2 id="next-h">まとめ：次のビューア</h2>
+        <p>14 の試作の良い所を、1 つの色・文字・部品の決まりでまとめた案。本体のビューアがどうなるとよいかを、触って確かめられます。</p>
+      </div>
+      <div id="next"></div>
+    </section>
+
     <section aria-labelledby="picks-h">
       <div class="sec-head">
         <h2 id="picks-h">まずはこの 3 つ</h2>
@@ -264,6 +303,7 @@ dialog::backdrop { background: rgb(8 10 14 / .58); }
     <h2>確かめたこと（2026-11-20）</h2>
     <ul>
       <li>14 の試作をすべて <code>lab/tools/shot.mjs</code>（1440×900）で開いた。読み込みの失敗も、コンソールのエラーも 0 件。撮った画面は <a href="shots/load/">shots/load/</a>。</li>
+      <li>次のビューアは、同梱の検査（<code>node lab/next/tools/check.mjs</code>）がすべて通った。51 手順 × 5 つの見方 × 5 通りの大きさと色でエラー 0、70 の節のカードでエラー 0、11px 未満の文字 0、図・地図・記録の札の重なり 0、ふるまい 9 項目、オリジンの無いサンドボックスの iframe でも動く。</li>
       <li>路線図はマウスと指で駅・線・札を押す試験（<code>metro/tools/check.mjs clicks</code>）がすべて通った。マンガはスマホ幅（390×844）の大きく読む画面で、コマが画面に収まる。端末版は <code>python3 lab/terminal/atlas_tui.py --render ui</code> で図を出す。</li>
     </ul>
     <p>ラボは MyAtlas の <code>lab</code> ブランチにあります（main には入れていません）。どのページも同梱したライブラリだけで開けます。<code>node_modules/</code> と <code>.venv/</code> は入れていません（要るのは検査の道具だけで、入れ方は各 NOTES.md）。</p>
@@ -531,6 +571,40 @@ function shotLink(p) {
 function actions(p, primary) {
   return `<div class="actions"><a class="btn${primary ? " primary" : ""}" href="${p.id}/index.html">開く</a><a class="btn" href="${p.id}/NOTES.md" data-notes="${p.id}">NOTES.md</a><button class="btn" type="button" data-shots="${p.id}">画面 ${p.shots.length} 枚</button></div>`;
 }
+
+// The synthesis: one viewer built from the prototypes' best ideas, then reviewed twice and refined.
+const NEXT = {
+  id: "next", title: "次のビューア", kind: "まとめの案",
+  line: "5 つの見方が同じ手順と同じ節を選ぶ。「歩く」では、道のり・手順のカード・やりとり図・コードの行が一緒に進む。場所はアドレスに残る。",
+  views: [
+    ["歩く", "code-tour・comic・seq-plus・graph-notebook"],
+    ["地図", "metro の路線図（保存した配置）"],
+    ["やりとり", "seq-plus（紙はその場で開いて畳む）"],
+    ["記録", "trace-timeline（OS_CALL の直しも）"],
+    ["データ", "data-journey（Request のフィールド × 手順）"],
+    ["節のカード", "matrix の被参照・graph-notebook"],
+  ],
+  reviews: [["初めての人と見た目の目", [3, 4, 3, 4]], ["事実と作りの目", [4, 4, 3, 4]]],
+  fixed: "2 つのレビューの重い指摘 5 つと中くらいの 13 は、すべて直した（点は直す前のもの）。地図とコードの食い違い（Request の 13 語と 15 語など）は、その場で「!」で示す。",
+  try: "「最初から歩く」を押す。→ で 1 手ずつ、Enter で中の紙、上の帯で見方を切り替える。/ でさがす。",
+  shots: [["main", "歩く：開いた画面（UI の要求の手順 1）"], ["paper", "中の紙を歩く：コードの行に吹き出し"], ["map", "地図：路線図の上に今の手順"], ["seq", "やりとり：文・矢印・記録の 3 列"], ["trace", "記録：スレッドごとの呼び出しと場面"], ["data", "データ：Request のフィールド × 手順"], ["dark", "暗い画面"], ["phone", "スマホ"]],
+};
+byId.next = NEXT;
+const NEXT_LABELS = ["読みやすさ", "正しさ", "仕上がり", "まとまり"];
+const NEXT_THUMBS = [["map", "地図"], ["trace", "記録"], ["data", "データ"]];
+document.getElementById("next").innerHTML = `<article class="hero"><div class="hero-shots">${shotLink(NEXT)}
+    <div class="thumbs">${NEXT_THUMBS.map(([v, name]) => `<a href="next/index.html#v=${v}"><img src="next/shots/${v}.png" alt="" width="1440" height="900"><span>${name}</span></a>`).join("")}</div>
+  </div><div class="body">
+    <div class="meta"><span class="kind">${esc(NEXT.kind)}</span><span class="pid">next</span></div>
+    <h3><a href="next/index.html">${esc(NEXT.title)}</a></h3>
+    <p>${fmt(NEXT.line)}</p>
+    <ul class="views">${NEXT.views.map(([v, from]) => `<li><b>${esc(v)}</b><span>${esc(from)}</span></li>`).join("")}</ul>
+    <div class="reviews">${NEXT.reviews.map(([who, sc]) => `<div><h4>${esc(who)}</h4><dl class="scores" aria-label="${esc(who)}の点（5 点満点）">${sc.map((v, i) =>
+      `<div><dt>${NEXT_LABELS[i]}</dt><dd><span class="pips" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i${k <= v ? ' class="on"' : ""}></i>`).join("")}</span><b>${v}</b></dd></div>`).join("")}</dl></div>`).join("")}</div>
+    <p class="fixed">${fmt(NEXT.fixed)}</p>
+    <p class="try"><span class="label">試すこと</span>${fmt(NEXT.try)}</p>
+    ${actions(NEXT, true)}
+  </div></article>`;
 
 document.getElementById("picks").innerHTML = PICKS.map((k, i) => {
   const p = byId[k.id];

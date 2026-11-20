@@ -1,0 +1,131 @@
+/* 地図: the metro map, with the lines and a timetable on the left */
+.view.map { display: grid; grid-template-columns: 304px minmax(0, 1fr); }
+.mp-side { min-height: 0; padding: var(--sp-4) var(--sp-4) var(--sp-6); background: var(--surface); border-right: 1px solid var(--border); }
+.mp-head h2 { font-size: var(--fs-16); font-weight: 750; }
+.mp-head p { margin-top: 4px; font-size: var(--fs-12); color: var(--text-2); line-height: 1.7; }
+.mp-note { padding: 6px 8px; border-radius: var(--r-sm); background: var(--surface-2); }
+.mp-cap { margin: var(--sp-4) 0 var(--sp-2); font-size: var(--fs-11); font-weight: 700; color: var(--text-2); letter-spacing: .02em; }
+.mp-lines { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.mp-ln { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; overflow: hidden; padding: 6px 8px; border: 0; border-radius: var(--r-sm); background: none; text-align: left; cursor: pointer; }
+.mp-ln:hover { background: var(--surface-2); }
+.mp-ln.on { background: var(--accent-soft); }
+.mp-badge { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--lc); color: var(--surface); font: 800 var(--fs-12)/1 var(--font); }
+.mp-badge.paper { background: var(--surface); color: var(--lc); box-shadow: inset 0 0 0 2.5px var(--lc); }
+.mp-lt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.mp-ln-name { font-size: var(--fs-13); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-ln-name.code { font-family: var(--mono); font-weight: 650; font-size: var(--fs-12); }
+.mp-ln-sub { font-size: var(--fs-11); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-sym { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; font-size: var(--fs-12); color: var(--text-2); }
+.mp-sym li { display: flex; align-items: center; gap: 10px; }
+.mp-sym svg { width: 38px; height: 18px; flex: none; }
+.mp-back { margin: var(--sp-3) 0 0 -6px; }
+.mp-back svg { width: 12px; height: 12px; }
+.mp-tt { margin-top: var(--sp-2); }
+.mp-tt-h { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: center; padding: var(--sp-2) 0 var(--sp-3); border-bottom: 2px solid var(--lc); }
+.mp-tt-h h3 { font-size: var(--fs-16); font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-tt-h h3.code { font-family: var(--mono); font-size: var(--fs-14); }
+.mp-tt-h .btn { grid-column: 1 / -1; justify-self: start; }
+.mp-rows { list-style: none; margin: 0; padding: var(--sp-2) 0 0; }
+.mp-row { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px; padding: 8px 6px 8px 0; border-radius: var(--r-sm); cursor: pointer; }
+.mp-row::before { content: ""; position: absolute; left: 14px; top: 0; bottom: 0; width: 4px; background: var(--lc); }
+.mp-row:first-child::before { top: 14px; }
+.mp-row:last-child::before { bottom: calc(100% - 18px); }
+.mp-row.alt::before { background: repeating-linear-gradient(var(--lc) 0 6px, transparent 6px 10px); }
+.mp-row.link { cursor: default; color: var(--text-2); }
+.mp-row:hover { background: var(--surface-2); }
+.mp-row.now { background: var(--accent-soft); }
+.mp-num { position: relative; z-index: 1; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 2px 0 0 4px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2.5px var(--lc); font: 700 var(--fs-11)/1 var(--font); }
+.mp-row.now .mp-num { background: var(--accent); color: var(--accent-text); box-shadow: 0 0 0 3px var(--surface); }
+.mp-route { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; font-size: var(--fs-12); }
+.mp-st { border: 0; background: none; padding: 0; font: 650 var(--fs-12)/1.5 var(--font); color: var(--text); cursor: pointer; text-align: left; }
+.mp-st.code { font-family: var(--mono); font-weight: 600; }
+.mp-st .ns { color: var(--text-2); font-weight: 500; font-family: var(--mono); }
+.mp-st:hover { color: var(--accent); }
+.mp-what { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 2px; font-size: var(--fs-12); }
+.mp-kind { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); }
+.mp-label { margin-top: 2px; font-size: var(--fs-12); color: var(--text-2); line-height: 1.65; }
+.mp-label .chip { font-size: var(--fs-11); min-height: 18px; line-height: 16px; }
+
+.mp-wrap { position: relative; min-width: 0; min-height: 0; background: var(--surface); }
+.mp-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; user-select: none; font-family: var(--font); cursor: grab; }
+.mp-svg.dragging { cursor: grabbing; }
+.mp-hint { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border); font-size: var(--fs-12); color: var(--text-2); white-space: nowrap; box-shadow: var(--shadow); pointer-events: none; max-width: calc(100% - 120px); overflow: hidden; text-overflow: ellipsis; }
+.mp-hint b { color: var(--text); }
+.mp-zoom { position: absolute; right: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
+.mp-zoom .btn { box-shadow: var(--shadow); font-size: var(--fs-16); }
+.zone-band { fill: color-mix(in srgb, var(--lc) var(--tint), var(--surface)); stroke: none; }
+.zone-rule { stroke: var(--border); stroke-width: 1; }
+/* map units: the map opens at 0.8 or more, so 14 units read at 11px or more */
+.zone-name { font-size: var(--fs-16); font-weight: 750; letter-spacing: .03em; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.zone-sub { font-size: var(--fs-14); fill: var(--text-2); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.zone-strip { opacity: 0; transition: opacity .2s; pointer-events: none; }
+#mpZones.floating .zone-strip { opacity: 1; }
+#mpZones.floating .zone-label { opacity: 0; }
+.zone-label { transition: opacity .2s; }
+.zs-bg { fill: var(--surface); }
+.zs-name { font-size: var(--fs-14); font-weight: 750; text-anchor: middle; dominant-baseline: central; letter-spacing: .06em; }
+.mp-svg.compact .zone-sub, .mp-svg.compact .mt-label .sb, .mp-svg.compact .mt-label .ns { display: none; }
+.track { fill: none; stroke-linecap: round; stroke-linejoin: round; transition: opacity .25s; }
+.track-alt { stroke-dasharray: 9 7; stroke-linecap: butt; }
+.track-link-core { fill: none; stroke: var(--surface); stroke-linecap: round; }
+.line-g.dim { opacity: .14; }
+.hit { fill: none; stroke: transparent; stroke-width: 18; cursor: pointer; stroke-linecap: round; }
+.mt-station { cursor: pointer; transition: opacity .25s; }
+.mt-station .dot { fill: var(--surface); stroke-width: 3; }
+.mt-station .dot.minor { stroke-width: 2.4; }
+.mt-station .pill { fill: var(--surface); stroke: var(--text); stroke-width: 2.6; }
+.mt-station:hover .dot, .mt-station:hover .pill { stroke-width: 4; }
+.mt-station .halo-ring { fill: none; stroke: var(--accent); stroke-width: 3; opacity: 0; }
+.mt-station.selected .halo-ring { opacity: 1; }
+.mt-station .tap { fill: transparent; pointer-events: none; }
+@media (pointer: coarse) { .mt-station .tap { pointer-events: all; } }
+.mt-label { cursor: pointer; paint-order: stroke; stroke: var(--surface); stroke-width: 3.5px; stroke-linejoin: round; transition: opacity .25s; }
+.mt-label .nm { font-size: var(--fs-14); font-weight: 650; fill: var(--text); }
+.mt-label .nm.code { font-family: var(--mono); font-weight: 600; font-size: var(--fs-14); letter-spacing: -.01em; }
+.mt-label .sb { font-size: var(--fs-13); fill: var(--text-2); }
+.mt-label .ns { font-family: var(--mono); font-size: var(--fs-13); fill: var(--text-2); }
+.mt-label:hover .nm, .mt-label.selected .nm { fill: var(--accent); }
+.mt-station.dim, .mt-label.dim { opacity: .2; }
+.shield { pointer-events: none; transition: opacity .25s; }
+.shield text { font-size: var(--fs-14); font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.shield.dim { opacity: .2; }
+.shield.gone { opacity: 0; }
+.term-tag { cursor: pointer; transition: opacity .25s; }
+.term-tag rect { fill: var(--surface); stroke-width: 1.8; }
+.term-tag:hover rect { fill: var(--surface-2); }
+.term-tag text { dominant-baseline: central; }
+.term-tag .tt-code { fill: var(--surface); font-size: var(--fs-14); font-weight: 800; text-anchor: middle; }
+.term-tag .tt-word { font-size: var(--fs-14); font-weight: 800; letter-spacing: .04em; }
+.term-tag.dim { opacity: .25; }
+.tag-lead { stroke-width: 1.6; fill: none; }
+#mpChev path { fill: none; stroke: var(--surface); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ride-badge { cursor: pointer; }
+.ride-badge rect { stroke: var(--surface); stroke-width: 2; }
+.ride-badge text { font-size: var(--fs-14); font-weight: 700; fill: var(--surface); text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums; }
+.ride-badge.current rect { stroke: var(--accent); stroke-width: 3; }
+.flash { fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: .28; pointer-events: none; }
+.mp-now { pointer-events: none; }
+.mp-now .lead { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.mp-now .arrive { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.mp-now rect { fill: var(--surface); stroke: var(--accent); stroke-width: 2; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .15)); }
+.mp-now .n { fill: var(--accent); }
+.mp-now .nt { fill: var(--accent-text); font-size: var(--fs-14); font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.mp-now .vt { fill: var(--accent); font-size: var(--fs-14); font-weight: 750; dominant-baseline: central; }
+.mp-now .n.ring { stroke: var(--surface); stroke-width: 2.5; filter: drop-shadow(0 1px 3px rgb(0 0 0 / .25)); }
+.mp-sheet-h { display: none; }
+@media (max-width: 1100px) { .view.map { grid-template-columns: 260px minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  /* a phone: the map takes the whole view; the lines and the timetable are a sheet over its foot */
+  .view.map { display: block; }
+  .mp-wrap { position: absolute; inset: 0; }
+  .mp-side { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; max-height: 48px; overflow: hidden; padding: 0 var(--sp-3) var(--sp-3); border: 0; border-top: 1px solid var(--border); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -4px 16px rgb(0 0 0 / .1); transition: max-height .2s ease; }
+  .mp-side.open { max-height: 64vh; overflow: auto; }
+  .mp-sheet-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: var(--sp-2); width: calc(100% + 2 * var(--sp-3)); height: 48px; margin: 0 calc(-1 * var(--sp-3)); padding: 0 var(--sp-4); border: 0; background: var(--surface); font-size: var(--fs-14); cursor: pointer; }
+  .mp-sheet-h span:last-child { margin-left: auto; font-size: var(--fs-12); color: var(--accent); font-weight: 650; }
+  .mp-grip { position: absolute; left: 50%; top: 5px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--border-strong); }
+  .mp-head p { display: none; }
+  .mp-hint { display: none; }
+  .mp-zoom { bottom: 60px; }
+}
+
+.mp-drift { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: var(--fs-11); font-weight: 650; color: var(--warn-text); }

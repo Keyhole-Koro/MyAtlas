@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>次のビューア</title>
+<script src="js/boot-theme.js"></script>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/walk.css">
+<link rel="stylesheet" href="css/seq.css">
+<link rel="stylesheet" href="css/map.css">
+<link rel="stylesheet" href="css/trace.css">
+<link rel="stylesheet" href="css/data.css">
+<link rel="stylesheet" href="css/card.css">
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <div class="brand-t"><h1>次のビューア</h1><span class="brand-sub" id="brandSub">MyComputer 文書マップ</span></div>
+  </div>
+  <div class="seg flows" id="flows" role="tablist" aria-label="流れ"></div>
+  <nav class="views" id="views" role="tablist" aria-label="見方"></nav>
+  <div class="play-pill" id="playPill" role="status" hidden><span class="pp-dot" aria-hidden="true"></span><button type="button" class="pp-go" id="ppGo" title="歩くへ"><span id="ppText"></span></button><button class="btn small" type="button" id="ppStop">止める</button></div>
+  <div class="tools">
+    <div class="search" id="search">
+      <span class="search-i" aria-hidden="true"></span>
+      <input id="q" type="search" placeholder="節と手順をさがす" autocomplete="off" aria-label="節と手順をさがす" aria-controls="qres">
+      <kbd>/</kbd>
+      <ul class="qres" id="qres" role="listbox" hidden></ul>
+    </div>
+    <button class="btn icon ghost" id="searchBtn" type="button" title="さがす（/）" aria-label="さがす"></button>
+    <button class="btn icon ghost" id="themeBtn" type="button"></button>
+    <button class="btn icon ghost" id="helpBtn" type="button" title="使い方とキー（?）" aria-label="使い方とキー"></button>
+  </div>
+</header>
+
+<main class="views-host" id="host">
+  <section class="view walk" id="v-walk" aria-label="歩く"></section>
+  <section class="view map" id="v-map" aria-label="地図" hidden></section>
+  <section class="view seqv" id="v-seq" aria-label="やりとり" hidden></section>
+  <section class="view tracev" id="v-trace" aria-label="記録" hidden></section>
+  <section class="view datav" id="v-data" aria-label="データ" hidden></section>
+</main>
+
+<aside class="ncard" id="ncard" hidden aria-label="節のカード"></aside>
+<div class="scrim" id="scrim" hidden></div>
+<div class="help" id="help" hidden role="dialog" aria-modal="true" aria-label="使い方"></div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="data/atlas.js"></script>
+<script src="data/code.js"></script>
+<script src="data/trace-full.js"></script>
+<script src="data/metro-layout.js"></script>
+<script src="js/lib/highlight.js"></script>
+<script src="js/lib/lines.js"></script>
+<script src="js/lib/relations.js"></script>
+<script src="js/lib/seq-model.js"></script>
+<script src="js/lib/metro-model.js"></script>
+<script src="js/lib/metro-layout.js"></script>
+<script src="js/lib/trace-model.js"></script>
+<script src="js/lib/journeys.js"></script>
+<script src="js/core.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/seqdraw.js"></script>
+<script src="js/code.js"></script>
+<script src="js/walk.js"></script>
+<script src="js/seq.js"></script>
+<script src="js/map.js"></script>
+<script src="js/trace.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
