@@ -3,7 +3,9 @@
 A map is a directory of plain text, `docs/atlas` unless `--docs` says otherwise. Each node is
 written once, in the file of its layer, and everything else points at it with `[[id]]`. Flows and
 papers place nodes as boxes and say, step by step, what passes between them. The code paths in the
-text are relative to `--root`.
+text are relative to `--root`, and the figure paths to the map's directory. Each has to stay inside
+its directory: an absolute path or one that climbs out with `..` is an error, because the page
+would carry what it reads.
 
 ```
 docs/atlas/
@@ -195,6 +197,7 @@ syscall.
 ## What the check reports
 
 Errors: a node, box, step or pointer that points at nothing; code that is not where the text says;
+a code or figure path outside `--root` or the map's directory;
 a parameter, field or value the code does not have; a line the reader cannot read. Warnings: a field
 or value the text does not explain, steps numbered out of order. `myatlas check` exits 1 on an
 error, and `myatlas build` writes no page.

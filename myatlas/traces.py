@@ -37,6 +37,12 @@ KEEP = ('seq', 'instr', 'thread', 'program', 'fn', 'ev', 'cause', 'interrupted',
         'method', 'from', 'unwound')
 
 
+def name_or_number(v):
+    """A field that names a function, a thread or a syscall, or None when a damaged file put a list or an
+    object there: those name nothing, and they cannot be looked up."""
+    return v if isinstance(v, (str, int)) else None
+
+
 def load_traces(project, nodes, rep):
     """Every trace, each event cut down to what the viewer reads and tied to its node. Sets n['fn'] on the
     nodes runs can name."""
@@ -57,15 +63,31 @@ def load_traces(project, nodes, rep):
         except ValueError as e:
             rep.error(project.rel(p), f'記録が読めない: {e}')
             continue
+        if not isinstance(t, dict):
+            rep.error(project.rel(p), '記録の一番外は JSON のオブジェクト')
+            continue
+        raw = t.get('events', [])
+        if not isinstance(raw, list):
+            rep.error(project.rel(p), 'events は JSON の配列')
+            raw = []
+        bad = [i for i, e in enumerate(raw) if not isinstance(e, dict)]
+        if bad:
+            rep.error(project.rel(p), f'events の {len(bad)} 個がオブジェクトでない（{bad[0]} 番目から）。飛ばす')
+        build = t.get('build', {})
+        if not isinstance(build, dict):
+            rep.error(project.rel(p), 'build は JSON のオブジェクト')
+            build = {}
         events, call, running = [], {}, {}
-        for e in t.get('events', []):
+        for e in raw:
+            if not isinstance(e, dict):
+                continue
             x = {k: e[k] for k in KEEP if e.get(k) is not None}
-            ev, fn, thread = e.get('ev'), e.get('fn'), e.get('thread')
+            ev, fn, thread = e.get('ev'), name_or_number(e.get('fn')), name_or_number(e.get('thread'))
             nid = by_fn.get((fn, None))
             if ev == 'irq':
                 # A syscall enters the kernel by an interrupt on the calling thread, and the dispatch that
                 # follows on that thread runs it.
-                call[thread] = e.get('syscall')
+                call[thread] = name_or_number(e.get('syscall'))
             elif ev == 'enter':
                 if fn in dispatch and call.get(thread):
                     x['syscall'] = call[thread]
@@ -77,5 +99,5 @@ def load_traces(project, nodes, rep):
                 x['n'] = nid
             events.append(x)
         out.append({'id': p.stem, 'title': t.get('title', p.stem), 'date': t.get('date'), 'run': t.get('run', {}),
-                    'build': t.get('build', {}).get('sources', {}), 'threads': t.get('threads', {}), 'events': events})
+                    'build': build.get('sources', {}), 'threads': t.get('threads', {}), 'events': events})
     return out

@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from myatlas import code_mylang, code_rust  # noqa: E402
 from myatlas.build import build, page  # noqa: E402
 from myatlas.check import field_matches, load  # noqa: E402
+from myatlas.cli import main  # noqa: E402
 from myatlas.project import Project, Report  # noqa: E402
 from myatlas.traces import load_traces  # noqa: E402
 
@@ -230,6 +231,59 @@ class AtlasTest(unittest.TestCase):
         rep, _ = self.fx.check()
         self.assertIn('os.kind: 図のファイルが無い: docs/atlas/figures/kind.svg', self.messages(rep))
 
+    def test_a_figure_outside_the_map_is_not_read(self):
+        self.fx.edit('docs/atlas/layers/os.md', '列挙・src/queue.mln の Kind\n', '列挙・src/queue.mln の Kind\n図：../../src/queue.mln\n')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertIn('os.kind: 図のファイルは地図のディレクトリの中に置く: ../../src/queue.mln', self.messages(rep))
+        self.assertNotIn('figure', nodes['os.kind'])
+        self.assertIsNone(page(Project(self.fx.root), Report()))
+
+    def test_code_outside_the_root_is_not_read(self):
+        fx = Fixture(self.fx.root / 'inner')   # the outer fixture's code lies beside it, outside its root
+        fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain', '関数・../src/queue.mln の drain')
+        fx.edit('docs/atlas/layers/os.md', '構造体・src/queue.mln の Message', f'構造体・{fx.root}/src/queue.mln の Message')
+        rep, (_, _, nodes, _, _) = fx.check()
+        errors = self.messages(rep)
+        self.assertIn('os.drain: コードのファイルは --root の中に置く: ../src/queue.mln', errors)
+        self.assertIn(f'os.message: コードのファイルは --root の中に置く: {fx.root}/src/queue.mln', errors)
+        self.assertNotIn('sig', nodes['os.drain']['api'])
+        self.assertNotIn('fields', nodes['os.message'])
+        self.assertIsNone(Project(fx.root).code_text('../src/queue.mln'))
+        self.assertIsNone(page(Project(fx.root), Report()))
+
+    def located(self, rep):
+        return [(where, m) for lv, where, m in rep.items if lv == 'error']
+
+    def test_a_heading_without_an_id_is_an_error(self):
+        self.fx.edit('docs/atlas/layers/os.md', '## os.drain  Queue.drain', '## \n関数・src/queue.mln の push\n\n## os.drain  Queue.drain')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/layers/os.md:12', '節の見出しは「## ID  題」')])
+        self.assertIn('os.drain', nodes)
+
+    def test_a_start_that_is_not_a_number_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '入口：app', '入口：app\nはじめ：二')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:4', 'はじめ は手順の番号: 二')])
+        self.assertEqual(flows[0]['start'], [0, 'app.main'])
+
+    def test_a_lane_that_is_not_a_number_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '｜略 p', '｜略 p｜段 x')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:6', '箱の段は数: x')])
+        self.assertNotIn('lane', flows[0]['boxes'][1])
+
+    def test_a_first_step_from_a_missing_box_is_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. ap → push')
+        rep, (_, _, _, flows, _) = self.fx.check()
+        self.assertEqual(self.located(rep), [('docs/atlas/flows/send.md:8', '手順の箱 ap が無い')])
+        self.assertEqual(flows[0]['start'], [0, None])
+
+    def test_a_path_that_climbs_back_in_stays_allowed(self):
+        self.fx.edit('docs/atlas/layers/os.md', '関数・src/queue.mln の drain', '関数・src/../src/queue.mln の drain')
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        self.assertEqual(nodes['os.drain']['api']['sig'], 'void (borrow Queue q) drain()')
+
     def test_a_trace_names_the_nodes_it_ran(self):
         events = [{'seq': 0, 'ev': 'enter', 'fn': 'queue.push', 'thread': 1, 'program': 'app', 'instr': 5},
                   {'seq': 1, 'ev': 'exit', 'fn': 'queue.push', 'thread': 1, 'program': 'app', 'instr': 9},
@@ -258,6 +312,28 @@ class AtlasTest(unittest.TestCase):
                          [(0, None, 'DRAIN'), (1, 'os.drain', 'DRAIN'), (2, None, 'WAIT'), (3, None, None),
                           (4, 'os.drain', None), (5, None, 'WAIT'), (6, None, None), (7, None, None)])
 
+    def test_a_malformed_trace_is_an_error(self):
+        files = {'list': '[]', 'events': '{"events":[1, {"ev": "enter", "fn": "queue.push"}, {"ev": "enter", "fn": [1]},'
+                           ' {"ev": "irq", "thread": [2], "syscall": {}}, {"ev": "enter", "fn": "queue.push", "thread": {}}]}',
+                 'build': '{"build":"x"}', 'nolist': '{"events":{"ev":"enter"}}'}
+        for name, content in files.items():
+            self.fx.write(self.fx.docs / 'traces' / f'{name}.json', content)
+        rep, (_, _, nodes, _, _) = self.fx.check()
+        self.assertEqual(self.messages(rep), [])
+        traces = {t['id']: t for t in load_traces(Project(self.fx.root), nodes, rep)}
+        self.assertEqual(self.located(rep), [
+            ('docs/atlas/traces/build.json', 'build は JSON のオブジェクト'),
+            ('docs/atlas/traces/events.json', 'events の 1 個がオブジェクトでない（0 番目から）。飛ばす'),
+            ('docs/atlas/traces/list.json', '記録の一番外は JSON のオブジェクト'),
+            ('docs/atlas/traces/nolist.json', 'events は JSON の配列')])
+        self.assertEqual(sorted(traces), ['build', 'events', 'nolist'])
+        self.assertEqual(traces['build']['build'], {})
+        # A list or an object where a name belongs names nothing, and does not stop the rest.
+        self.assertEqual(traces['events']['events'], [{'ev': 'enter', 'fn': 'queue.push', 'n': 'os.push'}, {'ev': 'enter', 'fn': [1]},
+                                                      {'ev': 'irq', 'thread': [2], 'syscall': {}},
+                                                      {'ev': 'enter', 'fn': 'queue.push', 'thread': {}, 'n': 'os.push'}])
+        self.assertEqual(traces['nolist']['events'], [])
+
     def test_the_page_carries_the_map(self):
         out = self.fx.root / 'build' / 'atlas' / 'index.html'
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
@@ -268,6 +344,24 @@ class AtlasTest(unittest.TestCase):
         data = json.loads(text.split('const DATA = ', 1)[1].split(';\n', 1)[0].replace('<\\/', '</'))
         self.assertEqual(data['docs'], 'docs/atlas')
         self.assertNotIn('_where', json.dumps(data))
+
+    def page_data(self, text):
+        return json.loads(text.split('const DATA = ', 1)[1].split(';\n', 1)[0])
+
+    def test_markup_in_the_text_cannot_leave_the_script(self):
+        self.fx.edit('docs/atlas/layers/os.md', '列に入れる。', '列に入れる。<!-- <script> </script>')
+        text, _ = page(Project(self.fx.root), Report())
+        blob = text.split('const DATA = ', 1)[1].split(';\n', 1)[0]
+        for markup in ('<!--', '<script', '</script', '<'):
+            self.assertNotIn(markup, blob)
+        self.assertEqual(self.page_data(text)['nodes']['os.push']['text'], '列に入れる。<!-- <script> </script>')
+
+    def test_a_title_that_spells_a_placeholder_stays_text(self):
+        self.fx.edit('docs/atlas/atlas.md', '# 小さな地図', '# 地図 __ATLAS_DATA__ <b>')
+        text, _ = page(Project(self.fx.root), Report())
+        self.assertIn('<title>地図 __ATLAS_DATA__ &lt;b&gt;</title>', text)
+        self.assertEqual(text.count('const DATA = {'), 1)
+        self.assertEqual(self.page_data(text)['title'], '地図 __ATLAS_DATA__ <b>')
 
     def test_an_error_writes_no_page(self):
         self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
@@ -369,6 +463,78 @@ class CodeTest(unittest.TestCase):
     def test_a_field_run(self):
         self.assertEqual(field_matches('a0 … a2', ['a0', 'a1', 'a2', 'a3']), ['a0', 'a1', 'a2'])
         self.assertEqual(field_matches('*s0', ['*s0']), ['*s0'])
+
+    def test_mylang_sizes_from_constants_arrays_and_entities(self):
+        text = 'u32 BASE = 0x1F;\nu8 buf[ 16 ];\nentity Task max 64 {\n}\n// LIMIT = 9;\ni32 MORE = n;\n'
+        self.assertEqual(code_mylang.find_number(text, 'BASE'), 31)
+        self.assertEqual(code_mylang.find_number(text, 'buf'), 16)
+        self.assertEqual(code_mylang.find_number(text, 'Task'), 64)
+        self.assertIsNone(code_mylang.find_number(text, 'LIMIT'))   # only in a comment
+        self.assertIsNone(code_mylang.find_number(text, 'MORE'))    # not a number
+
+    def test_mylang_namespace(self):
+        self.assertEqual(code_mylang.namespace_of('// a queue\n  namespace queue ;\n'), 'queue')
+        self.assertIsNone(code_mylang.namespace_of('void f() {}'))
+        self.assertIsNone(code_mylang.namespace_of(None))
+
+    def test_mylang_enum_values_carry_data_and_generics(self):
+        self.assertEqual(code_mylang.find_enum('enum Event { Key(u8), Pair(Map<i32, i32>), Quit, }', 'Event'),
+                         ['Key', 'Pair', 'Quit'])
+        self.assertEqual(code_mylang.find_enum('enum E {}', 'E'), [])
+        self.assertIsNone(code_mylang.find_enum('struct E { i32 a; };', 'E'))
+
+    def test_mylang_stores_are_assignments_not_comparisons(self):
+        text = """enum State { Idle, Busy(i32), Done }
+void start(Job j) { j.state = State::Busy(1); }
+void finish(Job j) {
+  if (x) { j.state = State::Done; }
+  log(j.state == State::Idle);
+}
+Job make() { return Job { state: State::Idle }; }
+"""
+        self.assertEqual(code_mylang.stores(text, 'State', 'state'), [('start', 'Busy'), ('finish', 'Done'), ('make', 'Idle')])
+
+
+class CliTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix='myatlas-test-')
+        self.fx = Fixture(Path(self.temporary.name))
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def run_main(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = main(['--root', str(self.fx.root), *argv])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_check_exits_1_only_on_an_error(self):
+        code, out, err = self.run_main('check')
+        self.assertEqual((code, err), (0, '0 errors, 1 warnings\n'))
+        self.assertIn('warning: os.kind: Kind の POP に説明が無い', out)
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
+        code, out, err = self.run_main('check')
+        self.assertEqual((code, err), (1, '1 errors, 1 warnings\n'))
+        self.assertIn('docs/atlas/flows/send.md:8: error: 手順の箱 pull が無い', out)
+
+    def test_build_writes_to_the_default_path(self):
+        code, out, _ = self.run_main('build')
+        self.assertEqual(code, 0)
+        self.assertIn('wrote build/atlas/index.html (6 nodes, 1 flows, 1 papers)', out)
+        self.assertIn('<title>小さな地図</title>', (self.fx.root / 'build' / 'atlas' / 'index.html').read_text(encoding='utf-8'))
+
+    def test_build_writes_no_page_on_an_error(self):
+        self.fx.edit('docs/atlas/flows/send.md', '1. app → push', '1. app → pull')
+        code, _, _ = self.run_main('build', str(self.fx.root / 'out.html'))
+        self.assertEqual(code, 1)
+        self.assertFalse((self.fx.root / 'out.html').exists())
+
+    def test_a_missing_index_stops_with_a_message(self):
+        (self.fx.docs / 'atlas.md').unlink()
+        with self.assertRaises(SystemExit) as stop:
+            self.run_main('check')
+        self.assertEqual(str(stop.exception), f'{self.fx.docs / "atlas.md"} does not exist')
 
 
 if __name__ == '__main__':

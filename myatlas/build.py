@@ -1,6 +1,7 @@
 """Writing the viewer: one HTML page with the whole map in it."""
 import html
 import json
+import re
 from pathlib import Path
 
 from .check import load
@@ -33,9 +34,13 @@ def page(project, rep, template=TEMPLATE):
     if missing:
         rep.error(str(template), f'{", ".join(missing)} が雛形に無い')
         return None
-    blob = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
-    text = text.replace('__ATLAS_TITLE__', html.escape(index['title'])).replace('__ATLAS_DOCS__', html.escape(data['docs']))
-    return text.replace('__ATLAS_DATA__', blob), (len(nodes), len(flows), len(papers))
+    # Every < as \u003c: the same string to the script, and nothing in it the HTML parser can take for
+    # </script> or <!--, which would end or swallow the script element.
+    blob = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('<', '\\u003c')
+    values = {'__ATLAS_DATA__': blob, '__ATLAS_TITLE__': html.escape(index['title']), '__ATLAS_DOCS__': html.escape(data['docs'])}
+    # One pass, so a title or docs path that spells a placeholder stays text.
+    text = re.sub('|'.join(PLACES), lambda m: values[m.group(0)], text)
+    return text, (len(nodes), len(flows), len(papers))
 
 
 def build(project, out):

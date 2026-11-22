@@ -1,6 +1,14 @@
 """Where a project keeps its code and its map, and the problems a check finds."""
+import os
 import sys
 from pathlib import Path
+
+
+def leaves(rel):
+    """Whether a path the text gives leaves the directory it is relative to: absolute, or climbing out with
+    '..'. Only the text is looked at, so a symlink inside the directory still works."""
+    path = os.path.normpath(rel)
+    return os.path.isabs(path) or path == os.pardir or path.startswith(os.pardir + os.sep)
 
 
 class Project:
@@ -22,10 +30,10 @@ class Project:
             return str(path)
 
     def code_text(self, rel):
-        """A source file's text, read once; None when it is missing."""
+        """A source file's text, read once; None when it is missing or outside the root."""
         if rel not in self._files:
             p = self.root / rel
-            self._files[rel] = p.read_text(encoding='utf-8', errors='replace') if p.is_file() else None
+            self._files[rel] = p.read_text(encoding='utf-8', errors='replace') if not leaves(rel) and p.is_file() else None
         return self._files[rel]
 
 
